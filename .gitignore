@@ -1,0 +1,51 @@
+# Node modules
+node_modules/
+
+# Expo build files and caches
+.expo/
+.expo-shared/
+dist/
+web-build/
+*.expo
+
+# Environment files (sensitive keys, API tokens)
+.env
+.env.* 
+app-env.d.ts
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# VSCode or JetBrains IDE settings
+.vscode/
+.idea/
+
+# Logs and debugging
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+expo-debug.log
+
+# TypeScript
+*.tsbuildinfo
+
+# Metro bundler cache
+.cache/
+metro-cache/
+
+# Coverage / testing
+coverage/
+
+# Fonts cache
+*.ttf
+*.otf
+
+# Optional
+# package-lock.json
+# yarn.lock
+
+# Optional
+ios/
+android/
