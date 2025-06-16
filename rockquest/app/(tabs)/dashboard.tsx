@@ -3,17 +3,21 @@ import { View, Text, TouchableOpacity, ScrollView, StatusBar, StyleSheet, Dimens
 import { LinearGradient } from "expo-linear-gradient"
 import { useFonts, PressStart2P_400Regular } from "@expo-google-fonts/press-start-2p"
 import * as SplashScreen from "expo-splash-screen"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { Ionicons, MaterialIcons } from "@expo/vector-icons"
+import { useRouter } from "expo-router"
 
 SplashScreen.preventAutoHideAsync()
 
 const { width, height } = Dimensions.get("window")
 
 export default function Dashboard() {
+  const router = useRouter()
   const [fontsLoaded] = useFonts({
     PressStart2P_400Regular,
   })
+
+  const [showGreeting, setShowGreeting] = useState(true)
 
   useEffect(() => {
     if (fontsLoaded) {
@@ -39,21 +43,33 @@ export default function Dashboard() {
       <View style={styles.mainContent}>
         {/* Header with Profile Icon */}
         <View style={styles.profileIconContainer}>
-          <TouchableOpacity style={styles.profileIcon}>
+          <TouchableOpacity style={styles.profileIcon} activeOpacity={0.8} onPress={() => router.replace("/(tabs)/profile")}>
             <Ionicons name="person" size={20} color="white" />
           </TouchableOpacity>
         </View>
 
-        {/* Greeting Section */}
-        <View style={styles.greetingContainer}>
-          <Text style={styles.greetingText}>Hello, Player Username</Text>
-          <Text style={styles.newsText}>
-            Are you updated with the <Text style={styles.newsLink}>news</Text>?
-          </Text>
-        </View>
+        {/* Greeting Banner - Dismissible */}
+        {showGreeting && (
+          <View style={styles.greetingPanelContainer}>
+            <TouchableOpacity style={styles.greetingPanel} activeOpacity={0.8} onPress={() => setShowGreeting(false)}>
+              <View style={styles.greetingContent}>
+                <View style={styles.greetingLeft}>
+                  <View style={styles.greetingIcon}>
+                    <Ionicons name="notifications" size={16} color="white" />
+                  </View>
+                  <View style={styles.greetingTextContainer}>
+                    <Text style={styles.greetingTitle}>Hello, Player!</Text>
+                    <Text style={styles.greetingDescription}>Check out the latest news</Text>
+                  </View>
+                </View>
+                <Ionicons name="close" size={20} color="#A77B4E" />
+              </View>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* Quest Panel - Floating */}
-        <View style={styles.questPanelContainer}>
+        <View style={[styles.questPanelContainer, { top: showGreeting ? 160 : 80 }]}>
           <TouchableOpacity style={styles.questPanel} activeOpacity={0.8}>
             <View style={styles.questContent}>
               <View style={styles.questLeft}>
@@ -151,31 +167,32 @@ export default function Dashboard() {
 
         {/* Bottom Navigation */}
         <View style={styles.bottomNav}>
-          <TouchableOpacity style={styles.navItem} activeOpacity={0.7}>
-            <Ionicons name="home" size={24} color="#A77B4E" />
-            <Text style={[styles.navText, styles.navTextActive]}>Home</Text>
-          </TouchableOpacity>
+        <TouchableOpacity style={styles.navItem} activeOpacity={0.7} onPress={() => router.replace("/(tabs)/dashboard")}>
+          <Ionicons name="home" size={24} color="#A77B4E" />
+          <Text style={[styles.navText, styles.navTextActive]}>Home</Text>
+        </TouchableOpacity>
 
-          <TouchableOpacity style={styles.navItem} activeOpacity={0.7}>
-            <Ionicons name="camera" size={24} color="#BA9B77" />
-            <Text style={styles.navText}>Scan</Text>
-          </TouchableOpacity>
+        <TouchableOpacity style={styles.navItem} activeOpacity={0.7} onPress={() => router.replace("/(tabs)/camera")}>
+          <Ionicons name="camera" size={24} color="#BA9B77" />
+          <Text style={styles.navText}>Scan</Text>
+        </TouchableOpacity>
 
-          <TouchableOpacity style={styles.navItem} activeOpacity={0.7}>
-            <MaterialIcons name="collections" size={24} color="#BA9B77" />
-            <Text style={styles.navText}>Collections</Text>
-          </TouchableOpacity>
+        <TouchableOpacity style={styles.navItem} activeOpacity={0.7} onPress={() => router.replace("/(tabs)/collections")}>
+          <MaterialIcons name="collections" size={24} color="#BA9B77" />
+          <Text style={styles.navText}>Collections</Text>
+        </TouchableOpacity>
 
-          <TouchableOpacity style={styles.navItem} activeOpacity={0.7}>
-            <Ionicons name="person" size={24} color="#BA9B77" />
-            <Text style={styles.navText}>Profile</Text>
-          </TouchableOpacity>
+        <TouchableOpacity style={styles.navItem} activeOpacity={0.7} onPress={() => router.replace("/(tabs)/posts")}>
+          <Ionicons name="chatbubbles" size={24} color="#BA9B77" />
+          <Text style={styles.navText}>Posts</Text>
+        </TouchableOpacity>
         </View>
       </View>
     </View>
   )
 }
 
+// CSS IS ADJUSTED TO MY PHONE SO IT MIGHT NOT LOOK EXACTLY THE SAME ON YOURS
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -186,9 +203,9 @@ const styles = StyleSheet.create({
   },
   profileIconContainer: {
     position: "absolute",
-    top: 48,
+    top: 80,
     right: 16,
-    zIndex: 20,
+    zIndex: 30,
   },
   profileIcon: {
     width: 40,
@@ -205,31 +222,62 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
     elevation: 5,
   },
-  greetingContainer: {
+  greetingPanelContainer: {
     position: "absolute",
-    top: 64,
+    top: 80,
     left: 16,
-    right: 64,
+    right: 72,
     zIndex: 10,
   },
-  greetingText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#1f2937",
+  greetingPanel: {
+    backgroundColor: "rgba(255, 255, 255, 0.95)",
+    borderRadius: 8,
+    padding: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
-  newsText: {
+  greetingContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  greetingLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+  greetingIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 4,
+    backgroundColor: "#A77B4E",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+  greetingTextContainer: {
+    flex: 1,
+  },
+  greetingTitle: {
     fontSize: 14,
-    color: "#6b7280",
+    color: "#1f2937",
+    fontFamily: "PressStart2P_400Regular",
+    marginBottom: 4,
   },
-  newsLink: {
-    color: "#A77B4E",
+  greetingDescription: {
+    fontSize: 12,
+    color: "#6b7280",
   },
   questPanelContainer: {
     position: "absolute",
-    top: 112,
+    top: 80,
     left: 16,
-    right: 16,
-    zIndex: 10,
+    right: 72,
+    zIndex: 15,
+    
   },
   questPanel: {
     backgroundColor: "rgba(255, 255, 255, 0.95)",
@@ -275,7 +323,7 @@ const styles = StyleSheet.create({
   },
   mapContainer: {
     flex: 1,
-    marginTop: 80,
+    marginTop: 0,
   },
   mapGradient: {
     flex: 1,

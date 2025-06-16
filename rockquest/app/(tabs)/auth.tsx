@@ -21,7 +21,7 @@ export default function AuthScreen() {
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const router = useRouter();
-  
+
   useEffect(() => {
     if (fontsLoaded) {
       SplashScreen.hideAsync()
@@ -125,17 +125,6 @@ export default function AuthScreen() {
               </Text>
             </TouchableOpacity>
           </View>
-
-          {/* Back to Start */}
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => {
-              /* Navigate back to start screen */
-            }}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.backButtonText}>Back to Start</Text>
-          </TouchableOpacity>
         </View>
       </LinearGradient>
     </View>

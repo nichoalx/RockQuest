@@ -25,6 +25,34 @@ export default function TabLayout() {
           tabBarStyle: { display: "none" }, 
         }}
       />
+      <Tabs.Screen
+        name="collections"
+        options={{
+          title: "Collections",
+          tabBarStyle : { display: "none" },
+        }}
+      />
+      <Tabs.Screen
+        name="posts"
+        options={{
+          title: "Posts",
+          tabBarStyle: { display: "none" }, 
+        }}
+      />
+      <Tabs.Screen
+        name="camera"
+        options={{
+          title: "Camera",
+          tabBarStyle: { display: "none" }, 
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: "Profile",
+          tabBarStyle: { display: "none" }, 
+        }}
+      />
     </Tabs>
   )
 }
