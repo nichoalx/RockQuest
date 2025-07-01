@@ -8,10 +8,13 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "setup": "npm install --legacy-peer-deps && npx expo start"
   },
   "dependencies": {
     "@expo-google-fonts/press-start-2p": "^0.4.0",
+    "react-native-maps": "1.17.1",
+    "expo-location": "~16.2.1",
     "@expo/vector-icons": "^14.1.0",
     "@react-navigation/bottom-tabs": "^7.3.10",
     "@react-navigation/elements": "^2.3.8",
