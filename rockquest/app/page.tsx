@@ -5,7 +5,6 @@ export default function Page() {
   return (
     <View style={styles.container}>
       <StartScreen />
-      Nick Babi
     </View>
   )
 }
