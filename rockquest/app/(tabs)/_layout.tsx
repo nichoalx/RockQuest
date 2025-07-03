@@ -53,6 +53,54 @@ export default function TabLayout() {
           tabBarStyle: { display: "none" }, 
         }}
       />
+
+      <Tabs.Screen
+        name="GeoHomepage"
+        options={{
+          title: "Homepage",
+          tabBarStyle: { display: "none" }, 
+        }}
+      />
+      
+      <Tabs.Screen
+        name="GeoPosts"
+        options={{
+          title: "Posts",
+          tabBarStyle: { display: "none" }, 
+        }}
+      />
+      
+      <Tabs.Screen
+        name="GeoProfile"
+        options={{
+          title: "Profile",
+          tabBarStyle: { display: "none" }, 
+        }}
+      />
+
+      <Tabs.Screen
+        name="edit-profile"
+        options={{
+          title: "Edit Profile",
+          tabBarStyle: { display: "none" }, 
+        }}
+      />
+
+      <Tabs.Screen
+        name="GeoNewPost"
+        options={{
+          title: "New Post",
+          tabBarStyle: { display: "none" }, 
+        }}
+      />
+
+      <Tabs.Screen
+        name="GeoNewFact"
+        options={{
+          title: "New Fact",
+          tabBarStyle: { display: "none" }, 
+        }}
+      />
     </Tabs>
   )
 }

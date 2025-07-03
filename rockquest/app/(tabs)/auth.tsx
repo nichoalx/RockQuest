@@ -4,7 +4,7 @@ import { LinearGradient } from "expo-linear-gradient"
 import { useFonts, PressStart2P_400Regular } from "@expo-google-fonts/press-start-2p"
 import * as SplashScreen from "expo-splash-screen"
 import { useEffect, useState } from "react"
-import { useRouter } from "expo-router";
+import { useRouter } from "expo-router"
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync()
@@ -20,7 +20,9 @@ export default function AuthScreen() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
-  const router = useRouter();
+  const [role, setRole] = useState("user") // Default role
+
+  const router = useRouter()
 
   useEffect(() => {
     if (fontsLoaded) {
@@ -30,19 +32,26 @@ export default function AuthScreen() {
 
   const handleAuth = () => {
     if (!email || !password) {
-      Alert.alert("Error", "Please fill in all fields");
-      return;
+      Alert.alert("Error", "Please fill in all fields")
+      return
     }
 
     if (!isLogin && password !== confirmPassword) {
-      Alert.alert("Error", "Passwords don't match");
-      return;
+      Alert.alert("Error", "Passwords don't match")
+      return
     }
 
-    // Simulated success — redirect
-    Alert.alert("Success", isLogin ? "Logged in!" : "Account created!");
-    router.replace("/(tabs)/dashboard");
-  };
+    Alert.alert("Success", isLogin ? "Logged in!" : "Account created!")
+
+    // Navigate based on role
+    if (role === "geologist") {
+      router.replace("/GeoHomepage")
+    } else if (role === "admin") {
+      router.replace("/AdminDashboard") // Replace with your actual admin route
+    } else {
+      router.replace("/(tabs)/dashboard")
+    }
+  }
 
   const toggleAuthMode = () => {
     setIsLogin(!isLogin)
@@ -64,12 +73,10 @@ export default function AuthScreen() {
         end={{ x: 1, y: 1 }}
       >
         <View style={styles.content}>
-          {/* Title */}
           <Text style={styles.title}>{isLogin ? "Login" : "Sign Up"}</Text>
 
-          {/* Form Container */}
           <View style={styles.formContainer}>
-            {/* Email Input */}
+            {/* Email */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Email</Text>
               <TextInput
@@ -83,7 +90,7 @@ export default function AuthScreen() {
               />
             </View>
 
-            {/* Password Input */}
+            {/* Password */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Password</Text>
               <TextInput
@@ -97,7 +104,7 @@ export default function AuthScreen() {
               />
             </View>
 
-            {/* Confirm Password Input (only for signup) */}
+            {/* Confirm Password (Signup only) */}
             {!isLogin && (
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Confirm Password</Text>
@@ -113,12 +120,30 @@ export default function AuthScreen() {
               </View>
             )}
 
+            {/* Role Selection */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Login As</Text>
+              <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                {["user", "geologist", "admin"].map((r) => (
+                  <TouchableOpacity
+                    key={r}
+                    style={[styles.roleButton, role === r && styles.roleButtonSelected]}
+                    onPress={() => setRole(r)}
+                  >
+                    <Text style={role === r ? styles.roleButtonTextSelected : styles.roleButtonText}>
+                      {r.charAt(0).toUpperCase() + r.slice(1)}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
             {/* Auth Button */}
             <TouchableOpacity style={styles.authButton} onPress={handleAuth} activeOpacity={0.8}>
               <Text style={styles.authButtonText}>{isLogin ? "Login" : "Create Account"}</Text>
             </TouchableOpacity>
 
-            {/* Toggle Auth Mode */}
+            {/* Toggle Login/Signup */}
             <TouchableOpacity onPress={toggleAuthMode} activeOpacity={0.7}>
               <Text style={styles.toggleText}>
                 {isLogin ? "Don't have an account? Sign up" : "Already have an account? Login"}
@@ -199,14 +224,26 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: 14,
   },
-  backButton: {
-    marginTop: 32,
-    paddingVertical: 12,
+  roleButton: {
+    flex: 1,
+    marginHorizontal: 4,
+    paddingVertical: 10,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "#A77B4E",
+    backgroundColor: "white",
+    alignItems: "center",
   },
-  backButtonText: {
+  roleButtonSelected: {
+    backgroundColor: "#A77B4E",
+  },
+  roleButtonText: {
+    color: "#A77B4E",
+    fontWeight: "bold",
+  },
+  roleButtonTextSelected: {
     color: "white",
-    textAlign: "center",
-    fontSize: 14,
-    textDecorationLine: "underline",
+    fontWeight: "bold",
   },
 })
+
