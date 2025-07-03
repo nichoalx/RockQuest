@@ -34,4 +34,18 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 ### 3. Install Dependencies
 pip install -r requirements.txt
 
+### 4. Set VS Code Python Interpreter
+If you are using VS Code, make sure to select the correct interpreter:
+example:
+/Users/mensi/Downloads/FYP_RockQuest/RockQuest/backend/venv/bin/python
+can see from typing "which python" on terminal
+
+You can set this via:
+Cmd + Shift + P → Python: Select Interpreter → Enter interpreter path...
+
+### 5. Run FastAPI Server
+uvicorn main:app --reload
+
+
+
 
