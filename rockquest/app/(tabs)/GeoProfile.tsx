@@ -3,26 +3,42 @@ import { PressStart2P_400Regular, useFonts } from "@expo-google-fonts/press-star
 import { Ionicons } from "@expo/vector-icons"
 import { useRouter } from "expo-router"
 import * as SplashScreen from "expo-splash-screen"
-import { useEffect } from "react"
-import { ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from "react-native"
+import { useEffect, useState } from "react"
+import AsyncStorage from "@react-native-async-storage/async-storage"
+
+import {
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+  Alert,
+} from "react-native"
 
 SplashScreen.preventAutoHideAsync()
 
 export default function ProfileScreen() {
-  const router = useRouter();
-  const [fontsLoaded] = useFonts({
-    PressStart2P_400Regular,
-  })
+  const router = useRouter()
+  const [fontsLoaded] = useFonts({ PressStart2P_400Regular })
 
-  useEffect(() => {
-    if (fontsLoaded) {
-      SplashScreen.hideAsync()
-    }
-  }, [fontsLoaded])
+  const [isEditing, setIsEditing] = useState(false)
+  const [description, setDescription] = useState("")
+  const WORD_LIMIT = 30
 
-  if (!fontsLoaded) {
-    return null
+  const [birthday, setBirthday] = useState("")
+
+useEffect(() => {
+  if (fontsLoaded) {
+    SplashScreen.hideAsync()
+    AsyncStorage.getItem("userBirthday").then((value) => {
+      if (value) setBirthday(value)
+    })
   }
+}, [fontsLoaded])
+
+  if (!fontsLoaded) return null
 
   return (
     <View style={styles.container}>
@@ -54,20 +70,43 @@ export default function ProfileScreen() {
               <Text style={styles.playerLabel}>Geologist</Text>
               <View style={styles.birthdayContainer}>
                 <Ionicons name="gift" size={16} color="#A77B4E" />
-                <Text style={styles.birthdayText}>Birthday</Text>
+                <Text style={styles.birthdayText}>{birthday || "Birthday"}</Text>
               </View>
             </View>
           </View>
 
-          {/* Description */}
+          {/* Description Section */}
           <View style={styles.descriptionSection}>
-            <Text style={styles.descriptionText}>
-              Add a short description about yourself.{"\n"}
-              Set a character limit to the text field.
-            </Text>
+            {isEditing ? (
+              <>
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="Write a short description of yourself..."
+                  value={description}
+                  onChangeText={(text) => {
+                    const wordCount = text.trim().split(/\s+/).length
+                    if (wordCount <= WORD_LIMIT) {
+                      setDescription(text)
+                    } else {
+                      Alert.alert("Word Limit Reached", `Maximum ${WORD_LIMIT} words allowed.`)
+                    }
+                  }}
+                  multiline
+                />
+                <TouchableOpacity style={styles.saveButton} onPress={() => setIsEditing(false)}>
+                  <Text style={styles.saveButtonText}>Save</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <TouchableOpacity onPress={() => setIsEditing(true)}>
+                <Text style={styles.descriptionText}>
+                  {description ? description : "Add a short description about yourself."}
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
-        
+
         {/* Action Buttons */}
         <View style={styles.actionButtons}>
           <TouchableOpacity style={styles.actionButton} activeOpacity={0.8} onPress={() => router.replace("/(tabs)/edit-profile")}>
@@ -90,13 +129,13 @@ export default function ProfileScreen() {
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.navItem} activeOpacity={0.7} onPress={() => router.replace("/(tabs)/GeoPosts")}>
-          <Ionicons name="chatbubbles" size={24} color="#BA9B77"  />
+          <Ionicons name="chatbubbles" size={24} color="#BA9B77" />
           <Text style={styles.navText}>Posts</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.navItem} activeOpacity={0.7} onPress={() => router.replace("/(tabs)/auth")}>
-          <Ionicons name="log-out" size={24} color="#BA9B77"  />
-          <Text style={styles.navText}>Posts</Text>
+          <Ionicons name="log-out" size={24} color="#BA9B77" />
+          <Text style={styles.navText}>Log Out</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -124,11 +163,6 @@ const styles = StyleSheet.create({
     color: "#1f2937",
     marginBottom: 8,
     marginTop: 20,
-  },
-  subtitle: {
-    fontSize: 18,
-    color: "#1f2937",
-    fontWeight: "600",
   },
   profileIcon: {
     width: 40,
@@ -194,76 +228,27 @@ const styles = StyleSheet.create({
     color: "#6b7280",
     lineHeight: 20,
   },
-  achievementsSection: {
-    marginBottom: 20,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#1f2937",
-    marginBottom: 12,
-  },
-  achievementsGrid: {
-    flexDirection: "row",
-    gap: 12,
-  },
-  achievementBox: {
-    width: 60,
-    height: 60,
+  textInput: {
     backgroundColor: "white",
+    padding: 10,
     borderRadius: 8,
-    justifyContent: "center",
-    alignItems: "center",
-    position: "relative",
-  },
-  achievementX: {
-    width: 24,
-    height: 24,
-    position: "relative",
-  },
-  xLine1: {
-    position: "absolute",
-    width: 24,
-    height: 2,
-    backgroundColor: "#6b7280",
-    transform: [{ rotate: "45deg" }],
-    top: 11,
-  },
-  xLine2: {
-    position: "absolute",
-    width: 24,
-    height: 2,
-    backgroundColor: "#6b7280",
-    transform: [{ rotate: "-45deg" }],
-    top: 11,
-  },
-  trackerSection: {
-    marginBottom: 0,
-  },
-  trackerStats: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  trackerItem: {
-    alignItems: "center",
-    flex: 1,
-  },
-  trackerLabel: {
+    borderColor: "#ccc",
+    borderWidth: 1,
     fontSize: 14,
-    color: "#6b7280",
-    marginBottom: 4,
+    minHeight: 60,
+    marginBottom: 10,
   },
-  trackerNumber: {
-    fontSize: 24,
+  saveButton: {
+    backgroundColor: "#A77B4E",
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 20,
+    alignSelf: "flex-start",
+  },
+  saveButtonText: {
+    color: "white",
     fontWeight: "bold",
-    color: "#1f2937",
-  },
-  trackerDivider: {
-    width: 2,
-    height: 40,
-    backgroundColor: "#1f2937",
-    marginHorizontal: 20,
+    fontSize: 14,
   },
   actionButtons: {
     gap: 12,
@@ -304,3 +289,4 @@ const styles = StyleSheet.create({
     color: "#6b7280",
   },
 })
+
