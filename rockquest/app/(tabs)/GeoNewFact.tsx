@@ -18,124 +18,152 @@ export default function NewFactScreen() {
   const [factInformation, setFactInformation] = useState("")
 
   const handleSubmit = () => {
-    // You can extend this to save post data to a backend later
     router.replace("/(tabs)/GeoPosts")
   }
 
-  return (
-  <View style={styles.wrapper}>
-    <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
+  const handleReset = () => {
+    setFactName("")
+    setShortFactDescription("")
+    setFactInformation("")
+  }
 
-    <View style={styles.header}>
-      <View style={styles.headerContent}>
-        <View style={styles.titleWrapper}>
-          <Text style={styles.title}>RockQuest</Text>
-        </View>
+  return (
+    <View style={styles.wrapper}>
+      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
+
+      <View style={styles.header}>
+        <View style={styles.headerContent}>
+          <View style={styles.titleWrapper}>
+            <Text style={styles.title}>RockQuest</Text>
+          </View>
           <TouchableOpacity
             style={styles.profileIcon}
             onPress={() => router.replace("/(tabs)/GeoProfile")}
-          > 
+          >
             <Ionicons name="person" size={20} color="white" />
           </TouchableOpacity>
         </View>
       </View>
-        
+
       <Text style={styles.pageTitle}>New Fact</Text>
 
-      {/* Inputs */}
-      <Text style={styles.label}>Fact Name</Text>
-      <TextInput
-        style={styles.input}
-        value={factName}
-        onChangeText={setFactName}
-        placeholder="Enter Fact name"
-      />
+      <View style={styles.contentBox}>
+        <Text style={styles.label}>Fact Name</Text>
+        <TextInput
+          style={styles.input}
+          value={factName}
+          onChangeText={setFactName}
+          placeholder="Enter Fact name"
+        />
 
-      <Text style={styles.label}>Short Description</Text>
-      <TextInput
-        style={styles.input}
-        value={shortFactDescription}
-        onChangeText={setShortFactDescription}
-        placeholder="Enter a short description"
-      />
+        <Text style={styles.label}>Short Description</Text>
+        <TextInput
+          style={styles.input}
+          value={shortFactDescription}
+          onChangeText={setShortFactDescription}
+          placeholder="Enter a short description"
+        />
 
-      <Text style={styles.label}>Information</Text>
-      <TextInput
-        style={[styles.input, styles.textArea]}
-        value={factInformation}
-        onChangeText={setFactInformation}
-        placeholder="Enter detailed information"
-        multiline
-      />
+        <Text style={styles.label}>Information</Text>
+        <TextInput
+          style={[styles.input, styles.textArea]}
+          value={factInformation}
+          onChangeText={setFactInformation}
+          placeholder="Enter detailed information"
+          multiline
+        />
 
-      <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-        <Text style={styles.submitButtonText}>Submit Fact</Text>
-      </TouchableOpacity>
+        {/* Buttons Row */}
+        <View style={styles.buttonRow}>
+          <TouchableOpacity
+            style={styles.returnButton}
+            onPress={() => router.replace("/(tabs)/GeoPosts")}
+          >
+            <Text style={styles.returnButtonText}>Return</Text>
+          </TouchableOpacity>
 
-    {/* Bottom Navigation */}
-    <View style={styles.bottomNav}>
-      <TouchableOpacity
-        style={styles.navItem}
-        onPress={() => router.replace("/(tabs)/GeoHomepage")}
-      >
-        <Ionicons name="home" size={24} color="#BA9B77" />
-        <Text style={styles.navText}>Home</Text>
-      </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.resetButton}
+            onPress={handleReset}
+          >
+            <Text style={styles.resetButtonText}>Reset</Text>
+          </TouchableOpacity>
 
-      <TouchableOpacity
-        style={styles.navItem}
-        onPress={() => router.replace("/(tabs)/GeoPosts")}
-      >
-        <Ionicons name="chatbubbles" size={24} color="#BA9B77" />
-        <Text style={styles.navText}>Posts</Text>
-      </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.submitButton}
+            onPress={handleSubmit}
+          >
+            <Text style={styles.submitButtonText}>Submit Fact</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
 
-      <TouchableOpacity
-        style={styles.navItem}
-        onPress={() => router.replace("/(tabs)/auth")}
-      >
-        <Ionicons name="log-out" size={24} color="#BA9B77" />
-        <Text style={styles.navText}>Log Out</Text>
-      </TouchableOpacity>
+      <View style={styles.bottomNav}>
+        <TouchableOpacity
+          style={styles.navItem}
+          onPress={() => router.replace("/(tabs)/GeoHomepage")}
+        >
+          <Ionicons name="home" size={24} color="#BA9B77" />
+          <Text style={styles.navText}>Home</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.navItem}
+          onPress={() => router.replace("/(tabs)/GeoPosts")}
+        >
+          <Ionicons name="chatbubbles" size={24} color="#BA9B77" />
+          <Text style={styles.navText}>Posts</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.navItem}
+          onPress={() => router.replace("/(tabs)/auth")}
+        >
+          <Ionicons name="log-out" size={24} color="#BA9B77" />
+          <Text style={styles.navText}>Log Out</Text>
+        </TouchableOpacity>
+      </View>
     </View>
-  </View>
-)
+  )
 }
 
-// CSS Style Sheet
 const styles = StyleSheet.create({
-  container: {
-    padding: 20,
-    paddingTop: 60,
-    backgroundColor: "white",
-  },
-
-    wrapper: {
+  wrapper: {
     flex: 1,
     backgroundColor: "white",
     position: "relative",
   },
 
-  scrollView: {
-    flex: 1,
-  },
-
-  topHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-
   header: {
     paddingTop: 40,
     paddingHorizontal: 20,
-    paddingBottom: 10, 
+    paddingBottom: 10,
   },
 
   headerContent: {
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "center",
+  },
+
+  titleWrapper: {
+    justifyContent: "center",
+    height: 40,
+  },
+
+  title: {
+    fontFamily: "PressStart2P_400Regular",
+    fontSize: 16,
+    color: "#1f2937",
+  },
+
+  profileIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginTop: 10,
+    backgroundColor: "#A77B4E",
+    justifyContent: "center",
     alignItems: "center",
   },
 
@@ -148,56 +176,29 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
 
-  titleWrapper: {
-    justifyContent: "center",
-    height: 40, 
-  },
-
-  title: {
-    fontFamily: "PressStart2P_400Regular",
-    fontSize: 16, 
-    color: "#1f2937",
-    marginTop: 0,
-    marginBottom: 0,
-},
-
-  profileIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginTop: 10,
-    backgroundColor: "#A77B4E",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  placeholder: {
-    height: 200,
-    borderWidth: 1,
-    borderColor: "#d1d5db",
-    borderRadius: 8,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  placeholderText: {
-    color: "#6b7280",
-    marginTop: 8,
+  contentBox: {
+    paddingHorizontal: 20,
+    width: "100%",
+    maxWidth: 500,
+    alignSelf: "center",
   },
 
   label: {
     fontSize: 14,
     fontWeight: "600",
-    marginBottom: 4,
     color: "#1f2937",
+    marginBottom: 4,
+    marginLeft: 2,
   },
 
   input: {
+    width: "100%",
     borderWidth: 1,
     borderColor: "#d1d5db",
     borderRadius: 6,
     padding: 10,
     marginBottom: 16,
+    backgroundColor: "#fff",
   },
 
   textArea: {
@@ -205,11 +206,49 @@ const styles = StyleSheet.create({
     textAlignVertical: "top",
   },
 
+  buttonRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 10,
+  },
+
+  returnButton: {
+    flex: 1,
+    backgroundColor: "#777",
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: "center",
+    marginRight: 8,
+  },
+
+  returnButtonText: {
+    color: "white",
+    fontWeight: "600",
+    fontSize: 16,
+  },
+
+  resetButton: {
+    flex: 1,
+    backgroundColor: "#d1a054",
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: "center",
+    marginHorizontal: 8,
+  },
+
+  resetButtonText: {
+    color: "white",
+    fontWeight: "600",
+    fontSize: 16,
+  },
+
   submitButton: {
+    flex: 1,
     backgroundColor: "#A77B4E",
     paddingVertical: 12,
     borderRadius: 8,
     alignItems: "center",
+    marginLeft: 8,
   },
 
   submitButtonText: {
@@ -247,3 +286,4 @@ const styles = StyleSheet.create({
     color: "#A77B4E",
   },
 })
+

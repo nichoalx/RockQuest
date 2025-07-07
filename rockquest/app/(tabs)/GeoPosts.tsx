@@ -12,7 +12,7 @@ export default function PostsScreen() {
   const router = useRouter()
   const [fontsLoaded] = useFonts({ PressStart2P_400Regular })
   const [showMyPosts, setShowMyPosts] = useState(false)
-  const [postTypeFilter, setPostTypeFilter] = useState("all") // all | posts | facts
+  const [postTypeFilter, setPostTypeFilter] = useState("all")
   const [showCreateOptions, setShowCreateOptions] = useState(false)
 
   useEffect(() => {
@@ -63,25 +63,28 @@ export default function PostsScreen() {
         </View>
 
         {/* Post Type Filter */}
-        <View style={styles.filterRowContainer2}>
+        <View style={styles.filterRowAligned}>
           <TouchableOpacity
-            style={[styles.filterButton, postTypeFilter === "all" && styles.filterButtonActive]}
+            style={[styles.filterButtonEqual, postTypeFilter === "all" && styles.filterButtonActive]}
             onPress={() => setPostTypeFilter("all")}
           >
             <Text style={[styles.filterText, postTypeFilter === "all" && styles.filterTextActive]}>All</Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.filterButton, postTypeFilter === "posts" && styles.filterButtonActive]}
-            onPress={() => setPostTypeFilter("posts")}
-          >
-            <Text style={[styles.filterText, postTypeFilter === "posts" && styles.filterTextActive]}>Posts</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.filterButton, postTypeFilter === "facts" && styles.filterButtonActive]}
-            onPress={() => setPostTypeFilter("facts")}
-          >
-            <Text style={[styles.filterText, postTypeFilter === "facts" && styles.filterTextActive]}>Facts</Text>
-          </TouchableOpacity>
+
+          <View style={styles.filterRightGroup}>
+            <TouchableOpacity
+              style={[styles.filterButtonEqual, postTypeFilter === "posts" && styles.filterButtonActive]}
+              onPress={() => setPostTypeFilter("posts")}
+            >
+              <Text style={[styles.filterText, postTypeFilter === "posts" && styles.filterTextActive]}>Posts</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.filterButtonEqual, postTypeFilter === "facts" && styles.filterButtonActive]}
+              onPress={() => setPostTypeFilter("facts")}
+            >
+              <Text style={[styles.filterText, postTypeFilter === "facts" && styles.filterTextActive]}>Facts</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
 
@@ -202,7 +205,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
   },
-  
   filterButton: {
     paddingHorizontal: 16,
     paddingVertical: 8,
@@ -210,7 +212,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#d1d5db",
   },
-
   filterButtonActive: {
     backgroundColor: "#1f2937",
     borderColor: "#1f2937",
@@ -223,15 +224,25 @@ const styles = StyleSheet.create({
   filterTextActive: {
     color: "white",
   },
-
-  filterRowContainer2: {
+  filterRowAligned: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    gap: 8,
     marginTop: 12,
   },
-
+  filterRightGroup: {
+    flexDirection: "row",
+    gap: 8,
+    marginLeft: 12,
+  },
+  filterButtonEqual: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#d1d5db",
+    minWidth: 70,
+    alignItems: "center",
+  },
   addButton: {
     width: 40,
     height: 40,
@@ -326,60 +337,42 @@ const styles = StyleSheet.create({
   navTextActive: {
     color: "#A77B4E",
   },
-
   modalOverlay: {
-  position: "absolute",
-  top: 0,
-  bottom: 0,
-  left: 0,
-  right: 0,
-  backgroundColor: "rgba(0,0,0,0.4)",
-  justifyContent: "center",
-  alignItems: "center",
-  zIndex: 100,
-},
-modalContent: {
-  backgroundColor: "#fff",
-  borderRadius: 12,
-  padding: 24,
-  width: "80%",
-  alignItems: "center",
-},
-modalButton: {
-  paddingVertical: 12,
-  paddingHorizontal: 20,
-  backgroundColor: "#f3f4f6",
-  borderRadius: 8,
-  marginBottom: 12,
-  width: "100%",
-},
-modalButtonText: {
-  textAlign: "center",
-  color: "#1f2937",
-  fontSize: 16,
-},
-cancelText: {
-  marginTop: 8,
-  color: "#6b7280",
-  fontSize: 14,
-  textDecorationLine: "underline",
-},
-filterTypeRow: {
-  flexDirection: "row",
-  justifyContent: "space-around",
-  marginTop: 12,
-},
-typeFilterButton: {
-  paddingVertical: 8,
-  paddingHorizontal: 12,
-  borderRadius: 20,
-  backgroundColor: "#f3f4f6",
-},
-typeFilterText: {
-  color: "#6b7280",
-  fontSize: 12,
-},
-activeType: {
-  backgroundColor: "#A77B4E",
-},
+    position: "absolute",
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 100,
+  },
+  modalContent: {
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 24,
+    width: "80%",
+    alignItems: "center",
+  },
+  modalButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    backgroundColor: "#f3f4f6",
+    borderRadius: 8,
+    marginBottom: 12,
+    width: "100%",
+  },
+  modalButtonText: {
+    textAlign: "center",
+    color: "#1f2937",
+    fontSize: 16,
+  },
+  cancelText: {
+    marginTop: 8,
+    color: "#6b7280",
+    fontSize: 14,
+    textDecorationLine: "underline",
+  },
 })
+

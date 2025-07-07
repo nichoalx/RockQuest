@@ -1,44 +1,49 @@
 "use client"
-import { PressStart2P_400Regular, useFonts } from "@expo-google-fonts/press-start-2p"
-import { Ionicons } from "@expo/vector-icons"
-import { useRouter } from "expo-router"
-import * as SplashScreen from "expo-splash-screen"
-import { useEffect, useState } from "react"
-import AsyncStorage from "@react-native-async-storage/async-storage"
 
+import { useRouter } from "expo-router"
+import { Ionicons } from "@expo/vector-icons"
+import AsyncStorage from "@react-native-async-storage/async-storage"
+import React, { useEffect, useState, useCallback } from "react"
 import {
   ScrollView,
   StatusBar,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
-  Alert,
 } from "react-native"
+import { useFocusEffect } from "@react-navigation/native"
 
-SplashScreen.preventAutoHideAsync()
-
-export default function ProfileScreen() {
+export default function GeoProfile() {
   const router = useRouter()
-  const [fontsLoaded] = useFonts({ PressStart2P_400Regular })
-
-  const [isEditing, setIsEditing] = useState(false)
-  const [description, setDescription] = useState("")
-  const WORD_LIMIT = 30
-
+  const [username, setUsername] = useState("Username")
   const [birthday, setBirthday] = useState("")
 
-useEffect(() => {
-  if (fontsLoaded) {
-    SplashScreen.hideAsync()
-    AsyncStorage.getItem("userBirthday").then((value) => {
-      if (value) setBirthday(value)
-    })
-  }
-}, [fontsLoaded])
+  useFocusEffect(
+    useCallback(() => {
+      const loadProfile = async () => {
+        try {
+          const savedUsername = await AsyncStorage.getItem("userName")
+          const savedBirthday = await AsyncStorage.getItem("userBirthday")
 
-  if (!fontsLoaded) return null
+          if (savedUsername) {
+            setUsername(savedUsername)
+          } else {
+            setUsername("Username")
+          }
+
+          if (savedBirthday) {
+            setBirthday(savedBirthday)
+          } else {
+            setBirthday("")
+          }
+        } catch (error) {
+          console.error("Failed to load profile data", error)
+        }
+      }
+      loadProfile()
+    }, [])
+  )
 
   return (
     <View style={styles.container}>
@@ -50,7 +55,10 @@ useEffect(() => {
           <View>
             <Text style={styles.title}>Profile</Text>
           </View>
-          <TouchableOpacity style={styles.profileIcon} onPress={() => router.replace("/(tabs)/GeoProfile")}>
+          <TouchableOpacity
+            style={styles.profileIcon}
+            onPress={() => router.replace("/(tabs)/edit-profile")}
+          >
             <Ionicons name="person" size={20} color="white" />
           </TouchableOpacity>
         </View>
@@ -66,55 +74,42 @@ useEffect(() => {
               <View style={styles.profilePicturePlaceholder} />
             </View>
             <View style={styles.profileInfo}>
-              <Text style={styles.username}>Username</Text>
+              <Text style={styles.username}>{username}</Text>
               <Text style={styles.playerLabel}>Geologist</Text>
               <View style={styles.birthdayContainer}>
                 <Ionicons name="gift" size={16} color="#A77B4E" />
-                <Text style={styles.birthdayText}>{birthday || "Birthday"}</Text>
+                <Text style={styles.birthdayText}>
+                  {birthday ? birthday : "Birthday"}
+                </Text>
               </View>
             </View>
           </View>
 
-          {/* Description Section */}
+          {/* Description */}
           <View style={styles.descriptionSection}>
-            {isEditing ? (
-              <>
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="Write a short description of yourself..."
-                  value={description}
-                  onChangeText={(text) => {
-                    const wordCount = text.trim().split(/\s+/).length
-                    if (wordCount <= WORD_LIMIT) {
-                      setDescription(text)
-                    } else {
-                      Alert.alert("Word Limit Reached", `Maximum ${WORD_LIMIT} words allowed.`)
-                    }
-                  }}
-                  multiline
-                />
-                <TouchableOpacity style={styles.saveButton} onPress={() => setIsEditing(false)}>
-                  <Text style={styles.saveButtonText}>Save</Text>
-                </TouchableOpacity>
-              </>
-            ) : (
-              <TouchableOpacity onPress={() => setIsEditing(true)}>
-                <Text style={styles.descriptionText}>
-                  {description ? description : "Add a short description about yourself."}
-                </Text>
-              </TouchableOpacity>
-            )}
+            <Text style={styles.descriptionText}>
+              Add a short description about yourself.{"\n"}
+              Set a character limit to the text field.
+            </Text>
           </View>
         </View>
 
         {/* Action Buttons */}
         <View style={styles.actionButtons}>
-          <TouchableOpacity style={styles.actionButton} activeOpacity={0.8} onPress={() => router.replace("/(tabs)/edit-profile")}>
+          <TouchableOpacity
+            style={styles.actionButton}
+            activeOpacity={0.8}
+            onPress={() => router.replace("/(tabs)/edit-profile")}
+          >
             <Ionicons name="create" size={20} color="#1f2937" />
             <Text style={styles.actionButtonText}>Edit Profile</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.actionButton} activeOpacity={0.8} onPress={() => router.replace("/(tabs)/auth")}>
+          <TouchableOpacity
+            style={styles.actionButton}
+            activeOpacity={0.8}
+            onPress={() => router.replace("/(tabs)/auth")}
+          >
             <Ionicons name="log-out" size={20} color="#1f2937" />
             <Text style={styles.actionButtonText}>Log out</Text>
           </TouchableOpacity>
@@ -123,35 +118,41 @@ useEffect(() => {
 
       {/* Bottom Navigation */}
       <View style={styles.bottomNav}>
-        <TouchableOpacity style={styles.navItem} activeOpacity={0.7} onPress={() => router.replace("/(tabs)/GeoHomepage")}>
+        <TouchableOpacity
+          style={styles.navItem}
+          activeOpacity={0.7}
+          onPress={() => router.replace("/(tabs)/GeoHomepage")}
+        >
           <Ionicons name="home" size={24} color="#BA9B77" />
           <Text style={styles.navText}>Home</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.navItem} activeOpacity={0.7} onPress={() => router.replace("/(tabs)/GeoPosts")}>
+        <TouchableOpacity
+          style={styles.navItem}
+          activeOpacity={0.7}
+          onPress={() => router.replace("/(tabs)/GeoPosts")}
+        >
           <Ionicons name="chatbubbles" size={24} color="#BA9B77" />
           <Text style={styles.navText}>Posts</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.navItem} activeOpacity={0.7} onPress={() => router.replace("/(tabs)/auth")}>
+        <TouchableOpacity
+          style={styles.navItem}
+          activeOpacity={0.7}
+          onPress={() => router.replace("/(tabs)/auth")}
+        >
           <Ionicons name="log-out" size={24} color="#BA9B77" />
-          <Text style={styles.navText}>Log Out</Text>
+          <Text style={styles.navText}>Logout</Text>
         </TouchableOpacity>
       </View>
     </View>
   )
 }
 
+// Styles remain the same as your original GeoProfile page
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "white",
-  },
-  header: {
-    paddingTop: 50,
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-  },
+  container: { flex: 1, backgroundColor: "white" },
+  header: { paddingTop: 50, paddingHorizontal: 20, paddingBottom: 20 },
   headerContent: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -173,87 +174,34 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  content: {
-    flex: 1,
-    paddingHorizontal: 20,
-  },
+  content: { flex: 1, paddingHorizontal: 20 },
   profileCard: {
     backgroundColor: "#C0BAA9",
     borderRadius: 16,
     padding: 20,
     marginBottom: 20,
   },
-  profileSection: {
-    flexDirection: "row",
-    marginBottom: 16,
-  },
-  profilePicture: {
-    marginRight: 16,
-  },
+  profileSection: { flexDirection: "row", marginBottom: 16 },
+  profilePicture: { marginRight: 16 },
   profilePicturePlaceholder: {
     width: 80,
     height: 80,
     borderRadius: 40,
     backgroundColor: "white",
   },
-  profileInfo: {
-    flex: 1,
-    justifyContent: "center",
-  },
+  profileInfo: { flex: 1, justifyContent: "center" },
   username: {
     fontSize: 18,
     fontWeight: "bold",
     color: "#1f2937",
     marginBottom: 4,
   },
-  playerLabel: {
-    fontSize: 14,
-    color: "#6b7280",
-    marginBottom: 8,
-  },
-  birthdayContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  birthdayText: {
-    fontSize: 14,
-    color: "#A77B4E",
-    marginLeft: 6,
-  },
-  descriptionSection: {
-    marginBottom: 20,
-  },
-  descriptionText: {
-    fontSize: 14,
-    color: "#6b7280",
-    lineHeight: 20,
-  },
-  textInput: {
-    backgroundColor: "white",
-    padding: 10,
-    borderRadius: 8,
-    borderColor: "#ccc",
-    borderWidth: 1,
-    fontSize: 14,
-    minHeight: 60,
-    marginBottom: 10,
-  },
-  saveButton: {
-    backgroundColor: "#A77B4E",
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 20,
-    alignSelf: "flex-start",
-  },
-  saveButtonText: {
-    color: "white",
-    fontWeight: "bold",
-    fontSize: 14,
-  },
-  actionButtons: {
-    gap: 12,
-    marginBottom: 20,
-  },
+  playerLabel: { fontSize: 14, color: "#6b7280", marginBottom: 8 },
+  birthdayContainer: { flexDirection: "row", alignItems: "center" },
+  birthdayText: { fontSize: 14, color: "#A77B4E", marginLeft: 6 },
+  descriptionSection: { marginBottom: 20 },
+  descriptionText: { fontSize: 14, color: "#6b7280", lineHeight: 20 },
+  actionButtons: { gap: 12, marginBottom: 20 },
   actionButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -278,15 +226,8 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     paddingBottom: 20,
   },
-  navItem: {
-    flex: 1,
-    alignItems: "center",
-    paddingVertical: 8,
-  },
-  navText: {
-    fontSize: 12,
-    marginTop: 4,
-    color: "#6b7280",
-  },
+  navItem: { flex: 1, alignItems: "center", paddingVertical: 8 },
+  navText: { fontSize: 12, marginTop: 4, color: "#6b7280" },
 })
+
 

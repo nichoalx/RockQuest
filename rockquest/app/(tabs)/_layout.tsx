@@ -69,6 +69,14 @@ export default function TabLayout() {
           tabBarStyle: { display: "none" }, 
         }}
       />
+
+      <Tabs.Screen
+        name="GeoReviewPosts"
+        options={{
+          title: "Review Posts",
+          tabBarStyle: { display: "none" }, 
+        }}
+      />
       
       <Tabs.Screen
         name="GeoProfile"

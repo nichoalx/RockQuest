@@ -2,7 +2,7 @@
 
 import { Ionicons } from "@expo/vector-icons"
 import { useRouter } from "expo-router"
-import React, { useState } from "react"
+import React, { useEffect, useState } from "react"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import {
   SafeAreaView,
@@ -12,58 +12,91 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-  Platform,
 } from "react-native"
-import DateTimePicker from "@react-native-community/datetimepicker"
 
 export default function EditProfilePage() {
   const router = useRouter()
-
-  // Initialize birthday as Date object for date picker
-  const [birthday, setBirthday] = useState(new Date("2000-01-11"))
-  const [showDatePicker, setShowDatePicker] = useState(false)
 
   const [formData, setFormData] = useState({
     username: "Geologist01",
     email: "Geologist@gmail.com",
     password: "123456",
-    birthday: "01/11/2000", // stored as string in MM/DD/YYYY format
+    birthday: "",
   })
   const [showPassword, setShowPassword] = useState(false)
+  const [birthdayError, setBirthdayError] = useState("")
 
-  const formatDate = (date: Date) => {
-    const month = (date.getMonth() + 1).toString().padStart(2, "0")
-    const day = date.getDate().toString().padStart(2, "0")
-    const year = date.getFullYear()
-    return `${month}/${day}/${year}`
+  // Load saved birthday on mount
+  useEffect(() => {
+    const loadBirthday = async () => {
+      try {
+        const savedBirthday = await AsyncStorage.getItem("userBirthday")
+        if (savedBirthday) {
+          setFormData((prev) => ({ ...prev, birthday: savedBirthday }))
+        }
+      } catch (error) {
+        console.error("Failed to load birthday", error)
+      }
+    }
+    loadBirthday()
+  }, [])
+
+  // Validate date format DD/MM/YYYY and validity of date
+  const validateBirthday = (value: string) => {
+    if (!/^\d{2}\/\d{2}\/\d{4}$/.test(value)) return false
+
+    const [dd, mm, yyyy] = value.split("/").map(Number)
+    const date = new Date(yyyy, mm - 1, dd)
+
+    return (
+      date.getFullYear() === yyyy &&
+      date.getMonth() === mm - 1 &&
+      date.getDate() === dd
+    )
+  }
+
+  const formatBirthday = (text: string) => {
+    const cleaned = text.replace(/\D/g, "")
+    let formatted = ""
+
+    if (cleaned.length <= 2) {
+      formatted = cleaned
+    } else if (cleaned.length <= 4) {
+      formatted = `${cleaned.slice(0, 2)}/${cleaned.slice(2)}`
+    } else {
+      formatted = `${cleaned.slice(0, 2)}/${cleaned.slice(2, 4)}/${cleaned.slice(4, 8)}`
+    }
+
+    return formatted
+  }
+
+  const handleBirthdayChange = (text: string) => {
+    const formatted = formatBirthday(text)
+    setFormData((prev) => ({ ...prev, birthday: formatted }))
+
+    if (formatted.length < 10) {
+      setBirthdayError("Please key in your birthday using the DD/MM/YYYY format!")
+    } else if (!validateBirthday(formatted)) {
+      setBirthdayError("Invalid birthday. Please use DD/MM/YYYY.")
+    } else {
+      setBirthdayError("")
+    }
   }
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
-  const openDatePicker = () => {
-    setShowDatePicker(true)
-  }
-
-  const onChangeDate = (event: any, selectedDate?: Date) => {
-    setShowDatePicker(Platform.OS === "ios") // iOS keeps picker visible after selection
-    if (selectedDate) {
-      setBirthday(selectedDate)
-      const formatted = formatDate(selectedDate)
-      setFormData((prev) => ({ ...prev, birthday: formatted }))
-    }
-  }
-
   const handleSaveChanges = async () => {
-    try {
-      await AsyncStorage.setItem("userBirthday", formData.birthday)
-      console.log("Birthday saved:", formData.birthday)
-      router.replace("/(tabs)/GeoProfile")
-    } catch (error) {
-      console.error("Failed to save birthday", error)
-    }
+  try {
+    await AsyncStorage.setItem("userName", formData.username)
+    await AsyncStorage.setItem("userBirthday", formData.birthday)
+    // ...save other data or do API calls
+    alert("Changes saved!")
+  } catch (error) {
+    console.error("Failed to save profile data", error)
   }
+}
 
   const handleDeleteAccount = () => {
     console.log("Delete account requested")
@@ -73,6 +106,7 @@ export default function EditProfilePage() {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="white" />
 
+      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.replace("/(tabs)/GeoProfile")} style={styles.returnButton}>
           <Ionicons name="chevron-back" size={24} color="#333" />
@@ -87,9 +121,11 @@ export default function EditProfilePage() {
         </TouchableOpacity>
       </View>
 
+      {/* Main Content */}
       <View style={styles.content}>
         <Text style={styles.sectionTitle}>Edit profile</Text>
 
+        {/* Username Field */}
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Username</Text>
           <TextInput
@@ -100,6 +136,7 @@ export default function EditProfilePage() {
           />
         </View>
 
+        {/* Email Field */}
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Email</Text>
           <TextInput
@@ -112,6 +149,7 @@ export default function EditProfilePage() {
           />
         </View>
 
+        {/* Password Field */}
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Password</Text>
           <View style={styles.passwordContainer}>
@@ -128,24 +166,23 @@ export default function EditProfilePage() {
           </View>
         </View>
 
-        {/* Birthday with calendar picker */}
+        {/* Birthday Field */}
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Birthday</Text>
-          <TouchableOpacity onPress={openDatePicker} style={[styles.input, { justifyContent: "center" }]}>
-            <Text>{formData.birthday}</Text>
-          </TouchableOpacity>
-          {showDatePicker && (
-            <DateTimePicker
-              testID="dateTimePicker"
-              value={birthday}
-              mode="date"
-              display="calendar"
-              onChange={onChangeDate}
-              maximumDate={new Date()}
-            />
+          <TextInput
+            style={[styles.input, birthdayError ? { borderColor: "red" } : {}]}
+            value={formData.birthday}
+            onChangeText={handleBirthdayChange}
+            placeholder="DD/MM/YYYY"
+            keyboardType="numeric"
+            maxLength={10}
+          />
+          {birthdayError !== "" && (
+            <Text style={{ color: "red", marginTop: 4 }}>{birthdayError}</Text>
           )}
         </View>
 
+        {/* Buttons */}
         <TouchableOpacity style={styles.saveButton} onPress={handleSaveChanges}>
           <Text style={styles.saveButtonText}>Save Changes</Text>
         </TouchableOpacity>
@@ -155,6 +192,7 @@ export default function EditProfilePage() {
         </TouchableOpacity>
       </View>
 
+      {/* Bottom Navigation */}
       <View style={styles.bottomNav}>
         <TouchableOpacity style={styles.navItem} onPress={() => router.replace("/(tabs)/GeoHomepage")}>
           <Ionicons name="home" size={24} color="#BA9B77" />
@@ -175,6 +213,7 @@ export default function EditProfilePage() {
   )
 }
 
+// Styles unchanged
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F5F5F0" },
   header: {
@@ -260,3 +299,5 @@ const styles = StyleSheet.create({
   navText: { fontSize: 12, marginTop: 4, color: "#6b7280" },
   navTextActive: { color: "#A77B4E" },
 })
+
+

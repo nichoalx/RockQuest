@@ -60,7 +60,7 @@ export default function Dashboard() {
 
         <TouchableOpacity
           style={styles.shortcutButton}
-          onPress={() => router.replace("/(tabs)/GeoPosts")}
+          onPress={() => router.replace("/(tabs)/GeoReviewPosts")}
         >
           <Text style={styles.shortcutText}>Review Posts</Text>
         </TouchableOpacity>
