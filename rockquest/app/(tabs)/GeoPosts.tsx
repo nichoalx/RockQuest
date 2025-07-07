@@ -166,6 +166,7 @@ export default function PostsScreen() {
   )
 }
 
+// CSS stylesheet
 const styles = StyleSheet.create({
   container: {
     flex: 1,

@@ -88,7 +88,7 @@ export default function Dashboard() {
   )
 }
 
-// CSS Style Sheet
+// CSS Stylesheet
 const styles = StyleSheet.create({
   
   container: {

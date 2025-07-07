@@ -3,12 +3,14 @@
 import { useRouter } from "expo-router"
 import { Ionicons } from "@expo/vector-icons"
 import AsyncStorage from "@react-native-async-storage/async-storage"
-import React, { useEffect, useState, useCallback } from "react"
+import React, { useCallback, useState } from "react"
 import {
+  Modal,
   ScrollView,
   StatusBar,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native"
@@ -18,6 +20,10 @@ export default function GeoProfile() {
   const router = useRouter()
   const [username, setUsername] = useState("Username")
   const [birthday, setBirthday] = useState("")
+  const [description, setDescription] = useState("")
+  const [tempDescription, setTempDescription] = useState("")
+  const [isModalVisible, setIsModalVisible] = useState(false)
+  const maxLength = 150
 
   useFocusEffect(
     useCallback(() => {
@@ -25,18 +31,11 @@ export default function GeoProfile() {
         try {
           const savedUsername = await AsyncStorage.getItem("userName")
           const savedBirthday = await AsyncStorage.getItem("userBirthday")
+          const savedDescription = await AsyncStorage.getItem("userDescription")
 
-          if (savedUsername) {
-            setUsername(savedUsername)
-          } else {
-            setUsername("Username")
-          }
-
-          if (savedBirthday) {
-            setBirthday(savedBirthday)
-          } else {
-            setBirthday("")
-          }
+          if (savedUsername) setUsername(savedUsername)
+          if (savedBirthday) setBirthday(savedBirthday)
+          if (savedDescription) setDescription(savedDescription)
         } catch (error) {
           console.error("Failed to load profile data", error)
         }
@@ -45,6 +44,16 @@ export default function GeoProfile() {
     }, [])
   )
 
+  const saveDescription = async () => {
+    try {
+      await AsyncStorage.setItem("userDescription", tempDescription)
+      setDescription(tempDescription)
+      setIsModalVisible(false)
+    } catch (error) {
+      console.error("Failed to save description", error)
+    }
+  }
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
@@ -52,9 +61,7 @@ export default function GeoProfile() {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerContent}>
-          <View>
-            <Text style={styles.title}>Profile</Text>
-          </View>
+          <Text style={styles.title}>Profile</Text>
           <TouchableOpacity
             style={styles.profileIcon}
             onPress={() => router.replace("/(tabs)/edit-profile")}
@@ -66,9 +73,7 @@ export default function GeoProfile() {
 
       {/* Content */}
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Profile Card */}
         <View style={styles.profileCard}>
-          {/* Profile Picture and Info */}
           <View style={styles.profileSection}>
             <View style={styles.profilePicture}>
               <View style={styles.profilePicturePlaceholder} />
@@ -78,19 +83,23 @@ export default function GeoProfile() {
               <Text style={styles.playerLabel}>Geologist</Text>
               <View style={styles.birthdayContainer}>
                 <Ionicons name="gift" size={16} color="#A77B4E" />
-                <Text style={styles.birthdayText}>
-                  {birthday ? birthday : "Birthday"}
-                </Text>
+                <Text style={styles.birthdayText}>{birthday || "Birthday"}</Text>
               </View>
             </View>
           </View>
 
-          {/* Description */}
+          {/* Description Section */}
           <View style={styles.descriptionSection}>
-            <Text style={styles.descriptionText}>
-              Add a short description about yourself.{"\n"}
-              Set a character limit to the text field.
-            </Text>
+            <TouchableOpacity
+              onPress={() => {
+                setTempDescription(description)
+                setIsModalVisible(true)
+              }}
+            >
+              <Text style={styles.descriptionText}>
+                {description || "Add a short description about yourself.\nSet a character limit to the text field."}
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -145,11 +154,45 @@ export default function GeoProfile() {
           <Text style={styles.navText}>Logout</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Modal for Editing Description */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={isModalVisible}
+        onRequestClose={() => setIsModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Edit Description</Text>
+            <TextInput
+              style={styles.descriptionInput}
+              value={tempDescription}
+              onChangeText={setTempDescription}
+              multiline
+              maxLength={maxLength}
+              placeholder="Write something about yourself..."
+            />
+            <Text style={styles.charCount}>{tempDescription.length}/{maxLength}</Text>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity style={styles.saveButton} onPress={saveDescription}>
+                <Text style={styles.saveButtonText}>Save</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={() => setIsModalVisible(false)}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   )
 }
 
-// Styles remain the same as your original GeoProfile page
+// Styles
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "white" },
   header: { paddingTop: 50, paddingHorizontal: 20, paddingBottom: 20 },
@@ -201,6 +244,24 @@ const styles = StyleSheet.create({
   birthdayText: { fontSize: 14, color: "#A77B4E", marginLeft: 6 },
   descriptionSection: { marginBottom: 20 },
   descriptionText: { fontSize: 14, color: "#6b7280", lineHeight: 20 },
+  descriptionInput: {
+    fontSize: 14,
+    color: "#1f2937",
+    lineHeight: 20,
+    borderWidth: 1,
+    borderColor: "#d1d5db",
+    borderRadius: 8,
+    padding: 10,
+    backgroundColor: "white",
+    minHeight: 80,
+    textAlignVertical: "top",
+  },
+  charCount: {
+    alignSelf: "flex-end",
+    marginTop: 6,
+    fontSize: 12,
+    color: "#6b7280",
+  },
   actionButtons: { gap: 12, marginBottom: 20 },
   actionButton: {
     flexDirection: "row",
@@ -228,6 +289,50 @@ const styles = StyleSheet.create({
   },
   navItem: { flex: 1, alignItems: "center", paddingVertical: 8 },
   navText: { fontSize: 12, marginTop: 4, color: "#6b7280" },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContent: {
+    width: "90%",
+    backgroundColor: "white",
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#1f2937",
+    marginBottom: 12,
+  },
+  modalButtons: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    marginTop: 16,
+  },
+  saveButton: {
+    backgroundColor: "#A77B4E",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    marginLeft: 10,
+  },
+  saveButtonText: { color: "white", fontWeight: "600" },
+  cancelButton: {
+    backgroundColor: "#e5e7eb",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  cancelButtonText: { color: "#1f2937", fontWeight: "600" },
 })
+
 
 

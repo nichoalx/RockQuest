@@ -213,7 +213,7 @@ export default function EditProfilePage() {
   )
 }
 
-// Styles unchanged
+// CSS stylesheet
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F5F5F0" },
   header: {

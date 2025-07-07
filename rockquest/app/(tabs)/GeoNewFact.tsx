@@ -127,6 +127,7 @@ export default function NewFactScreen() {
   )
 }
 
+// CSS stylesheet
 const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
