@@ -100,8 +100,4 @@ POST /upload-rock/
 - Add GPS and uploader metadata
 - Admin panel for reviewing/reporting
 
-------------------------------------------------------------
 
-📫 Contact
-
-For any issues, open an issue at https://github.com/your-username/rockquest/issues or contact the dev team.
