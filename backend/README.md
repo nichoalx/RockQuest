@@ -1,51 +1,107 @@
-# 🪨 RockQuest Backend
+🪨 RockQuest Backend
 
 This is the FastAPI backend for the RockQuest mobile application. It handles:
+
 - Rock image uploads and metadata saving
-- Firebase integration (Firestore, Storage, Authentication)
-- API routes for uploading rocks, managing quests, and admin moderation
+- Firebase integration (Firestore & Storage)
+- REST API routes for uploading rocks
+- Admin-ready structure for moderation and quest management
 
----
+------------------------------------------------------------
 
-## 📦 Tech Stack
+📦 Tech Stack
 
 - Python 3.10+
 - FastAPI
 - Firebase Admin SDK
 - Firestore (NoSQL DB)
 - Firebase Storage
-- Uvicorn (for running the API)
-- TensorFlow.js (model runs client-side; backend handles data)
+- Uvicorn (ASGI server)
+- python-dotenv (for environment variable management)
 
----
+Note: The machine learning model (TensorFlow.js) runs client-side; this backend manages image storage and metadata.
 
-## 🚀 Getting Started (for Developers)
+------------------------------------------------------------
 
-### 1. Clone the Project
+🚀 Getting Started (for Developers)
 
-```bash
-git clone https://github.com/your-username/rockquest.git
-cd rockquest/backend
+1. Clone the Project
 
-### 2. Create and Activate Virtual Environment
-python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+    git clone https://github.com/your-username/rockquest.git
+    cd rockquest/backend
 
-### 3. Install Dependencies
-pip install -r requirements.txt
+2. Create and Activate Virtual Environment
 
-### 4. Set VS Code Python Interpreter
-If you are using VS Code, make sure to select the correct interpreter:
-example:
-/Users/mensi/Downloads/FYP_RockQuest/RockQuest/backend/venv/bin/python
-can see from typing "which python" on terminal
+    python3 -m venv venv
+    source venv/bin/activate        # On macOS/Linux
+    venv\Scripts\activate           # On Windows
 
-You can set this via:
-Cmd + Shift + P → Python: Select Interpreter → Enter interpreter path...
+3. Install Dependencies
 
-### 5. Run FastAPI Server
-uvicorn main:app --reload
+    pip install -r requirements.txt
 
+4. Set Up Firebase Credentials
 
+    - Download your Firebase Admin SDK service account key (e.g., firebase-admin-key.json)
+    - Create a .env file in the backend/ folder:
 
+      GOOGLE_APPLICATION_CREDENTIALS=firebase-admin-key.json
+      FIREBASE_STORAGE_BUCKET=your-project-id.appspot.com
 
+    Do not commit `.env` or `firebase-admin-key.json` to GitHub — these are secret.
+
+5. Run the FastAPI Server
+
+    uvicorn app.main:app --reload
+
+    Visit http://127.0.0.1:8000 to verify the backend is running.
+
+6. (Optional) Set Python Interpreter in VS Code
+
+    If you're using VS Code, choose the virtual environment interpreter.
+
+    Example path (adjust to your project):
+
+    /Users/mensi/Downloads/RockQuest_FYP/RockQuest/backend/venv/bin/python
+
+    Steps:
+    - Open Command Palette (Cmd + Shift + P)
+    - Type "Python: Select Interpreter"
+    - Browse to or paste the path
+
+------------------------------------------------------------
+
+🧪 API Testing
+
+Use Postman, curl, or any HTTP client to test.
+
+POST /upload-rock/
+
+    form-data:
+    - file: image file
+    - name: rock name (e.g. "Granite")
+
+    Example Response:
+
+    {
+      "message": "Rock uploaded successfully",
+      "data": {
+        "name": "Granite",
+        "imageUrl": "https://..."
+      }
+    }
+
+------------------------------------------------------------
+
+✅ To-Do (Next Features)
+
+- Add user authentication (Firebase JWT)
+- Add /get-rocks route
+- Add GPS and uploader metadata
+- Admin panel for reviewing/reporting
+
+------------------------------------------------------------
+
+📫 Contact
+
+For any issues, open an issue at https://github.com/your-username/rockquest/issues or contact the dev team.
