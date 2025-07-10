@@ -18,6 +18,15 @@ export default function TabLayout() {
           tabBarStyle: { display: "none" }, 
         }}
       />
+
+      <Tabs.Screen
+        name="welcomeScreen"
+        options={{
+          title: "Welcome to RockQuest",
+          tabBarStyle: { display: "none" }, 
+        }}
+      />
+
       <Tabs.Screen
         name="dashboard"
         options={{

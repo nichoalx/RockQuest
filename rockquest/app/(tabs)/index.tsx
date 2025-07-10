@@ -19,7 +19,7 @@ export default function StartScreen() {
 
   if (!fontsLoaded) return null;
   if (tapped) {
-    router.replace("/(tabs)/auth");
+    router.replace("/(tabs)/welcomeScreen");
     return null;
   }
 

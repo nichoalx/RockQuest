@@ -4,31 +4,33 @@ import { LinearGradient } from "expo-linear-gradient"
 import { useFonts, PressStart2P_400Regular } from "@expo-google-fonts/press-start-2p"
 import * as SplashScreen from "expo-splash-screen"
 import { useEffect, useState } from "react"
-import { useRouter } from "expo-router"
+import { useRouter, useLocalSearchParams } from "expo-router"
 
-// Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync()
 
 const { width, height } = Dimensions.get("window")
 
 export default function AuthScreen() {
-  const [fontsLoaded] = useFonts({
-    PressStart2P_400Regular,
-  })
-
+  const [fontsLoaded] = useFonts({ PressStart2P_400Regular })
   const [isLogin, setIsLogin] = useState(true)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
-  const [role, setRole] = useState("user") // Default role
+  const [role, setRole] = useState("user")
 
   const router = useRouter()
+  const { mode } = useLocalSearchParams()
 
   useEffect(() => {
     if (fontsLoaded) {
       SplashScreen.hideAsync()
     }
   }, [fontsLoaded])
+
+  useEffect(() => {
+    if (mode === "signup") setIsLogin(false)
+    else setIsLogin(true)
+  }, [mode])
 
   const handleAuth = () => {
     if (!email || !password) {
@@ -43,11 +45,10 @@ export default function AuthScreen() {
 
     Alert.alert("Success", isLogin ? "Logged in!" : "Account created!")
 
-    // Navigate based on role
     if (role === "geologist") {
       router.replace("/GeoHomepage")
     } else if (role === "admin") {
-      router.replace("/AdminDashboard") // Replace with your actual admin route
+      router.replace("/AdminDashboard")
     } else {
       router.replace("/(tabs)/dashboard")
     }
@@ -60,9 +61,7 @@ export default function AuthScreen() {
     setConfirmPassword("")
   }
 
-  if (!fontsLoaded) {
-    return null
-  }
+  if (!fontsLoaded) return null
 
   return (
     <View style={styles.container}>
@@ -76,52 +75,8 @@ export default function AuthScreen() {
           <Text style={styles.title}>{isLogin ? "Login" : "Sign Up"}</Text>
 
           <View style={styles.formContainer}>
-            {/* Email */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Email</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter your email"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-            </View>
 
-            {/* Password */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Password</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter your password"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-            </View>
-
-            {/* Confirm Password (Signup only) */}
-            {!isLogin && (
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Confirm Password</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Confirm your password"
-                  value={confirmPassword}
-                  onChangeText={setConfirmPassword}
-                  secureTextEntry
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                />
-              </View>
-            )}
-
-            {/* Role Selection */}
-            <View style={styles.inputGroup}>
+          <View style={styles.inputGroup}>
               <Text style={styles.label}>Login As</Text>
               <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
                 {["user", "geologist", "admin"].map((r) => (
@@ -137,13 +92,52 @@ export default function AuthScreen() {
                 ))}
               </View>
             </View>
+            
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Email</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Enter your email"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </View>
 
-            {/* Auth Button */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Password</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Enter your password"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </View>
+
+            {!isLogin && (
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Confirm Password</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Confirm your password"
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  secureTextEntry
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+              </View>
+            )}
+
             <TouchableOpacity style={styles.authButton} onPress={handleAuth} activeOpacity={0.8}>
               <Text style={styles.authButtonText}>{isLogin ? "Login" : "Create Account"}</Text>
             </TouchableOpacity>
 
-            {/* Toggle Login/Signup */}
             <TouchableOpacity onPress={toggleAuthMode} activeOpacity={0.7}>
               <Text style={styles.toggleText}>
                 {isLogin ? "Don't have an account? Sign up" : "Already have an account? Login"}
@@ -157,17 +151,9 @@ export default function AuthScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  gradient: {
-    flex: 1,
-  },
-  content: {
-    flex: 1,
-    justifyContent: "center",
-    paddingHorizontal: 32,
-  },
+  container: { flex: 1 },
+  gradient: { flex: 1 },
+  content: { flex: 1, justifyContent: "center", paddingHorizontal: 32 },
   title: {
     fontFamily: "PressStart2P_400Regular",
     fontSize: 24,
@@ -189,15 +175,8 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
     elevation: 5,
   },
-  inputGroup: {
-    marginBottom: 16,
-  },
-  label: {
-    color: "#374151",
-    fontSize: 14,
-    fontWeight: "600",
-    marginBottom: 8,
-  },
+  inputGroup: { marginBottom: 16 },
+  label: { color: "#374151", fontSize: 14, fontWeight: "600", marginBottom: 8 },
   input: {
     borderWidth: 1,
     borderColor: "#d1d5db",
@@ -213,17 +192,8 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     marginBottom: 16,
   },
-  authButtonText: {
-    color: "white",
-    textAlign: "center",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  toggleText: {
-    color: "#A77B4E",
-    textAlign: "center",
-    fontSize: 14,
-  },
+  authButtonText: { color: "white", textAlign: "center", fontSize: 16, fontWeight: "bold" },
+  toggleText: { color: "#A77B4E", textAlign: "center", fontSize: 14 },
   roleButton: {
     flex: 1,
     marginHorizontal: 4,
@@ -234,16 +204,9 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     alignItems: "center",
   },
-  roleButtonSelected: {
-    backgroundColor: "#A77B4E",
-  },
-  roleButtonText: {
-    color: "#A77B4E",
-    fontWeight: "bold",
-  },
-  roleButtonTextSelected: {
-    color: "white",
-    fontWeight: "bold",
-  },
+  roleButtonSelected: { backgroundColor: "#A77B4E" },
+  roleButtonText: { color: "#A77B4E", fontWeight: "bold" },
+  roleButtonTextSelected: { color: "white", fontWeight: "bold" },
 })
+
 
