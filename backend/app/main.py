@@ -1,46 +1,84 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException
-from fastapi.responses import JSONResponse
-from uuid import uuid4
-from datetime import datetime
-import mimetypes
+# backend/app/main.py
 
-from app.firebase import db, bucket  # Firebase setup from firebase.py
+from fastapi import FastAPI, HTTPException
+from typing import List
+from datetime import datetime
+
+from app.firebase import db
+from app.models import Rock
 
 app = FastAPI()
 
+# Root route
 @app.get("/")
 def root():
-    return {"message": "RockQuest backend is running"}
+    return {"message": "Welcome to the RockQuest API 🎉"}
 
-@app.post("/upload-rock/")
-async def upload_rock(file: UploadFile = File(...), name: str = "Unknown"):
-    # Validate file type
-    if not file.content_type.startswith("image/"):
-        raise HTTPException(status_code=400, detail="File must be an image")
 
-    # Validate file size (~5MB limit)
-    contents = await file.read()
-    if len(contents) > 5 * 1024 * 1024:
-        raise HTTPException(status_code=400, detail="File size exceeds 5MB limit")
-    await file.seek(0)
-
+# Get all rocks
+@app.get("/get-rocks/", response_model=List[Rock])
+def get_rocks():
     try:
-        # Upload to Firebase Storage
-        ext = mimetypes.guess_extension(file.content_type) or ".jpg"
-        filename = f"rocks/{uuid4()}{ext}"
-        blob = bucket.blob(filename)
-        blob.upload_from_file(file.file, content_type=file.content_type)
-        blob.make_public()
-
-        # Create Firestore document
-        rock_entry = {
-            "name": name,
-            "imageUrl": blob.public_url,
-            "uploadedAt": datetime.utcnow()
-        }
-        db.collection("rocks").add(rock_entry)
-
-        return {"message": "Rock uploaded successfully", "data": rock_entry}
-
+        docs = db.collection("rocks").stream()
+        rocks = []
+        for doc in docs:
+            rock = doc.to_dict()
+            rock["id"] = doc.id
+            rocks.append(rock)
+        return rocks
     except Exception as e:
-        return JSONResponse(status_code=500, content={"error": str(e)})
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# Get a single rock by ID
+@app.get("/get-rock/{rock_id}")
+def get_rock(rock_id: str):
+    doc_ref = db.collection("rocks").document(rock_id)
+    doc = doc_ref.get()
+    if not doc.exists:
+        raise HTTPException(status_code=404, detail="Rock not found")
+    return {**doc.to_dict(), "id": doc.id}
+
+
+# Create a new rock
+@app.post("/create-rock/")
+def create_rock(rock: Rock):
+    rock_data = rock.dict(exclude_unset=True)
+
+    # Auto-fill createdAt if not provided
+    if "createdAt" not in rock_data:
+        rock_data["createdAt"] = datetime.utcnow()
+
+    doc_ref = db.collection("rocks").document()
+    doc_ref.set(rock_data)
+    return {"message": "Rock created", "id": doc_ref.id}
+
+
+# Update rock by ID
+@app.put("/update-rock/{rock_id}")
+def update_rock(rock_id: str, rock: Rock):
+    doc_ref = db.collection("rocks").document(rock_id)
+    doc = doc_ref.get()
+    if not doc.exists:
+        raise HTTPException(status_code=404, detail="Rock not found")
+
+    update_data = rock.dict(exclude_unset=True)
+    doc_ref.update(update_data)
+    return {"message": "Rock updated successfully", "id": rock_id}
+
+
+# Delete rock by ID
+@app.delete("/delete-rock/{rock_id}")
+def delete_rock(rock_id: str):
+    doc_ref = db.collection("rocks").document(rock_id)
+    doc = doc_ref.get()
+    if not doc.exists:
+        raise HTTPException(status_code=404, detail="Rock not found")
+
+    doc_ref.delete()
+    return {"message": "Rock deleted successfully", "id": rock_id}
+
+# Optional: run directly
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("app.main:app", host="127.0.0.1", port=8000, reload=True)
