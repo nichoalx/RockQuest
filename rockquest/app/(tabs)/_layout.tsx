@@ -28,6 +28,46 @@ export default function TabLayout() {
       />
 
       <Tabs.Screen
+        name="choose-role"
+        options={{
+          title: "Role",
+          tabBarStyle: { display: "none" }, 
+        }}
+      />
+
+      <Tabs.Screen
+        name="profile-info"
+        options={{
+          title: "Profile Info",
+          tabBarStyle: { display: "none" }, 
+        }}
+      />
+
+      <Tabs.Screen
+        name="signup-details"
+        options={{
+          title: "Signup details",
+          tabBarStyle: { display: "none" }, 
+        }}
+      />
+
+      <Tabs.Screen
+        name="upload-documents"
+        options={{
+          title: "Upload documents",
+          tabBarStyle: { display: "none" }, 
+        }}
+      />
+
+      <Tabs.Screen
+        name="thankyouScreen"
+        options={{
+          title: "Finish",
+          tabBarStyle: { display: "none" }, 
+        }}
+      />
+
+      <Tabs.Screen
         name="dashboard"
         options={{
           title: "Dashboard",
