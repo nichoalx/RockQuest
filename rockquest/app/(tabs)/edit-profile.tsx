@@ -1,7 +1,7 @@
 "use client"
 
 import { Ionicons } from "@expo/vector-icons"
-import { useRouter } from "expo-router"
+import { useRouter, useLocalSearchParams } from "expo-router"
 import React, { useEffect, useState } from "react"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import {
@@ -16,17 +16,17 @@ import {
 
 export default function EditProfilePage() {
   const router = useRouter()
+  const { role = "geologist" } = useLocalSearchParams()
 
   const [formData, setFormData] = useState({
-    username: "Geologist01",
-    email: "Geologist@gmail.com",
+    username: role === "player" ? "Player01" : "Geologist01",
+    email: role === "player" ? "Player@gmail.com" : "Geologist@gmail.com",
     password: "123456",
     birthday: "",
   })
   const [showPassword, setShowPassword] = useState(false)
   const [birthdayError, setBirthdayError] = useState("")
 
-  // Load saved birthday on mount
   useEffect(() => {
     const loadBirthday = async () => {
       try {
@@ -41,7 +41,6 @@ export default function EditProfilePage() {
     loadBirthday()
   }, [])
 
-  // Validate date format DD/MM/YYYY and validity of date
   const validateBirthday = (value: string) => {
     if (!/^\d{2}\/\d{2}\/\d{4}$/.test(value)) return false
 
@@ -88,15 +87,15 @@ export default function EditProfilePage() {
   }
 
   const handleSaveChanges = async () => {
-  try {
-    await AsyncStorage.setItem("userName", formData.username)
-    await AsyncStorage.setItem("userBirthday", formData.birthday)
-    // ...save other data or do API calls
-    alert("Changes saved!")
-  } catch (error) {
-    console.error("Failed to save profile data", error)
+    try {
+      await AsyncStorage.setItem("userName", formData.username)
+      await AsyncStorage.setItem("userBirthday", formData.birthday)
+      // You can save other data here too
+      alert("Changes saved!")
+    } catch (error) {
+      console.error("Failed to save profile data", error)
+    }
   }
-}
 
   const handleDeleteAccount = () => {
     console.log("Delete account requested")
@@ -108,7 +107,16 @@ export default function EditProfilePage() {
 
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.replace("/(tabs)/GeoProfile")} style={styles.returnButton}>
+        <TouchableOpacity
+          onPress={() => {
+            if (role === "player") {
+              router.replace("/(tabs)/profile")
+            } else {
+              router.replace("/(tabs)/GeoProfile")
+            }
+          }}
+          style={styles.returnButton}
+        >
           <Ionicons name="chevron-back" size={24} color="#333" />
           <Text style={styles.returnText}>Return</Text>
         </TouchableOpacity>
@@ -125,7 +133,7 @@ export default function EditProfilePage() {
       <View style={styles.content}>
         <Text style={styles.sectionTitle}>Edit profile</Text>
 
-        {/* Username Field */}
+        {/* Username */}
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Username</Text>
           <TextInput
@@ -136,7 +144,7 @@ export default function EditProfilePage() {
           />
         </View>
 
-        {/* Email Field */}
+        {/* Email */}
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Email</Text>
           <TextInput
@@ -149,7 +157,7 @@ export default function EditProfilePage() {
           />
         </View>
 
-        {/* Password Field */}
+        {/* Password */}
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Password</Text>
           <View style={styles.passwordContainer}>
@@ -160,13 +168,16 @@ export default function EditProfilePage() {
               placeholder="Enter password"
               secureTextEntry={!showPassword}
             />
-            <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
+            <TouchableOpacity
+              onPress={() => setShowPassword(!showPassword)}
+              style={styles.eyeIcon}
+            >
               <Ionicons name={showPassword ? "eye" : "eye-off"} size={20} color="#666" />
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* Birthday Field */}
+        {/* Birthday */}
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Birthday</Text>
           <TextInput
@@ -182,7 +193,6 @@ export default function EditProfilePage() {
           )}
         </View>
 
-        {/* Buttons */}
         <TouchableOpacity style={styles.saveButton} onPress={handleSaveChanges}>
           <Text style={styles.saveButtonText}>Save Changes</Text>
         </TouchableOpacity>
@@ -191,29 +201,10 @@ export default function EditProfilePage() {
           <Text style={styles.deleteButtonText}>Delete Account</Text>
         </TouchableOpacity>
       </View>
-
-      {/* Bottom Navigation */}
-      <View style={styles.bottomNav}>
-        <TouchableOpacity style={styles.navItem} onPress={() => router.replace("/(tabs)/GeoHomepage")}>
-          <Ionicons name="home" size={24} color="#BA9B77" />
-          <Text style={styles.navText}>Home</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.navItem} onPress={() => router.replace("/(tabs)/GeoPosts")}>
-          <Ionicons name="chatbubbles" size={24} color="#A77B4E" />
-          <Text style={[styles.navText, styles.navTextActive]}>Posts</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.navItem} onPress={() => router.replace("/(tabs)/auth")}>
-          <Ionicons name="log-out" size={24} color="#BA9B77" />
-          <Text style={styles.navText}>Log Out</Text>
-        </TouchableOpacity>
-      </View>
     </SafeAreaView>
   )
 }
 
-// CSS stylesheet
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F5F5F0" },
   header: {
@@ -287,17 +278,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
   },
-  bottomNav: {
-    flexDirection: "row",
-    backgroundColor: "white",
-    borderTopWidth: 1,
-    borderTopColor: "#e5e7eb",
-    paddingTop: 8,
-    paddingBottom: 20,
-  },
-  navItem: { flex: 1, alignItems: "center", paddingVertical: 8 },
-  navText: { fontSize: 12, marginTop: 4, color: "#6b7280" },
-  navTextActive: { color: "#A77B4E" },
 })
 
 

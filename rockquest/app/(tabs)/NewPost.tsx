@@ -1,7 +1,7 @@
 "use client"
 import { Ionicons } from "@expo/vector-icons"
 import * as ImagePicker from "expo-image-picker"
-import { useRouter } from "expo-router"
+import { useRouter, useLocalSearchParams } from "expo-router"
 import { useEffect, useState } from "react"
 import {
   Image,
@@ -15,6 +15,8 @@ import {
 
 export default function NewPostScreen() {
   const router = useRouter()
+  const { role = "geologist" } = useLocalSearchParams()
+
   const [image, setImage] = useState(null)
   const [rockName, setRockName] = useState("")
   const [shortDescription, setShortDescription] = useState("")
@@ -43,8 +45,11 @@ export default function NewPostScreen() {
   }
 
   const handleSubmit = () => {
-    // Extend this to save post data to a backend later
-    router.replace("/(tabs)/GeoPosts")
+    router.replace(`/(tabs)/${role === "player" ? "posts" : "GeoPosts"}`)
+  }
+
+  const handleReturn = () => {
+    router.replace(`/(tabs)/${role === "player" ? "posts" : "GeoPosts"}`)
   }
 
   const handleReset = () => {
@@ -65,7 +70,9 @@ export default function NewPostScreen() {
           </View>
           <TouchableOpacity
             style={styles.profileIcon}
-            onPress={() => router.replace("/(tabs)/GeoProfile")}
+            onPress={() =>
+              router.replace(`/(tabs)/${role === "player" ? "profile" : "GeoProfile"}`)
+            }
           >
             <Ionicons name="person" size={20} color="white" />
           </TouchableOpacity>
@@ -74,9 +81,7 @@ export default function NewPostScreen() {
 
       <Text style={styles.pageTitle}>New Post</Text>
 
-      {/* Content box wrapper for consistent width and alignment */}
       <View style={styles.contentBox}>
-        {/* Image Picker */}
         <TouchableOpacity style={styles.imagePicker} onPress={pickImage}>
           {image ? (
             <Image source={{ uri: image }} style={styles.imagePreview} />
@@ -88,7 +93,6 @@ export default function NewPostScreen() {
           )}
         </TouchableOpacity>
 
-        {/* Inputs */}
         <Text style={styles.label}>Rock Name</Text>
         <TextInput
           style={styles.input}
@@ -114,43 +118,34 @@ export default function NewPostScreen() {
           multiline
         />
 
-        {/* Buttons Row */}
         <View style={styles.buttonRow}>
-          <TouchableOpacity
-            style={styles.returnButton}
-            onPress={() => router.replace("/(tabs)/GeoPosts")}
-          >
+          <TouchableOpacity style={styles.returnButton} onPress={handleReturn}>
             <Text style={styles.returnButtonText}>Return</Text>
           </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.resetButton}
-            onPress={handleReset}
-          >
+          <TouchableOpacity style={styles.resetButton} onPress={handleReset}>
             <Text style={styles.resetButtonText}>Reset</Text>
           </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.submitButton}
-            onPress={handleSubmit}
-          >
+          <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
             <Text style={styles.submitButtonText}>Submit Post</Text>
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* Bottom Navigation */}
       <View style={styles.bottomNav}>
         <TouchableOpacity
           style={styles.navItem}
-          onPress={() => router.replace("/(tabs)/GeoHomepage")}
+          onPress={() =>
+            router.replace(`/(tabs)/${role === "player" ? "home" : "GeoHomepage"}`)
+          }
         >
           <Ionicons name="home" size={24} color="#BA9B77" />
           <Text style={styles.navText}>Home</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.navItem}
-          onPress={() => router.replace("/(tabs)/GeoPosts")}
+          onPress={() =>
+            router.replace(`/(tabs)/${role === "player" ? "posts" : "GeoPosts"}`)
+          }
         >
           <Ionicons name="chatbubbles" size={24} color="#BA9B77" />
           <Text style={styles.navText}>Posts</Text>
@@ -167,6 +162,7 @@ export default function NewPostScreen() {
   )
 }
 
+// CSS Stylesheet
 const styles = StyleSheet.create({
   wrapper: {
     flex: 1,

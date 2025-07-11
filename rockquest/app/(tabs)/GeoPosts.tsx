@@ -126,7 +126,7 @@ export default function PostsScreen() {
               style={styles.modalButton}
               onPress={() => {
                 setShowCreateOptions(false)
-                router.push("/(tabs)/GeoNewPost")
+                router.push({ pathname: "/(tabs)/NewPost", params: { role: "geologist" } })
               }}
             >
               <Text style={styles.modalButtonText}>New Post</Text>

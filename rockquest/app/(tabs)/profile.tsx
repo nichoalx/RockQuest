@@ -1,15 +1,30 @@
 "use client"
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, StatusBar } from "react-native"
+import React, { useState, useEffect } from "react"
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  StyleSheet,
+  StatusBar,
+  TextInput,
+  Modal,
+} from "react-native"
 import { useFonts, PressStart2P_400Regular } from "@expo-google-fonts/press-start-2p"
 import * as SplashScreen from "expo-splash-screen"
-import { useEffect } from "react"
 import { Ionicons, MaterialIcons } from "@expo/vector-icons"
-import { useRouter } from "expo-router";
+import { useRouter } from "expo-router"
 
 SplashScreen.preventAutoHideAsync()
 
 export default function ProfileScreen() {
-  const router = useRouter();
+  const router = useRouter()
+  const [username, setUsername] = useState("Username")
+  const [birthday, setBirthday] = useState("Birthday") // default display text
+  const [description, setDescription] = useState("")
+  const [tempDescription, setTempDescription] = useState("")
+  const [isModalVisible, setIsModalVisible] = useState(false)
+  const maxLength = 150
   const [fontsLoaded] = useFonts({
     PressStart2P_400Regular,
   })
@@ -19,6 +34,12 @@ export default function ProfileScreen() {
       SplashScreen.hideAsync()
     }
   }, [fontsLoaded])
+
+  // Save description from modal
+  const saveDescription = () => {
+    setDescription(tempDescription)
+    setIsModalVisible(false)
+  }
 
   if (!fontsLoaded) {
     return null
@@ -43,75 +64,89 @@ export default function ProfileScreen() {
       {/* Content */}
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Profile Card */}
-        <View style={styles.profileCard}>
-          {/* Profile Picture and Info */}
-          <View style={styles.profileSection}>
-            <View style={styles.profilePicture}>
-              <View style={styles.profilePicturePlaceholder} />
-            </View>
-            <View style={styles.profileInfo}>
-              <Text style={styles.username}>Username</Text>
-              <Text style={styles.playerLabel}>Player</Text>
-              <View style={styles.birthdayContainer}>
-                <Ionicons name="gift" size={16} color="#A77B4E" />
-                <Text style={styles.birthdayText}>Birthday</Text>
-              </View>
-            </View>
-          </View>
+<View style={styles.profileCard}>
+  {/* Profile Picture and Info */}
+  <View style={styles.profileSection}>
+    <View style={styles.profilePicture}>
+      <View style={styles.profilePicturePlaceholder} />
+    </View>
+    <View style={styles.profileInfo}>
+      <Text style={styles.username}>{username}</Text>
+      <Text style={styles.playerLabel}>Player</Text>
+      <View style={styles.birthdayContainer}>
+        <Ionicons name="gift" size={16} color="#A77B4E" />
+        <Text style={styles.birthdayText}>{birthday}</Text>
+      </View>
+    </View>
+  </View>
 
-          {/* Description */}
-          <View style={styles.descriptionSection}>
-            <Text style={styles.descriptionText}>
-              Add a short description about yourself.{"\n"}
-              Set a character limit to the text field.
-            </Text>
-          </View>
+  {/* Description Section */}
+  <View style={styles.descriptionSection}>
+    <TouchableOpacity
+      onPress={() => {
+        setTempDescription(description)
+        setIsModalVisible(true)
+      }}
+    >
+      <Text style={styles.descriptionText}>
+        {description || "Add a short description about yourself."}
+      </Text>
+    </TouchableOpacity>
+  </View>
 
-          {/* Achievements */}
-          <View style={styles.achievementsSection}>
-            <Text style={styles.sectionTitle}>Achievements:</Text>
-            <View style={styles.achievementsGrid}>
-              {[1, 2, 3].map((item) => (
-                <View key={item} style={styles.achievementBox}>
-                  <View style={styles.achievementX}>
-                    <View style={styles.xLine1} />
-                    <View style={styles.xLine2} />
-                  </View>
-                </View>
-              ))}
-            </View>
-          </View>
-
-          {/* Tracker */}
-          <View style={styles.trackerSection}>
-            <Text style={styles.sectionTitle}>Tracker:</Text>
-            <View style={styles.trackerStats}>
-              <View style={styles.trackerItem}>
-                <Text style={styles.trackerLabel}>Found</Text>
-                <Text style={styles.trackerNumber}>0</Text>
-              </View>
-              <View style={styles.trackerDivider} />
-              <View style={styles.trackerItem}>
-                <Text style={styles.trackerLabel}>Total</Text>
-                <Text style={styles.trackerNumber}>100</Text>
-              </View>
-            </View>
+  {/* Achievements */}
+  <View style={styles.achievementsSection}>
+    <Text style={styles.sectionTitle}>Badges:</Text>
+    <View style={styles.achievementsGrid}>
+      {[1, 2, 3].map((item) => (
+        <View key={item} style={styles.achievementBox}>
+          <View style={styles.achievementX}>
+            <View style={styles.xLine1} />
+            <View style={styles.xLine2} />
           </View>
         </View>
+      ))}
+    </View>
+  </View>
+
+  {/* Tracker */}
+  <View style={styles.trackerSection}>
+    <Text style={styles.sectionTitle}>Tracker:</Text>
+    <View style={styles.trackerStats}>
+      <View style={styles.trackerItem}>
+        <Text style={styles.trackerLabel}>Found</Text>
+        <Text style={styles.trackerNumber}>0</Text>
+      </View>
+      <View style={styles.trackerDivider} />
+      <View style={styles.trackerItem}>
+        <Text style={styles.trackerLabel}>Total</Text>
+        <Text style={styles.trackerNumber}>100</Text>
+      </View>
+    </View>
+  </View>
+</View>
 
         {/* Action Buttons */}
         <View style={styles.actionButtons}>
-          <TouchableOpacity style={styles.actionButton} activeOpacity={0.8}>
+          <TouchableOpacity
+            style={styles.actionButton}
+            activeOpacity={0.8}
+            onPress={() => router.replace({ pathname: "/(tabs)/edit-profile", params: { role: "player" } })}
+          >
             <Ionicons name="create" size={20} color="#1f2937" />
             <Text style={styles.actionButtonText}>Edit Profile</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.actionButton} activeOpacity={0.8}>
+          <TouchableOpacity style={styles.actionButton} activeOpacity={0.8} onPress={() => router.replace({ pathname: "/(tabs)/collections", params: { tab: "Badges" } })}>
             <Ionicons name="trophy" size={20} color="#1f2937" />
-            <Text style={styles.actionButtonText}>Achievements</Text>
+            <Text style={styles.actionButtonText}>Badges</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.actionButton} activeOpacity={0.8} onPress={() => router.replace("/(tabs)/auth")}>
+          <TouchableOpacity
+            style={styles.actionButton}
+            activeOpacity={0.8}
+            onPress={() => router.replace("/(tabs)/auth")}
+          >
             <Ionicons name="log-out" size={20} color="#1f2937" />
             <Text style={styles.actionButtonText}>Log out</Text>
           </TouchableOpacity>
@@ -120,26 +155,73 @@ export default function ProfileScreen() {
 
       {/* Bottom Navigation */}
       <View style={styles.bottomNav}>
-        <TouchableOpacity style={styles.navItem} activeOpacity={0.7} onPress={() => router.replace("/(tabs)/dashboard")}>
+        <TouchableOpacity
+          style={styles.navItem}
+          activeOpacity={0.7}
+          onPress={() => router.replace("/(tabs)/dashboard")}
+        >
           <Ionicons name="home" size={24} color="#BA9B77" />
           <Text style={styles.navText}>Home</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.navItem} activeOpacity={0.7} onPress={() => router.replace("/(tabs)/camera")}>
+        <TouchableOpacity
+          style={styles.navItem}
+          activeOpacity={0.7}
+          onPress={() => router.replace("/(tabs)/camera")}
+        >
           <Ionicons name="camera" size={24} color="#BA9B77" />
           <Text style={styles.navText}>Scan</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.navItem} activeOpacity={0.7} onPress={() => router.replace("/(tabs)/collections")}>
+        <TouchableOpacity
+          style={styles.navItem}
+          activeOpacity={0.7}
+          onPress={() => router.replace("/(tabs)/collections")}
+        >
           <MaterialIcons name="collections" size={24} color="#BA9B77" />
           <Text style={styles.navText}>Collections</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.navItem} activeOpacity={0.7} onPress={() => router.replace("/(tabs)/posts")}>
-          <Ionicons name="chatbubbles" size={24} color="#BA9B77"  />
+        <TouchableOpacity
+          style={styles.navItem}
+          activeOpacity={0.7}
+          onPress={() => router.replace("/(tabs)/posts")}
+        >
+          <Ionicons name="chatbubbles" size={24} color="#BA9B77" />
           <Text style={styles.navText}>Posts</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Modal for Editing Description */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={isModalVisible}
+        onRequestClose={() => setIsModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Edit Description</Text>
+            <TextInput
+              style={styles.descriptionInput}
+              value={tempDescription}
+              onChangeText={setTempDescription}
+              multiline
+              maxLength={maxLength}
+              placeholder="Write something about yourself..."
+            />
+            <Text style={styles.charCount}>{tempDescription.length}/{maxLength}</Text>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity style={styles.saveButton} onPress={saveDescription}>
+                <Text style={styles.saveButtonText}>Save</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.cancelButton} onPress={() => setIsModalVisible(false)}>
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   )
 }
@@ -165,11 +247,6 @@ const styles = StyleSheet.create({
     color: "#1f2937",
     marginBottom: 8,
     marginTop: 20,
-  },
-  subtitle: {
-    fontSize: 18,
-    color: "#1f2937",
-    fontWeight: "600",
   },
   profileIcon: {
     width: 40,
@@ -343,5 +420,73 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 4,
     color: "#6b7280",
+  },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContent: {
+    width: "90%",
+    backgroundColor: "white",
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#1f2937",
+    marginBottom: 12,
+  },
+  descriptionInput: {
+    fontSize: 14,
+    color: "#1f2937",
+    lineHeight: 20,
+    borderWidth: 1,
+    borderColor: "#d1d5db",
+    borderRadius: 8,
+    padding: 10,
+    backgroundColor: "white",
+    minHeight: 80,
+    textAlignVertical: "top",
+  },
+  charCount: {
+    alignSelf: "flex-end",
+    marginTop: 6,
+    fontSize: 12,
+    color: "#6b7280",
+  },
+  modalButtons: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    marginTop: 16,
+  },
+  saveButton: {
+    backgroundColor: "#A77B4E",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    marginLeft: 10,
+  },
+  saveButtonText: {
+    color: "white",
+    fontWeight: "600",
+  },
+  cancelButton: {
+    backgroundColor: "#e5e7eb",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  cancelButtonText: {
+    color: "#1f2937",
+    fontWeight: "600",
   },
 })

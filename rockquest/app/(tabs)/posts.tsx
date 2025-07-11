@@ -6,7 +6,6 @@ import { useEffect, useState } from "react"
 import { Ionicons, MaterialIcons } from "@expo/vector-icons"
 import { useRouter } from "expo-router";
 
-
 SplashScreen.preventAutoHideAsync()
 
 export default function PostsScreen() {
@@ -16,6 +15,7 @@ export default function PostsScreen() {
   })
 
   const [showMyPosts, setShowMyPosts] = useState(false)
+  const [postTypeFilter, setPostTypeFilter] = useState("all") // added state
 
   useEffect(() => {
     if (fontsLoaded) {
@@ -28,14 +28,20 @@ export default function PostsScreen() {
   }
 
   const posts = [
-    { id: 1, name: "Granite Sample", user: "You", isOwn: true },
-    { id: 2, name: "Quartz Crystal", user: "Username", isOwn: false },
-    { id: 3, name: "Basalt Rock", user: "Username", isOwn: false },
-    { id: 4, name: "Limestone", user: "You", isOwn: true },
-    { id: 5, name: "Obsidian", user: "Username", isOwn: false },
+    { id: 1, name: "Granite Sample", user: "You", isOwn: true, type: "post" },
+    { id: 2, name: "Quartz Crystal", user: "Username", isOwn: false, type: "fact" },
+    { id: 3, name: "Basalt Rock", user: "Username", isOwn: false, type: "post" },
+    { id: 4, name: "Limestone", user: "Username", isOwn: false, type: "fact" },
+    { id: 5, name: "Obsidian", user: "Username", isOwn: false, type: "post" },
   ]
 
-  const filteredPosts = showMyPosts ? posts.filter((post) => post.isOwn) : posts
+  // Filter posts by ownership and type
+  const filteredPosts = posts.filter((post) => {
+    if (showMyPosts && !post.isOwn) return false
+    if (postTypeFilter === "posts" && post.type !== "post") return false
+    if (postTypeFilter === "facts" && post.type !== "fact") return false
+    return true
+  })
 
   return (
     <View style={styles.container}>
@@ -60,9 +66,34 @@ export default function PostsScreen() {
           >
             <Text style={[styles.filterText, showMyPosts && styles.filterTextActive]}>My Posts</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.addButton}>
+          <TouchableOpacity style={styles.addButton} onPress={() => router.replace("/(tabs)/NewPost")}>
             <Ionicons name="add" size={20} color="white" />
           </TouchableOpacity>
+        </View>
+
+        {/* Post Type Filter Row */}
+        <View style={styles.filterRowAligned}>
+          <TouchableOpacity
+            style={[styles.filterButtonEqual, postTypeFilter === "all" && styles.filterButtonActive]}
+            onPress={() => setPostTypeFilter("all")}
+          >
+            <Text style={[styles.filterText, postTypeFilter === "all" && styles.filterTextActive]}>All</Text>
+          </TouchableOpacity>
+
+          <View style={styles.filterRightGroup}>
+            <TouchableOpacity
+              style={[styles.filterButtonEqual, postTypeFilter === "posts" && styles.filterButtonActive]}
+              onPress={() => setPostTypeFilter("posts")}
+            >
+              <Text style={[styles.filterText, postTypeFilter === "posts" && styles.filterTextActive]}>Posts</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.filterButtonEqual, postTypeFilter === "facts" && styles.filterButtonActive]}
+              onPress={() => setPostTypeFilter("facts")}
+            >
+              <Text style={[styles.filterText, postTypeFilter === "facts" && styles.filterTextActive]}>Facts</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
 
@@ -122,6 +153,7 @@ export default function PostsScreen() {
   )
 }
 
+// Add these new styles for the filter row and buttons (copy from GeoPosts styles)
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -179,6 +211,25 @@ const styles = StyleSheet.create({
   },
   filterTextActive: {
     color: "white",
+  },
+  filterRowAligned: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 12,
+  },
+  filterRightGroup: {
+    flexDirection: "row",
+    gap: 8,
+    marginLeft: 12,
+  },
+  filterButtonEqual: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#d1d5db",
+    minWidth: 70,
+    alignItems: "center",
   },
   addButton: {
     width: 40,

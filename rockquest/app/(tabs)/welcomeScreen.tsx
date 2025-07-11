@@ -4,6 +4,7 @@ import { useFonts, PressStart2P_400Regular } from "@expo-google-fonts/press-star
 import * as SplashScreen from "expo-splash-screen"
 import { useEffect } from "react"
 import { useRouter } from "expo-router"
+import LottieView from "lottie-react-native"  // <-- Import Lottie
 
 SplashScreen.preventAutoHideAsync()
 
@@ -26,6 +27,13 @@ export default function WelcomeScreen() {
       end={{ x: 1, y: 1 }}
     >
       <View style={styles.content}>
+        {/*<LottieView
+          source={require("../../../assets/images/welcome-animation.json")}
+          autoPlay
+          loop={false}
+          style={{ width: 250, height: 250, marginBottom: 24 }}
+        /> */}
+
         <Text style={styles.title}>RockQuest</Text>
 
         <TouchableOpacity
@@ -75,3 +83,4 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 })
+

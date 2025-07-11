@@ -64,7 +64,7 @@ export default function GeoProfile() {
           <Text style={styles.title}>Profile</Text>
           <TouchableOpacity
             style={styles.profileIcon}
-            onPress={() => router.replace("/(tabs)/edit-profile")}
+            onPress={() => router.replace("/(tabs)/edit-profile?userType=geologist")}
           >
             <Ionicons name="person" size={20} color="white" />
           </TouchableOpacity>
@@ -108,7 +108,7 @@ export default function GeoProfile() {
           <TouchableOpacity
             style={styles.actionButton}
             activeOpacity={0.8}
-            onPress={() => router.replace("/(tabs)/edit-profile")}
+            onPress={() => router.replace({ pathname: "/(tabs)/edit-profile", params: { role: "geologist" } })}
           >
             <Ionicons name="create" size={20} color="#1f2937" />
             <Text style={styles.actionButtonText}>Edit Profile</Text>
@@ -192,7 +192,7 @@ export default function GeoProfile() {
   )
 }
 
-// Styles
+// CSS Stylesheet
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "white" },
   header: { paddingTop: 50, paddingHorizontal: 20, paddingBottom: 20 },

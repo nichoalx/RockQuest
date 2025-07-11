@@ -144,7 +144,7 @@ export default function TabLayout() {
       />
 
       <Tabs.Screen
-        name="GeoNewPost"
+        name="NewPost"
         options={{
           title: "New Post",
           tabBarStyle: { display: "none" }, 
