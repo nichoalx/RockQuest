@@ -15,6 +15,10 @@ export default function ProfileInfoScreen() {
     }
   }, [])
 
+  const handleReturn = () => {
+    router.replace("/welcomeScreen");
+  };
+
   const handleNext = () => {
     if (!username || !description) {
       Alert.alert("Error", "Please fill in all fields")
@@ -23,7 +27,7 @@ export default function ProfileInfoScreen() {
 
     if (role === "geologist") {
       router.push({
-        pathname: "/upload-docs",
+        pathname: "/upload-documents",
         params: { email, password, role, username, description },
       })
     } else {
@@ -55,10 +59,15 @@ export default function ProfileInfoScreen() {
       <TouchableOpacity style={styles.button} onPress={handleNext}>
         <Text style={styles.buttonText}>{role === "geologist" ? "Next" : "Finish"}</Text>
       </TouchableOpacity>
+
+      <TouchableOpacity style={styles.returnButton} onPress={handleReturn}>
+                    <Text style={styles.returnButtonText}>Return</Text>
+                  </TouchableOpacity>
     </View>
   )
 }
 
+// CSS Stylesheet
 const styles = StyleSheet.create({
   container: { flex: 1, justifyContent: "center", padding: 24 },
   title: { fontSize: 20, fontWeight: "bold", marginBottom: 32, textAlign: "center" },
@@ -76,4 +85,15 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   buttonText: { color: "white", fontWeight: "bold", textAlign: "center" },
+
+  returnButton: {
+    backgroundColor: "#ccc",
+    padding: 16,
+    borderRadius: 8,
+  },
+  returnButtonText: {
+    color: "black",
+    fontWeight: "bold",
+    textAlign: "center",
+  },
 })

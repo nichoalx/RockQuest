@@ -55,10 +55,14 @@ export default function AuthScreen() {
   }
 
   const toggleAuthMode = () => {
-    setIsLogin(!isLogin)
-    setEmail("")
-    setPassword("")
-    setConfirmPassword("")
+    if (isLogin) {
+      router.push("/choose-role") // Navigate to role selection on signup
+    } else {
+      setIsLogin(true)
+      setEmail("")
+      setPassword("")
+      setConfirmPassword("")
+    }
   }
 
   if (!fontsLoaded) return null
@@ -75,8 +79,7 @@ export default function AuthScreen() {
           <Text style={styles.title}>{isLogin ? "Login" : "Sign Up"}</Text>
 
           <View style={styles.formContainer}>
-
-          <View style={styles.inputGroup}>
+            <View style={styles.inputGroup}>
               <Text style={styles.label}>Login As</Text>
               <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
                 {["user", "geologist", "admin"].map((r) => (
@@ -92,7 +95,7 @@ export default function AuthScreen() {
                 ))}
               </View>
             </View>
-            
+
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Email</Text>
               <TextInput

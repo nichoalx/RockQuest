@@ -16,6 +16,10 @@ export default function SignupDetailsScreen() {
     }
   }, [])
 
+  const handleReturn = () => {
+    router.replace("/welcomeScreen");
+  };
+
   const handleNext = () => {
     if (!email || !password || !confirmPassword) {
       Alert.alert("Error", "Please fill in all fields")
@@ -69,6 +73,10 @@ export default function SignupDetailsScreen() {
       <TouchableOpacity style={styles.button} onPress={handleNext}>
         <Text style={styles.buttonText}>Next</Text>
       </TouchableOpacity>
+
+      <TouchableOpacity style={styles.returnButton} onPress={handleReturn}>
+              <Text style={styles.returnButtonText}>Return</Text>
+            </TouchableOpacity>
     </View>
   )
 }
@@ -90,4 +98,15 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   buttonText: { color: "white", fontWeight: "bold", textAlign: "center" },
+
+  returnButton: {
+    backgroundColor: "#ccc",
+    padding: 16,
+    borderRadius: 8,
+  },
+  returnButtonText: {
+    color: "black",
+    fontWeight: "bold",
+    textAlign: "center",
+  },
 })

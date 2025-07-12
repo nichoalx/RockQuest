@@ -38,13 +38,21 @@ export default function UploadDocsScreen() {
       return;
     }
 
-    // Simulate document upload and account creation
-    Alert.alert("Submitted", "Your documents have been uploaded.");
-    router.replace("/thankyouScreen");
+    Alert.alert("Submitted", "Your documents have been uploaded.", [
+      {
+        text: "OK",
+        onPress: () => {
+          router.replace("/thankyouScreen");
+        },
+      },
+    ]);
+  };
+
+  const handleReturn = () => {
+    router.replace("/welcomeScreen");
   };
 
   if (!paramsChecked) {
-    // Optionally render a loading state while verifying params
     return (
       <View style={styles.container}>
         <Text style={styles.title}>Checking info...</Text>
@@ -55,6 +63,7 @@ export default function UploadDocsScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Upload Documents</Text>
+
       <TouchableOpacity style={styles.uploadButton} onPress={pickDocument}>
         <Text style={styles.uploadButtonText}>
           {document ? `Selected: ${document.name}` : "Choose File"}
@@ -63,6 +72,10 @@ export default function UploadDocsScreen() {
 
       <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
         <Text style={styles.submitButtonText}>Submit</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.returnButton} onPress={handleReturn}>
+        <Text style={styles.returnButtonText}>Return</Text>
       </TouchableOpacity>
     </View>
   );
@@ -86,7 +99,22 @@ const styles = StyleSheet.create({
     backgroundColor: "#A77B4E",
     padding: 16,
     borderRadius: 8,
+    marginBottom: 16,
   },
-  submitButtonText: { color: "white", fontWeight: "bold", textAlign: "center" },
+  submitButtonText: {
+    color: "white",
+    fontWeight: "bold",
+    textAlign: "center",
+  },
+  returnButton: {
+    backgroundColor: "#ccc",
+    padding: 16,
+    borderRadius: 8,
+  },
+  returnButtonText: {
+    color: "black",
+    fontWeight: "bold",
+    textAlign: "center",
+  },
 });
 
