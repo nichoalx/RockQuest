@@ -66,7 +66,12 @@ export default function PostsScreen() {
           >
             <Text style={[styles.filterText, showMyPosts && styles.filterTextActive]}>My Posts</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.addButton} onPress={() => router.replace("/(tabs)/NewPost")}>
+          <TouchableOpacity
+  style={styles.addButton}
+  onPress={() =>
+    router.push({ pathname: "/(tabs)/NewPost", params: { role: "player" } })
+  }
+>
             <Ionicons name="add" size={20} color="white" />
           </TouchableOpacity>
         </View>
@@ -153,7 +158,7 @@ export default function PostsScreen() {
   )
 }
 
-// Add these new styles for the filter row and buttons (copy from GeoPosts styles)
+// CSS Stylesheet
 const styles = StyleSheet.create({
   container: {
     flex: 1,

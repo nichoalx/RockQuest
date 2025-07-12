@@ -12,7 +12,7 @@ export default function SignupDetailsScreen() {
   useEffect(() => {
     if (!role || (role !== "user" && role !== "geologist")) {
       Alert.alert("Error", "Invalid role selected")
-      router.replace("/welcome") // Fallback in case user accessed this screen directly
+      router.replace("/welcomeScreen") // Fallback in case user accessed this screen directly
     }
   }, [])
 

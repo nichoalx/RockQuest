@@ -131,33 +131,47 @@ export default function NewPostScreen() {
         </View>
       </View>
 
-      <View style={styles.bottomNav}>
-        <TouchableOpacity
-          style={styles.navItem}
-          onPress={() =>
-            router.replace(`/(tabs)/${role === "player" ? "home" : "GeoHomepage"}`)
-          }
-        >
-          <Ionicons name="home" size={24} color="#BA9B77" />
-          <Text style={styles.navText}>Home</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.navItem}
-          onPress={() =>
-            router.replace(`/(tabs)/${role === "player" ? "posts" : "GeoPosts"}`)
-          }
-        >
-          <Ionicons name="chatbubbles" size={24} color="#BA9B77" />
-          <Text style={styles.navText}>Posts</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.navItem}
-          onPress={() => router.replace("/(tabs)/auth")}
-        >
-          <Ionicons name="log-out" size={24} color="#BA9B77" />
-          <Text style={styles.navText}>Log Out</Text>
-        </TouchableOpacity>
-      </View>
+      {/* Bottom Navigation Bar (Role-Based) */}
+      {role === "player" ? (
+        <View style={styles.bottomNav}>
+          <TouchableOpacity style={styles.navItem} onPress={() => router.replace("/(tabs)/dashboard")}>
+            <Ionicons name="home" size={24} color="#BA9B77" />
+            <Text style={styles.navText}>Home</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.navItem} onPress={() => router.replace("/(tabs)/camera")}>
+            <Ionicons name="camera" size={24} color="#BA9B77" />
+            <Text style={styles.navText}>Scan</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.navItem} onPress={() => router.replace("/(tabs)/collections")}>
+            <Ionicons name="images" size={24} color="#BA9B77" />
+            <Text style={styles.navText}>Collections</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.navItem} onPress={() => router.replace("/(tabs)/posts")}>
+            <Ionicons name="chatbubbles" size={24} color="#A77B4E" />
+            <Text style={[styles.navText, styles.navTextActive]}>Posts</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <View style={styles.bottomNav}>
+          <TouchableOpacity style={styles.navItem} onPress={() => router.replace("/(tabs)/GeoHomepage")}>
+            <Ionicons name="home" size={24} color="#BA9B77" />
+            <Text style={styles.navText}>Home</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.navItem} onPress={() => router.replace("/(tabs)/GeoPosts")}>
+            <Ionicons name="chatbubbles" size={24} color="#A77B4E" />
+            <Text style={[styles.navText, styles.navTextActive]}>Posts</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.navItem} onPress={() => router.replace("/(tabs)/auth")}>
+            <Ionicons name="log-out" size={24} color="#BA9B77" />
+            <Text style={styles.navText}>Log Out</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   )
 }
@@ -169,30 +183,25 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     position: "relative",
   },
-
   header: {
     paddingTop: 40,
     paddingHorizontal: 20,
     paddingBottom: 10,
   },
-
   headerContent: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
-
   titleWrapper: {
     justifyContent: "center",
     height: 40,
   },
-
   title: {
     fontFamily: "PressStart2P_400Regular",
     fontSize: 16,
     color: "#1f2937",
   },
-
   profileIcon: {
     width: 40,
     height: 40,
@@ -202,7 +211,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-
   pageTitle: {
     fontSize: 18,
     fontWeight: "600",
@@ -211,24 +219,20 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     paddingHorizontal: 20,
   },
-
   contentBox: {
     paddingHorizontal: 20,
     width: "100%",
     maxWidth: 500,
     alignSelf: "center",
   },
-
   imagePicker: {
     marginBottom: 20,
   },
-
   imagePreview: {
     width: "100%",
     height: 200,
     borderRadius: 8,
   },
-
   placeholder: {
     height: 200,
     borderWidth: 1,
@@ -237,12 +241,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-
   placeholderText: {
     color: "#6b7280",
     marginTop: 8,
   },
-
   label: {
     fontSize: 14,
     fontWeight: "600",
@@ -250,7 +252,6 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     marginLeft: 2,
   },
-
   input: {
     width: "100%",
     borderWidth: 1,
@@ -260,18 +261,15 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     backgroundColor: "#fff",
   },
-
   textArea: {
     height: 100,
     textAlignVertical: "top",
   },
-
   buttonRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     marginTop: 10,
   },
-
   returnButton: {
     flex: 1,
     backgroundColor: "#777",
@@ -280,13 +278,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginRight: 8,
   },
-
   returnButtonText: {
     color: "white",
     fontWeight: "600",
     fontSize: 16,
   },
-
   resetButton: {
     flex: 1,
     backgroundColor: "#d1a054",
@@ -295,13 +291,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginHorizontal: 8,
   },
-
   resetButtonText: {
     color: "white",
     fontWeight: "600",
     fontSize: 16,
   },
-
   submitButton: {
     flex: 1,
     backgroundColor: "#A77B4E",
@@ -310,13 +304,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginLeft: 8,
   },
-
   submitButtonText: {
     color: "white",
     fontSize: 16,
     fontWeight: "600",
   },
-
   bottomNav: {
     flexDirection: "row",
     backgroundColor: "white",
@@ -329,17 +321,18 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
   },
-
   navItem: {
     flex: 1,
     alignItems: "center",
     paddingVertical: 8,
   },
-
   navText: {
     fontSize: 12,
     marginTop: 4,
     color: "#6b7280",
   },
+  navTextActive: {
+    color: "#A77B4E",
+    fontWeight: "600",
+  },
 })
-
