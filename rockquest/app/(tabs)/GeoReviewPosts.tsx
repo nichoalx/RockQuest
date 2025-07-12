@@ -26,6 +26,7 @@ interface ReviewItem {
 
 const GeoPosts = () => {
   const router = useRouter();
+  const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false)
   const [selectedType, setSelectedType] = useState('All Types');
   const [selectedStatus, setSelectedStatus] = useState('All Status');
   const [modalVisible, setModalVisible] = useState(false);
@@ -436,6 +437,37 @@ const GeoPosts = () => {
         </View>
       </Modal>
 
+      {/* Modal for Logout Confirmation */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={isLogoutModalVisible}
+        onRequestClose={() => setIsLogoutModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Are you sure you want to log out?</Text>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={() => setIsLogoutModalVisible(false)}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.saveButton}
+                onPress={() => {
+                  setIsLogoutModalVisible(false)
+                  router.replace("/(tabs)/auth")
+                }}
+              >
+                <Text style={styles.saveButtonText}>Log out</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       {/* Bottom Navigation */}
       <View style={styles.bottomNav}>
         <TouchableOpacity 
@@ -459,7 +491,7 @@ const GeoPosts = () => {
         <TouchableOpacity 
           style={styles.navItem} 
           activeOpacity={0.7} 
-          onPress={() => router.replace("/(tabs)/auth")}
+          onPress={() => setIsLogoutModalVisible(true)}
         >
           <Ionicons name="log-out" size={24} color="#BA9B77" />
           <Text style={styles.navText}>Log Out</Text>
@@ -825,6 +857,26 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#BA9B77',
   },
+  modalButtons: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    marginTop: 16,
+  },
+  saveButton: {
+    backgroundColor: "#A77B4E",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    marginLeft: 10,
+  },
+  saveButtonText: { color: "white", fontWeight: "600" },
+  cancelButton: {
+    backgroundColor: "#e5e7eb",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  cancelButtonText: { color: "#1f2937", fontWeight: "600" },
 });
 
 export default GeoPosts;

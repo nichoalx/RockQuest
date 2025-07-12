@@ -23,6 +23,7 @@ export default function GeoProfile() {
   const [description, setDescription] = useState("")
   const [tempDescription, setTempDescription] = useState("")
   const [isModalVisible, setIsModalVisible] = useState(false)
+  const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false)
   const maxLength = 150
 
   useFocusEffect(
@@ -117,7 +118,7 @@ export default function GeoProfile() {
           <TouchableOpacity
             style={styles.actionButton}
             activeOpacity={0.8}
-            onPress={() => router.replace("/(tabs)/auth")}
+            onPress={() => setIsLogoutModalVisible(true)}
           >
             <Ionicons name="log-out" size={20} color="#1f2937" />
             <Text style={styles.actionButtonText}>Log out</Text>
@@ -148,7 +149,7 @@ export default function GeoProfile() {
         <TouchableOpacity
           style={styles.navItem}
           activeOpacity={0.7}
-          onPress={() => router.replace("/(tabs)/auth")}
+          onPress={() => setIsLogoutModalVisible(true)}
         >
           <Ionicons name="log-out" size={24} color="#BA9B77" />
           <Text style={styles.navText}>Logout</Text>
@@ -188,6 +189,38 @@ export default function GeoProfile() {
           </View>
         </View>
       </Modal>
+
+      {/* Modal for Logout Confirmation */}
+<Modal
+  animationType="fade"
+  transparent={true}
+  visible={isLogoutModalVisible}
+  onRequestClose={() => setIsLogoutModalVisible(false)}
+>
+  <View style={styles.modalOverlay}>
+    <View style={styles.modalContent}>
+      <Text style={styles.modalTitle}>Are you sure you want to log out?</Text>
+      <View style={styles.modalButtons}>
+        <TouchableOpacity
+          style={styles.cancelButton}
+          onPress={() => setIsLogoutModalVisible(false)}
+        >
+          <Text style={styles.cancelButtonText}>Cancel</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.saveButton}
+          onPress={() => {
+            setIsLogoutModalVisible(false)
+            router.replace("/(tabs)/auth")
+          }}
+        >
+          <Text style={styles.saveButtonText}>Log out</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  </View>
+</Modal>
+
     </View>
   )
 }

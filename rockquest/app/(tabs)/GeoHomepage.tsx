@@ -4,7 +4,8 @@ import { Ionicons } from "@expo/vector-icons"
 import { useRouter } from "expo-router"
 import * as SplashScreen from "expo-splash-screen"
 import { useEffect } from "react"
-import { Dimensions, StatusBar, StyleSheet, Text, TouchableOpacity, View } from "react-native"
+import { Dimensions, StatusBar, StyleSheet, Text, TouchableOpacity, View, Modal } from "react-native"
+import React, { useState } from "react"
 
 SplashScreen.preventAutoHideAsync()
 
@@ -12,6 +13,7 @@ const { width, height } = Dimensions.get("window")
 
 export default function Dashboard() {
   const router = useRouter()
+  const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false)
   const [fontsLoaded] = useFonts({ PressStart2P_400Regular })
 
   useEffect(() => {
@@ -79,11 +81,42 @@ export default function Dashboard() {
             <Text style={styles.navText}>Posts</Text>
         </TouchableOpacity>
       
-        <TouchableOpacity style={styles.navItem} activeOpacity={0.7} onPress={() => router.replace("/(tabs)/auth")}>
+        <TouchableOpacity style={styles.navItem} activeOpacity={0.7} onPress={() => setIsLogoutModalVisible(true)}>
           <Ionicons name="log-out" size={24} color="#BA9B77"  />
             <Text style={styles.navText}>Log Out</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Modal for Logout Confirmation */}
+<Modal
+  animationType="fade"
+  transparent={true}
+  visible={isLogoutModalVisible}
+  onRequestClose={() => setIsLogoutModalVisible(false)}
+>
+  <View style={styles.modalOverlay}>
+    <View style={styles.modalContent}>
+      <Text style={styles.modalTitle}>Are you sure you want to log out?</Text>
+      <View style={styles.modalButtons}>
+        <TouchableOpacity
+          style={styles.cancelButton}
+          onPress={() => setIsLogoutModalVisible(false)}
+        >
+          <Text style={styles.cancelButtonText}>Cancel</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.saveButton}
+          onPress={() => {
+            setIsLogoutModalVisible(false)
+            router.replace("/(tabs)/auth")
+          }}
+        >
+          <Text style={styles.saveButtonText}>Log out</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  </View>
+</Modal>
     </View>
   )
 }
@@ -211,5 +244,49 @@ const styles = StyleSheet.create({
   navTextActive: {
     color: "#A77B4E",
   },
+
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContent: {
+    width: "90%",
+    backgroundColor: "white",
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#1f2937",
+    marginBottom: 12,
+  },
+  modalButtons: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    marginTop: 16,
+  },
+  saveButton: {
+    backgroundColor: "#A77B4E",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    marginLeft: 10,
+  },
+  saveButtonText: { color: "white", fontWeight: "600" },
+  cancelButton: {
+    backgroundColor: "#e5e7eb",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  cancelButtonText: { color: "#1f2937", fontWeight: "600" },
 })
 
