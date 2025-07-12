@@ -11,7 +11,7 @@ export default function ProfileInfoScreen() {
   useEffect(() => {
     if (!email || !password || !role) {
       Alert.alert("Missing Info", "Please start from the beginning.")
-      router.replace("/welcome")
+      router.replace("/welcomeScreen")
     }
   }, [])
 

@@ -81,6 +81,14 @@ export default function TabLayout() {
           tabBarStyle : { display: "none" },
         }}
       />
+
+      <Tabs.Screen
+        name="collection-rock"
+        options={{
+          title: "Rock collection",
+          tabBarStyle: { display: "none" }, 
+        }}
+      />
       <Tabs.Screen
         name="posts"
         options={{
