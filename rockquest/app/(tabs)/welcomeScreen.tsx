@@ -1,23 +1,22 @@
-import { View, Text, TouchableOpacity, StyleSheet, useWindowDimensions } from "react-native"
-import { LinearGradient } from "expo-linear-gradient"
-import { useFonts, PressStart2P_400Regular } from "@expo-google-fonts/press-start-2p"
-import * as SplashScreen from "expo-splash-screen"
-import { useEffect } from "react"
-import { useRouter } from "expo-router"
-import LottieView from "lottie-react-native"  // <-- Import Lottie
+import { View, Text, TouchableOpacity, StyleSheet, useWindowDimensions } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { useFonts, PressStart2P_400Regular } from "@expo-google-fonts/press-start-2p";
+import * as SplashScreen from "expo-splash-screen";
+import { useEffect } from "react";
+import { useRouter } from "expo-router";
 
-SplashScreen.preventAutoHideAsync()
+SplashScreen.preventAutoHideAsync();
 
 export default function WelcomeScreen() {
-  const [fontsLoaded] = useFonts({ PressStart2P_400Regular })
-  const { width, height } = useWindowDimensions()
-  const router = useRouter()
+  const [fontsLoaded] = useFonts({ PressStart2P_400Regular });
+  const { width, height } = useWindowDimensions();
+  const router = useRouter();
 
   useEffect(() => {
-    if (fontsLoaded) SplashScreen.hideAsync()
-  }, [fontsLoaded])
+    if (fontsLoaded) SplashScreen.hideAsync();
+  }, [fontsLoaded]);
 
-  if (!fontsLoaded) return null
+  if (!fontsLoaded) return null;
 
   return (
     <LinearGradient
@@ -27,31 +26,18 @@ export default function WelcomeScreen() {
       end={{ x: 1, y: 1 }}
     >
       <View style={styles.content}>
-        {/*<LottieView
-          source={require("../../../assets/images/welcome-animation.json")}
-          autoPlay
-          loop={false}
-          style={{ width: 250, height: 250, marginBottom: 24 }}
-        /> */}
-
         <Text style={styles.title}>RockQuest</Text>
 
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() => router.push("/auth?mode=login")}
-        >
+        <TouchableOpacity style={styles.button} onPress={() => router.push("/auth?mode=login")}>
           <Text style={styles.buttonText}>Login</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() => router.push("/choose-role")}
-        >
+        <TouchableOpacity style={styles.button} onPress={() => router.push("/choose-role")}>
           <Text style={styles.buttonText}>Sign Up</Text>
         </TouchableOpacity>
       </View>
     </LinearGradient>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
@@ -82,5 +68,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: "center",
   },
-})
+});
+
+
+
+
+
+
+
 

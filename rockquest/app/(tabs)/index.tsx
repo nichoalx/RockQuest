@@ -4,6 +4,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useFonts, PressStart2P_400Regular } from "@expo-google-fonts/press-start-2p";
 import * as SplashScreen from "expo-splash-screen";
 import { useRouter } from "expo-router";
+import LottieView from "lottie-react-native";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -17,11 +18,14 @@ export default function StartScreen() {
     if (fontsLoaded) SplashScreen.hideAsync();
   }, [fontsLoaded]);
 
+  // Navigate on tap
+  useEffect(() => {
+    if (tapped) {
+      router.replace("/(tabs)/welcomeScreen");
+    }
+  }, [tapped, router]);
+
   if (!fontsLoaded) return null;
-  if (tapped) {
-    router.replace("/(tabs)/welcomeScreen");
-    return null;
-  }
 
   return (
     <TouchableOpacity activeOpacity={0.9} style={styles.container} onPress={() => setTapped(true)}>
@@ -31,10 +35,13 @@ export default function StartScreen() {
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
       >
-        <View style={styles.content}>
-          <Text style={styles.title}>RockQuest</Text>
-          <Text style={styles.tap}>Tap to start</Text>
-        </View>
+        <LottieView
+          source={require("../../assets/images/welcome-animation.json")}
+          autoPlay
+          loop={false}
+          style={{ width: width * 0.8, height: width * 0.8 }}
+        />
+        <Text style={styles.tap}>Tap to start</Text>
       </LinearGradient>
     </TouchableOpacity>
   );
@@ -42,30 +49,19 @@ export default function StartScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  gradient: { flex: 1 },
-  content: {
+  gradient: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: 20,
-  },
-  title: {
-    fontFamily: "PressStart2P_400Regular",
-    fontSize: 28,
-    color: "white",
-    textAlign: "center",
-    textShadowColor: "rgba(0, 0, 0, 0.5)",
-    textShadowOffset: { width: 2, height: 2 },
-    textShadowRadius: 4,
-    letterSpacing: 2,
   },
   tap: {
     fontFamily: "PressStart2P_400Regular",
-    fontSize: 12,
+    fontSize: 14,
     color: "white",
-    marginTop: 20,
+    marginTop: 24,
     textShadowColor: "rgba(0, 0, 0, 0.4)",
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 2,
   },
 });
+
