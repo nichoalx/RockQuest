@@ -10,7 +10,8 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  View,
+  Modal,
 } from "react-native"
 
 export default function NewPostScreen() {
@@ -21,6 +22,7 @@ export default function NewPostScreen() {
   const [rockName, setRockName] = useState("")
   const [shortDescription, setShortDescription] = useState("")
   const [information, setInformation] = useState("")
+  const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false)
 
   useEffect(() => {
     (async () => {
@@ -57,6 +59,11 @@ export default function NewPostScreen() {
     setShortDescription("")
     setInformation("")
     setImage(null)
+  }
+
+  const confirmLogout = () => {
+    setIsLogoutModalVisible(false)
+    router.replace("/(tabs)/auth")
   }
 
   return (
@@ -166,12 +173,41 @@ export default function NewPostScreen() {
             <Text style={[styles.navText, styles.navTextActive]}>Posts</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.navItem} onPress={() => router.replace("/(tabs)/auth")}>
+          <TouchableOpacity style={styles.navItem} onPress={() => setIsLogoutModalVisible(true)}>
             <Ionicons name="log-out" size={24} color="#BA9B77" />
             <Text style={styles.navText}>Log Out</Text>
           </TouchableOpacity>
         </View>
       )}
+
+      {/* Logout Confirmation Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={isLogoutModalVisible}
+        onRequestClose={() => setIsLogoutModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Confirm Logout</Text>
+            <Text style={styles.modalText}>Are you sure you want to log out?</Text>
+            <View style={styles.modalButtonRow}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelBtn]}
+                onPress={() => setIsLogoutModalVisible(false)}
+              >
+                <Text style={styles.cancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.confirmBtn]}
+                onPress={confirmLogout}
+              >
+                <Text style={styles.confirmText}>Logout</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   )
 }
@@ -333,6 +369,54 @@ const styles = StyleSheet.create({
   },
   navTextActive: {
     color: "#A77B4E",
+    fontWeight: "600",
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.5)",
+  },
+  modalContent: {
+    width: "80%",
+    backgroundColor: "white",
+    borderRadius: 16,
+    padding: 20,
+    elevation: 5,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#1f2937",
+    marginBottom: 10,
+  },
+  modalText: {
+    fontSize: 14,
+    color: "#374151",
+    marginBottom: 20,
+  },
+  modalButtonRow: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+  },
+  modalButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    marginLeft: 10,
+  },
+  cancelBtn: {
+    backgroundColor: "#e5e7eb",
+  },
+  confirmBtn: {
+    backgroundColor: "#A77B4E",
+  },
+  cancelText: {
+    color: "#1f2937",
+    fontWeight: "600",
+  },
+  confirmText: {
+    color: "white",
     fontWeight: "600",
   },
 })

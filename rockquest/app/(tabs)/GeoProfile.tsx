@@ -65,7 +65,6 @@ export default function GeoProfile() {
           <Text style={styles.title}>Profile</Text>
           <TouchableOpacity
             style={styles.profileIcon}
-            onPress={() => router.replace("/(tabs)/edit-profile?userType=geologist")}
           >
             <Ionicons name="person" size={20} color="white" />
           </TouchableOpacity>

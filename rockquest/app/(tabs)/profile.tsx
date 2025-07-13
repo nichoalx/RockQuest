@@ -20,11 +20,13 @@ SplashScreen.preventAutoHideAsync()
 export default function ProfileScreen() {
   const router = useRouter()
   const [username, setUsername] = useState("Username")
-  const [birthday, setBirthday] = useState("Birthday") // default display text
+  const [birthday, setBirthday] = useState("Birthday")
   const [description, setDescription] = useState("")
   const [tempDescription, setTempDescription] = useState("")
   const [isModalVisible, setIsModalVisible] = useState(false)
+  const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false)
   const maxLength = 150
+
   const [fontsLoaded] = useFonts({
     PressStart2P_400Regular,
   })
@@ -35,15 +37,12 @@ export default function ProfileScreen() {
     }
   }, [fontsLoaded])
 
-  // Save description from modal
   const saveDescription = () => {
     setDescription(tempDescription)
     setIsModalVisible(false)
   }
 
-  if (!fontsLoaded) {
-    return null
-  }
+  if (!fontsLoaded) return null
 
   return (
     <View style={styles.container}>
@@ -52,9 +51,7 @@ export default function ProfileScreen() {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerContent}>
-          <View>
-            <Text style={styles.title}>Profile</Text>
-          </View>
+          <Text style={styles.title}>Profile</Text>
           <TouchableOpacity style={styles.profileIcon} onPress={() => router.replace("/(tabs)/profile")}>
             <Ionicons name="person" size={20} color="white" />
           </TouchableOpacity>
@@ -63,81 +60,88 @@ export default function ProfileScreen() {
 
       {/* Content */}
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Profile Card */}
-<View style={styles.profileCard}>
-  {/* Profile Picture and Info */}
-  <View style={styles.profileSection}>
-    <View style={styles.profilePicture}>
-      <View style={styles.profilePicturePlaceholder} />
-    </View>
-    <View style={styles.profileInfo}>
-      <Text style={styles.username}>{username}</Text>
-      <Text style={styles.playerLabel}>Player</Text>
-      <View style={styles.birthdayContainer}>
-        <Ionicons name="gift" size={16} color="#A77B4E" />
-        <Text style={styles.birthdayText}>{birthday}</Text>
-      </View>
-    </View>
-  </View>
+        <View style={styles.profileCard}>
+          {/* Profile */}
+          <View style={styles.profileSection}>
+            <View style={styles.profilePicture}>
+              <View style={styles.profilePicturePlaceholder} />
+            </View>
+            <View style={styles.profileInfo}>
+              <Text style={styles.username}>{username}</Text>
+              <Text style={styles.playerLabel}>Player</Text>
+              <View style={styles.birthdayContainer}>
+                <Ionicons name="gift" size={16} color="#A77B4E" />
+                <Text style={styles.birthdayText}>{birthday}</Text>
+              </View>
+            </View>
+          </View>
 
-  {/* Description Section */}
-  <View style={styles.descriptionSection}>
-    <TouchableOpacity
-      onPress={() => {
-        setTempDescription(description)
-        setIsModalVisible(true)
-      }}
-    >
-      <Text style={styles.descriptionText}>
-        {description || "Add a short description about yourself."}
-      </Text>
-    </TouchableOpacity>
-  </View>
+          {/* Description */}
+          <View style={styles.descriptionSection}>
+            <TouchableOpacity
+              onPress={() => {
+                setTempDescription(description)
+                setIsModalVisible(true)
+              }}
+            >
+              <Text style={styles.descriptionText}>
+                {description || "Add a short description about yourself."}
+              </Text>
+            </TouchableOpacity>
+          </View>
 
-  {/* Achievements */}
-  <View style={styles.achievementsSection}>
-    <Text style={styles.sectionTitle}>Badges:</Text>
-    <View style={styles.achievementsGrid}>
-      {[1, 2, 3].map((item) => (
-        <View key={item} style={styles.achievementBox}>
-          <View style={styles.achievementX}>
-            <View style={styles.xLine1} />
-            <View style={styles.xLine2} />
+          {/* Achievements */}
+          <View style={styles.achievementsSection}>
+            <Text style={styles.sectionTitle}>Badges:</Text>
+            <View style={styles.achievementsGrid}>
+              {[1, 2, 3].map((item) => (
+                <View key={item} style={styles.achievementBox}>
+                  <View style={styles.achievementX}>
+                    <View style={styles.xLine1} />
+                    <View style={styles.xLine2} />
+                  </View>
+                </View>
+              ))}
+            </View>
+          </View>
+
+          {/* Tracker */}
+          <View style={styles.trackerSection}>
+            <Text style={styles.sectionTitle}>Tracker:</Text>
+            <View style={styles.trackerStats}>
+              <View style={styles.trackerItem}>
+                <Text style={styles.trackerLabel}>Found</Text>
+                <Text style={styles.trackerNumber}>0</Text>
+              </View>
+              <View style={styles.trackerDivider} />
+              <View style={styles.trackerItem}>
+                <Text style={styles.trackerLabel}>Total</Text>
+                <Text style={styles.trackerNumber}>100</Text>
+              </View>
+            </View>
           </View>
         </View>
-      ))}
-    </View>
-  </View>
-
-  {/* Tracker */}
-  <View style={styles.trackerSection}>
-    <Text style={styles.sectionTitle}>Tracker:</Text>
-    <View style={styles.trackerStats}>
-      <View style={styles.trackerItem}>
-        <Text style={styles.trackerLabel}>Found</Text>
-        <Text style={styles.trackerNumber}>0</Text>
-      </View>
-      <View style={styles.trackerDivider} />
-      <View style={styles.trackerItem}>
-        <Text style={styles.trackerLabel}>Total</Text>
-        <Text style={styles.trackerNumber}>100</Text>
-      </View>
-    </View>
-  </View>
-</View>
 
         {/* Action Buttons */}
         <View style={styles.actionButtons}>
           <TouchableOpacity
             style={styles.actionButton}
             activeOpacity={0.8}
-            onPress={() => router.replace({ pathname: "/(tabs)/edit-profile", params: { role: "player" } })}
+            onPress={() =>
+              router.replace({ pathname: "/(tabs)/edit-profile", params: { role: "player" } })
+            }
           >
             <Ionicons name="create" size={20} color="#1f2937" />
             <Text style={styles.actionButtonText}>Edit Profile</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.actionButton} activeOpacity={0.8} onPress={() => router.replace({ pathname: "/(tabs)/collections", params: { tab: "Badges" } })}>
+          <TouchableOpacity
+            style={styles.actionButton}
+            activeOpacity={0.8}
+            onPress={() =>
+              router.replace({ pathname: "/(tabs)/collections", params: { tab: "Badges" } })
+            }
+          >
             <Ionicons name="trophy" size={20} color="#1f2937" />
             <Text style={styles.actionButtonText}>Badges</Text>
           </TouchableOpacity>
@@ -145,7 +149,7 @@ export default function ProfileScreen() {
           <TouchableOpacity
             style={styles.actionButton}
             activeOpacity={0.8}
-            onPress={() => router.replace("/(tabs)/auth")}
+            onPress={() => setIsLogoutModalVisible(true)}
           >
             <Ionicons name="log-out" size={20} color="#1f2937" />
             <Text style={styles.actionButtonText}>Log out</Text>
@@ -193,12 +197,7 @@ export default function ProfileScreen() {
       </View>
 
       {/* Modal for Editing Description */}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={isModalVisible}
-        onRequestClose={() => setIsModalVisible(false)}
-      >
+      <Modal animationType="slide" transparent={true} visible={isModalVisible}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Edit Description</Text>
@@ -210,7 +209,9 @@ export default function ProfileScreen() {
               maxLength={maxLength}
               placeholder="Write something about yourself..."
             />
-            <Text style={styles.charCount}>{tempDescription.length}/{maxLength}</Text>
+            <Text style={styles.charCount}>
+              {tempDescription.length}/{maxLength}
+            </Text>
             <View style={styles.modalButtons}>
               <TouchableOpacity style={styles.saveButton} onPress={saveDescription}>
                 <Text style={styles.saveButtonText}>Save</Text>
@@ -222,10 +223,42 @@ export default function ProfileScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Logout Confirmation Modal */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={isLogoutModalVisible}
+        onRequestClose={() => setIsLogoutModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Are you sure you want to log out?</Text>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={() => setIsLogoutModalVisible(false)}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.saveButton}
+                onPress={() => {
+                  setIsLogoutModalVisible(false)
+                  router.replace("/(tabs)/auth")
+                }}
+              >
+                <Text style={styles.saveButtonText}>Log out</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   )
 }
 
+// CSS Stylesheet
 const styles = StyleSheet.create({
   container: {
     flex: 1,
