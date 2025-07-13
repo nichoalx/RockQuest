@@ -110,6 +110,13 @@ export default function TabLayout() {
           tabBarStyle: { display: "none" }, 
         }}
       />
+      <Tabs.Screen
+        name="quest"
+        options={{
+          title: "quest",
+          tabBarStyle: { display: "none" }, 
+        }}
+      />
 
       <Tabs.Screen
         name="GeoHomepage"

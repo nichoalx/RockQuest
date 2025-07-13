@@ -70,7 +70,11 @@ export default function Dashboard() {
 
         {/* Quest Panel - Floating */}
         <View style={[styles.questPanelContainer, { top: showGreeting ? 160 : 80 }]}>
-          <TouchableOpacity style={styles.questPanel} activeOpacity={0.8}>
+          <TouchableOpacity
+  style={styles.questPanel}
+  activeOpacity={0.8}
+  onPress={() => router.push("/quest")}
+>
             <View style={styles.questContent}>
               <View style={styles.questLeft}>
                 <View style={styles.questIcon}>
