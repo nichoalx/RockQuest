@@ -93,11 +93,5 @@ POST /upload-rock/
 
 ------------------------------------------------------------
 
-✅ To-Do (Next Features)
-
-- Add user authentication (Firebase JWT)
-- Add /get-rocks route
-- Add GPS and uploader metadata
-- Admin panel for reviewing/reporting
-
+FireAPI Swagger can be open at http://127.0.0.1:8000/docs
 
