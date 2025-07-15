@@ -1,10 +1,11 @@
 "use client"
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, StatusBar } from "react-native"
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, StatusBar, Alert } from "react-native"
 import { useFonts, PressStart2P_400Regular } from "@expo-google-fonts/press-start-2p"
 import * as SplashScreen from "expo-splash-screen"
 import { useEffect } from "react"
 import { Ionicons, MaterialIcons } from "@expo/vector-icons"
 import { useRouter } from "expo-router";
+import { FIREBASE_AUTH } from "../../utils/firebase" // Adjust the import path as needed
 
 SplashScreen.preventAutoHideAsync()
 
@@ -111,7 +112,19 @@ export default function ProfileScreen() {
             <Text style={styles.actionButtonText}>Achievements</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.actionButton} activeOpacity={0.8} onPress={() => router.replace("/(tabs)/auth")}>
+          <TouchableOpacity
+            style={styles.actionButton}
+            activeOpacity={0.8}
+            onPress={async () => {
+              try {
+                await FIREBASE_AUTH.signOut();
+                router.replace("/(tabs)/auth");
+              } catch (error) {
+                const errorMessage = (error instanceof Error && error.message) ? error.message : "Failed to log out.";
+                Alert.alert("Logout Error", errorMessage);
+              }
+            }}
+          >
             <Ionicons name="log-out" size={20} color="#1f2937" />
             <Text style={styles.actionButtonText}>Log out</Text>
           </TouchableOpacity>
