@@ -6,6 +6,7 @@ import * as SplashScreen from "expo-splash-screen"
 import { useEffect, useState } from "react"
 import { Ionicons, MaterialIcons } from "@expo/vector-icons"
 import { useRouter } from "expo-router"
+import MapComponent from "../../components/MapComponent"
 
 SplashScreen.preventAutoHideAsync()
 
@@ -36,11 +37,11 @@ export default function Dashboard() {
   ]
 
   return (
-    <View style={styles.container}>
+    <View style={{ flex: 1 }}>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
 
       {/* Main Content */}
-      <View style={styles.mainContent}>
+      <View style={{ flex: 1, position: "relative" }}>
         {/* Header with Profile Icon */}
         <View style={styles.profileIconContainer}>
           <TouchableOpacity style={styles.profileIcon} activeOpacity={0.8} onPress={() => router.replace("/(tabs)/profile")}>
@@ -87,58 +88,7 @@ export default function Dashboard() {
         </View>
 
         {/* Map Area */}
-        <View style={styles.mapContainer}>
-          <LinearGradient colors={["#C0BAA9", "#CCCABC"]} style={styles.mapGradient}>
-            {/* Map Grid Pattern */}
-            <View style={styles.mapGrid}>
-              <View style={styles.gridRow}>
-                {[...Array(4)].map((_, i) => (
-                  <View key={i} style={styles.gridColumn}>
-                    {[...Array(6)].map((_, j) => (
-                      <View key={j} style={styles.gridCell} />
-                    ))}
-                  </View>
-                ))}
-              </View>
-            </View>
-
-            {/* Rock Markers */}
-            <View style={[styles.rockMarker, { top: 60, left: 30 }]}>
-              <View style={styles.rockIcon}>
-                <Text style={styles.rockText}>R</Text>
-              </View>
-              <Text style={styles.rockLabel}>rock</Text>
-            </View>
-
-            <View style={[styles.rockMarker, { top: 120, right: 50 }]}>
-              <View style={styles.rockIcon}>
-                <Text style={styles.rockText}>R</Text>
-              </View>
-              <Text style={styles.rockLabel}>rock</Text>
-            </View>
-
-            <View style={[styles.rockMarker, { bottom: 120, left: 60 }]}>
-              <View style={styles.rockIcon}>
-                <Text style={styles.rockText}>R</Text>
-              </View>
-              <Text style={styles.rockLabel}>rock</Text>
-            </View>
-
-            <View style={[styles.rockMarker, { bottom: 80, right: 30 }]}>
-              <View style={styles.rockIcon}>
-                <Text style={styles.rockText}>R</Text>
-              </View>
-              <Text style={styles.rockLabel}>rock</Text>
-            </View>
-
-            {/* User Location */}
-            <View style={styles.userLocation}>
-              <View style={styles.userIcon}>
-                <Text style={styles.userText}>YOU</Text>
-              </View>
-            </View>
-          </LinearGradient>
-        </View>
+        <MapComponent />
 
         {/* Rocks Nearby Section */}
         <View style={styles.rocksSection}>
