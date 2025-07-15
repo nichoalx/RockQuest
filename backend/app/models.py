@@ -1,7 +1,7 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 from typing import Optional
 from datetime import datetime
-
+#Model for data
 class Rock(BaseModel):
     name: str
     type: Optional[str] = None
@@ -12,3 +12,15 @@ class Rock(BaseModel):
     createdAt: Optional[datetime] = None
     uploadedBy: Optional[str] = None
     confidence: Optional[float] = None
+#user - xh
+class User(BaseModel):
+    username: str
+    password: str
+    emailAddress: EmailStr
+
+class Login(BaseModel):
+    username: str
+    password: str
+    emailAddress: EmailStr
+    
+
