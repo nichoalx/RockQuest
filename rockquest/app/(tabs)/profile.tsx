@@ -1,15 +1,6 @@
 "use client"
 import React, { useState, useEffect } from "react"
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  ScrollView,
-  StyleSheet,
-  StatusBar,
-  TextInput,
-  Modal,
-} from "react-native"
+import {View,Text,TouchableOpacity,ScrollView,StyleSheet,StatusBar,TextInput,Modal,} from "react-native"
 import { useFonts, PressStart2P_400Regular } from "@expo-google-fonts/press-start-2p"
 import * as SplashScreen from "expo-splash-screen"
 import { Ionicons, MaterialIcons } from "@expo/vector-icons"

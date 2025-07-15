@@ -29,7 +29,7 @@ export default function QuestScreen() {
     { id: 6, text: "", completed: false },
     { id: 7, text: "", completed: false },
     { id: 8, text: "Take picture of a rock", completed: true },
-    { id: 9, text: "Change rock picture", completed: true },
+    { id: 9, text: "Change profile picture", completed: true },
   ]
 
   return (
@@ -37,64 +37,59 @@ export default function QuestScreen() {
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>RockQuest</Text>
-          <TouchableOpacity
-            style={styles.profileIcon}
-            activeOpacity={0.8}
-            onPress={() => router.replace("/(tabs)/profile")}
-          >
-            <Ionicons name="person" size={20} color="white" />
-          </TouchableOpacity>
+          <View style={styles.headerContent}>
+            <Text style={styles.title}>Quest</Text>
+            <TouchableOpacity style={styles.profileIcon} onPress={() => router.replace("/(tabs)/profile")}>
+              <Ionicons name="person" size={20} color="white" />
+            </TouchableOpacity>
+          </View>
         </View>
 
-        {/* Subheading */}
-        <Text style={styles.subtitle}>Quest</Text>
-
         {/* Today's Quest */}
-        <View style={styles.questSection}>
-          <View style={styles.questHeader}>
+        <View style={styles.sectionCard}>
+          <View style={styles.sectionHeader}>
             <Ionicons name="calendar-outline" size={20} color="#8B7355" />
-            <Text style={styles.questTitle}>Today's Quest</Text>
+            <Text style={styles.sectionTitle}>Today's Quest</Text>
           </View>
-          <Text style={styles.questDescription}>Take pictures of 3 rocks</Text>
+          <Text style={styles.sectionText}>Take pictures of 3 rocks</Text>
         </View>
 
         {/* Tasks */}
-        <View style={styles.tasksSection}>
-          <Text style={styles.tasksTitle}>Tasks</Text>
-          <View style={styles.tasksList}>
-            {tasks.map((task) => (
-              <View key={task.id} style={styles.taskItem}>
-                <TouchableOpacity style={styles.checkbox}>
-                  {task.completed && <Ionicons name="checkmark" size={16} color="#BA9B77" />}
-                </TouchableOpacity>
-                <Text style={[styles.taskText, task.completed && styles.taskTextCompleted]}>{task.text}</Text>
+        <View style={styles.sectionCard}>
+          <Text style={styles.sectionTitle}>Tasks</Text>
+          {tasks.map((task) => (
+            <View key={task.id} style={styles.taskItem}>
+              <View style={styles.checkbox}>
+                {task.completed && <Ionicons name="checkmark" size={14} color="#BA9B77" />}
               </View>
-            ))}
-          </View>
+              <Text style={[styles.taskText, task.completed && styles.taskTextCompleted]}>
+                {task.text || "Untitled task"}
+              </Text>
+            </View>
+          ))}
         </View>
       </ScrollView>
 
       {/* Bottom Navigation */}
       <View style={styles.bottomNav}>
-        <TouchableOpacity style={styles.navItem} activeOpacity={0.7} onPress={() => router.replace("/(tabs)/dashboard")}>
+        <TouchableOpacity style={styles.navItem} onPress={() => router.replace("/(tabs)/dashboard")}>
           <Ionicons name="home" size={24} color="#BA9B77" />
           <Text style={styles.navText}>Home</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.navItem} activeOpacity={0.7} onPress={() => router.replace("/(tabs)/camera")}>
+        <TouchableOpacity style={styles.navItem} onPress={() => router.replace("/(tabs)/camera")}>
           <Ionicons name="camera" size={24} color="#BA9B77" />
           <Text style={styles.navText}>Scan</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.navItem} activeOpacity={0.7} onPress={() => router.replace("/(tabs)/collections")}>
+        <TouchableOpacity style={styles.navItem} onPress={() => router.replace("/(tabs)/collections")}>
           <MaterialIcons name="collections" size={24} color="#BA9B77" />
           <Text style={styles.navText}>Collections</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.navItem} activeOpacity={0.7} onPress={() => router.replace("/(tabs)/posts")}>
-          <Ionicons name="chatbubbles" size={24} color="#A77B4E" />
-          <Text style={[styles.navText, styles.navTextActive]}>Posts</Text>
+        <TouchableOpacity style={styles.navItem} onPress={() => router.replace("/(tabs)/posts")}>
+          <Ionicons name="chatbubbles" size={24} color="#BA9B77" />
+          <Text style={styles.navText}>Posts</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -111,76 +106,55 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   header: {
+    paddingTop: 50,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+  },
+  headerContent: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
-    paddingTop: 60,
-    marginBottom: 0,
+    alignItems: "flex-start",
   },
   title: {
     fontFamily: "PressStart2P_400Regular",
-    fontSize: 18,
-    color: "#2C2C2C",
-  },
-  subtitle: {
-    fontSize: 16,
-    color: "#8B7355",
-    marginTop: 12,
-    marginBottom: 16,
+    fontSize: 20,
+    color: "#1f2937",
+    marginTop: 20,
   },
   profileIcon: {
     width: 40,
     height: 40,
     borderRadius: 20,
+    marginTop: 10,
     backgroundColor: "#A77B4E",
-    borderWidth: 2,
-    borderColor: "white",
     justifyContent: "center",
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
   },
-  questSection: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 24,
+  sectionCard: {
+    backgroundColor: "white",
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 20,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
   },
-  questHeader: {
+  sectionHeader: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 8,
+    marginBottom: 10,
   },
-  questTitle: {
+  sectionTitle: {
     fontSize: 16,
-    fontWeight: "600",
-    color: "#2C2C2C",
+    fontWeight: "bold",
+    color: "#1f2937",
     marginLeft: 8,
   },
-  questDescription: {
+  sectionText: {
     fontSize: 14,
-    color: "#666666",
-    lineHeight: 20,
-  },
-  tasksSection: {
-    flex: 1,
-  },
-  tasksTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#2C2C2C",
-    marginBottom: 16,
-  },
-  tasksList: {
-    flex: 1,
+    color: "#6b7280",
   },
   taskItem: {
     flexDirection: "row",
@@ -211,19 +185,11 @@ const styles = StyleSheet.create({
   },
   bottomNav: {
     flexDirection: "row",
-    backgroundColor: "#FFFFFF",
-    paddingVertical: 12,
-    paddingHorizontal: 20,
+    backgroundColor: "white",
     borderTopWidth: 1,
-    borderTopColor: "#E5E5E5",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: -2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 5,
+    borderTopColor: "#e5e7eb",
+    paddingTop: 8,
+    paddingBottom: 20,
   },
   navItem: {
     flex: 1,
@@ -232,12 +198,8 @@ const styles = StyleSheet.create({
   },
   navText: {
     fontSize: 12,
-    color: "#BA9B77",
     marginTop: 4,
-    fontWeight: "500",
-  },
-  navTextActive: {
-    color: "#A77B4E",
-    fontWeight: "600",
+    color: "#6b7280",
   },
 })
+
