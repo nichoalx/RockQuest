@@ -7,7 +7,7 @@ from app.firebase import db
 
 player_router = APIRouter(prefix="/player", tags=["Player"])
 
-#ROCK COLLECTION 
+# ROCK COLLECTION 
 @player_router.get("/rocks", response_model=List[Rock])
 def get_player_rocks(type: Optional[str] = Query(None)):
     try:
@@ -40,7 +40,18 @@ def delete_rock(rock_id: str):
     db.collection("rocks").document(rock_id).delete()
     return {"message": "Rock deleted", "id": rock_id}
 
-#POSTS
+# POSTS
+@player_router.get("/my-posts")
+def get_my_posts():
+    docs = db.collection("posts").where("uploadedBy", "==", "rock_hunter_01").stream()
+    posts = [{**doc.to_dict(), "id": doc.id} for doc in docs]
+    return posts
+
+@player_router.get("/all-posts")
+def get_all_posts():
+    docs = db.collection("posts").stream()
+    return [{"id": doc.id, **doc.to_dict()} for doc in docs]
+
 @player_router.post("/add-post")
 def add_post(data: dict):
     data["createdAt"] = datetime.utcnow()
@@ -64,20 +75,13 @@ def delete_post(post_id: str):
     ref.delete()
     return {"message": "Post deleted"}
 
-@player_router.get("/my-posts")
-def get_my_posts():
-    # Replace with Firebase Auth UID
-    docs = db.collection("posts").where("uploadedBy", "==", "rock_hunter_01").stream()
-    posts = [{**doc.to_dict(), "id": doc.id} for doc in docs]
-    return posts
-
 @player_router.post("/report-post")
 def report_post(post_id: str, reason: str):
     ref = db.collection("reports").document()
     ref.set({"postId": post_id, "reason": reason, "reportedAt": datetime.utcnow()})
     return {"message": "Post reported"}
 
-#QUESTS
+# QUESTS
 @player_router.get("/daily-quests")
 def get_daily_quests():
     return {
@@ -88,7 +92,7 @@ def get_daily_quests():
         "completed": False
     }
 
-#FACTS & ANNOUNCEMENTS
+# FACTS & ANNOUNCEMENTS
 @player_router.get("/facts")
 def get_facts():
     docs = db.collection("facts").stream()
@@ -99,7 +103,7 @@ def get_announcements():
     docs = db.collection("announcements").stream()
     return [{"id": doc.id, **doc.to_dict()} for doc in docs]
 
-#PROFILE
+# PROFILE
 @player_router.get("/profile")
 def get_profile():
     return {
@@ -111,12 +115,10 @@ def get_profile():
 
 @player_router.put("/update-profile")
 def update_profile(data: dict):
-    # Replace with actual user update logic
     return {"message": "Profile updated", "data": data}
 
 @player_router.delete("/delete-account")
 def delete_account():
-    # Add Firebase Auth delete + Firestore cleanup
     return {"message": "Account deleted"}
 
 @player_router.get("/achievements")

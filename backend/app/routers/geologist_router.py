@@ -5,10 +5,15 @@ from app.firebase import db
 
 geologist_router = APIRouter(prefix="/geologist", tags=["Geologist"])
 
-#POSTS & FACTS
-@geologist_router.get("/posts")
+# POSTS & FACTS
+@geologist_router.get("/my-posts")
 def get_geologist_posts():
     docs = db.collection("posts").where("role", "==", "geologist").stream()
+    return [{"id": doc.id, **doc.to_dict()} for doc in docs]
+
+@geologist_router.get("/all-posts")
+def get_all_posts():
+    docs = db.collection("posts").stream()
     return [{"id": doc.id, **doc.to_dict()} for doc in docs]
 
 @geologist_router.get("/facts")
@@ -63,7 +68,7 @@ def delete_fact(fact_id: str):
     ref.delete()
     return {"message": "Fact deleted"}
 
-#VERIFICATION
+# VERIFICATION 
 @geologist_router.get("/review-rocks")
 def review_pending_rocks():
     docs = db.collection("rocks").where("verified", "==", False).stream()
@@ -92,7 +97,7 @@ def add_expert_comment(data: dict):
     db.collection("comments").add(data)
     return {"message": "Comment added"}
 
-#PROFILE
+# PROFILE 
 @geologist_router.get("/profile")
 def get_profile():
     return {
