@@ -1,10 +1,23 @@
 "use client"
 import React, { useState, useEffect } from "react"
-import {View,Text,TouchableOpacity,ScrollView,StyleSheet,StatusBar,TextInput,Modal,} from "react-native"
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  StyleSheet,
+  StatusBar,
+  TextInput,
+  Modal,
+  Image,
+} from "react-native"
 import { useFonts, PressStart2P_400Regular } from "@expo-google-fonts/press-start-2p"
 import * as SplashScreen from "expo-splash-screen"
 import { Ionicons, MaterialIcons } from "@expo/vector-icons"
 import { useRouter } from "expo-router"
+
+import pfp1 from "../../assets/images/pfp1.png"
+import pfp2 from "../../assets/images/pfp2.png"
 
 SplashScreen.preventAutoHideAsync()
 
@@ -16,6 +29,8 @@ export default function ProfileScreen() {
   const [tempDescription, setTempDescription] = useState("")
   const [isModalVisible, setIsModalVisible] = useState(false)
   const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false)
+  const [isPfpModalVisible, setIsPfpModalVisible] = useState(false)
+  const [selectedPfp, setSelectedPfp] = useState(pfp1)
   const maxLength = 150
 
   const [fontsLoaded] = useFonts({
@@ -54,9 +69,9 @@ export default function ProfileScreen() {
         <View style={styles.profileCard}>
           {/* Profile */}
           <View style={styles.profileSection}>
-            <View style={styles.profilePicture}>
-              <View style={styles.profilePicturePlaceholder} />
-            </View>
+            <TouchableOpacity onPress={() => setIsPfpModalVisible(true)} style={styles.profilePicture}>
+              <Image source={selectedPfp} style={styles.profilePictureImage} />
+            </TouchableOpacity>
             <View style={styles.profileInfo}>
               <Text style={styles.username}>{username}</Text>
               <Text style={styles.playerLabel}>Player</Text>
@@ -187,7 +202,7 @@ export default function ProfileScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Modal for Editing Description */}
+      {/* Description Modal */}
       <Modal animationType="slide" transparent={true} visible={isModalVisible}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -211,6 +226,26 @@ export default function ProfileScreen() {
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
             </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Profile Picture Modal */}
+      <Modal animationType="slide" transparent={true} visible={isPfpModalVisible}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Choose Profile Picture</Text>
+            <View style={{ flexDirection: "row", justifyContent: "space-around", marginVertical: 10 }}>
+              <TouchableOpacity onPress={() => { setSelectedPfp(pfp1); setIsPfpModalVisible(false); }}>
+                <Image source={pfp1} style={styles.pfpOptionImage} />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => { setSelectedPfp(pfp2); setIsPfpModalVisible(false); }}>
+                <Image source={pfp2} style={styles.pfpOptionImage} />
+              </TouchableOpacity>
+            </View>
+            <TouchableOpacity style={styles.cancelButton} onPress={() => setIsPfpModalVisible(false)}>
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -512,5 +547,18 @@ const styles = StyleSheet.create({
   cancelButtonText: {
     color: "#1f2937",
     fontWeight: "600",
+  },
+  profilePictureImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "white",
+  },
+  pfpOptionImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 2,
+    borderColor: "#A77B4E",
   },
 })
