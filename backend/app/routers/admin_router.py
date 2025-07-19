@@ -87,3 +87,28 @@ def delete_announcement(announcement_id: str, user=Depends(verify_token)):
         raise HTTPException(status_code=404, detail="Announcement not found")
     ref.delete()
     return {"message": "Announcement deleted"}
+
+# POST MANAGEMENT
+@admin_router.post("/add-post")
+def add_post(data: dict, user=Depends(verify_token)):
+    data["createdAt"] = datetime.utcnow()
+    data["role"] = "admin"
+    data["uploadedBy"] = user["uid"]
+    db.collection("posts").add(data)
+    return {"message": "Post added"}
+
+@admin_router.put("/edit-post/{post_id}")
+def edit_post(post_id: str, data: dict, user=Depends(verify_token)):
+    ref = db.collection("posts").document(post_id)
+    if not ref.get().exists:
+        raise HTTPException(status_code=404, detail="Post not found")
+    ref.update(data)
+    return {"message": "Post updated"}
+
+@admin_router.delete("/delete-post/{post_id}")
+def delete_post(post_id: str, user=Depends(verify_token)):
+    ref = db.collection("posts").document(post_id)
+    if not ref.get().exists:
+        raise HTTPException(status_code=404, detail="Post not found")
+    ref.delete()
+    return {"message": "Post deleted"}
