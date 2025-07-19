@@ -1,43 +1,45 @@
 "use client"
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, StatusBar } from "react-native"
-import { useFonts, PressStart2P_400Regular } from "@expo-google-fonts/press-start-2p"
+import { PressStart2P_400Regular, useFonts } from "@expo-google-fonts/press-start-2p"
+import { Ionicons } from "@expo/vector-icons"
+import { useRouter } from "expo-router"
 import * as SplashScreen from "expo-splash-screen"
 import { useEffect, useState } from "react"
-import { Ionicons, MaterialIcons } from "@expo/vector-icons"
-import { useRouter } from "expo-router";
+import {
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  Modal,
+} from "react-native"
 
 SplashScreen.preventAutoHideAsync()
 
 export default function PostsScreen() {
-  const router = useRouter();
-  const [fontsLoaded] = useFonts({
-    PressStart2P_400Regular,
-  })
-
+  const router = useRouter()
+  const [fontsLoaded] = useFonts({ PressStart2P_400Regular })
   const [showMyPosts, setShowMyPosts] = useState(false)
-  const [postTypeFilter, setPostTypeFilter] = useState("all") // added state
+  const [postTypeFilter, setPostTypeFilter] = useState("all")
+  const [showCreateOptions, setShowCreateOptions] = useState(false)
+  const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false)
 
   useEffect(() => {
-    if (fontsLoaded) {
-      SplashScreen.hideAsync()
-    }
+    if (fontsLoaded) SplashScreen.hideAsync()
   }, [fontsLoaded])
 
-  if (!fontsLoaded) {
-    return null
-  }
+  if (!fontsLoaded) return null
 
   const posts = [
     { id: 1, name: "Granite Sample", user: "You", isOwn: true, type: "post" },
-    { id: 2, name: "Quartz Crystal", user: "Username", isOwn: false, type: "fact" },
+    { id: 2, name: "Quartz Fact", user: "Username", isOwn: false, type: "fact" },
     { id: 3, name: "Basalt Rock", user: "Username", isOwn: false, type: "post" },
-    { id: 4, name: "Limestone", user: "Username", isOwn: false, type: "fact" },
+    { id: 4, name: "Limestone Fact", user: "You", isOwn: true, type: "fact" },
     { id: 5, name: "Obsidian", user: "Username", isOwn: false, type: "post" },
   ]
 
-  // Filter posts by ownership and type
   const filteredPosts = posts.filter((post) => {
-    if (showMyPosts && !post.isOwn) return false
+    if (showMyPosts && post.user !== "You") return false
     if (postTypeFilter === "posts" && post.type !== "post") return false
     if (postTypeFilter === "facts" && post.type !== "fact") return false
     return true
@@ -50,15 +52,13 @@ export default function PostsScreen() {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerContent}>
-          <View>
-            <Text style={styles.title}>Posts</Text>
-          </View>
-          <TouchableOpacity style={styles.profileIcon} onPress={() => router.replace("/(tabs)/profile")}>
+          <Text style={styles.title}>Posts</Text>
+          <TouchableOpacity style={styles.profileIcon} onPress={() => router.replace("/(tabs)/GeoProfile")}>
             <Ionicons name="person" size={20} color="white" />
           </TouchableOpacity>
         </View>
 
-        {/* Filter and Add Button */}
+        {/* Filter and Add */}
         <View style={styles.actionContainer}>
           <TouchableOpacity
             style={[styles.filterButton, showMyPosts && styles.filterButtonActive]}
@@ -66,17 +66,12 @@ export default function PostsScreen() {
           >
             <Text style={[styles.filterText, showMyPosts && styles.filterTextActive]}>My Posts</Text>
           </TouchableOpacity>
-          <TouchableOpacity
-  style={styles.addButton}
-  onPress={() =>
-    router.push({ pathname: "/(tabs)/NewPost", params: { role: "player" } })
-  }
->
+          <TouchableOpacity style={styles.addButton} onPress={() => setShowCreateOptions(true)}>
             <Ionicons name="add" size={20} color="white" />
           </TouchableOpacity>
         </View>
 
-        {/* Post Type Filter Row */}
+        {/* Post Type Filter */}
         <View style={styles.filterRowAligned}>
           <TouchableOpacity
             style={[styles.filterButtonEqual, postTypeFilter === "all" && styles.filterButtonActive]}
@@ -102,7 +97,7 @@ export default function PostsScreen() {
         </View>
       </View>
 
-      {/* Posts List */}
+      {/* Posts */}
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.postsContainer}>
           {filteredPosts.map((post) => (
@@ -132,26 +127,79 @@ export default function PostsScreen() {
         </View>
       </ScrollView>
 
+      {/* Create Modal */}
+      {showCreateOptions && (
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <TouchableOpacity
+              style={styles.modalButton}
+              onPress={() => {
+                setShowCreateOptions(false)
+                router.push({ pathname: "/(tabs)/NewPost", params: { role: "geologist" } })
+              }}
+            >
+              <Text style={styles.modalButtonText}>New Post</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.modalButton}
+              onPress={() => {
+                setShowCreateOptions(false)
+                router.push("/(tabs)/GeoNewFact")
+              }}
+            >
+              <Text style={styles.modalButtonText}>New Fact</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setShowCreateOptions(false)}>
+              <Text style={styles.cancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
+      {/* Logout Modal (same style as GeoHomepage) */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={isLogoutModalVisible}
+        onRequestClose={() => setIsLogoutModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Are you sure you want to log out?</Text>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={() => setIsLogoutModalVisible(false)}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.saveButton}
+                onPress={() => {
+                  setIsLogoutModalVisible(false)
+                  router.replace("/(tabs)/auth")
+                }}
+              >
+                <Text style={styles.saveButtonText}>Log out</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       {/* Bottom Navigation */}
       <View style={styles.bottomNav}>
-        <TouchableOpacity style={styles.navItem} activeOpacity={0.7} onPress={() => router.replace("/(tabs)/dashboard")}>
+        <TouchableOpacity style={styles.navItem} onPress={() => router.replace("/(tabs)/GeoHomepage")}>
           <Ionicons name="home" size={24} color="#BA9B77" />
           <Text style={styles.navText}>Home</Text>
         </TouchableOpacity>
-
-        <TouchableOpacity style={styles.navItem} activeOpacity={0.7} onPress={() => router.replace("/(tabs)/camera")}>
-          <Ionicons name="camera" size={24} color="#BA9B77" />
-          <Text style={styles.navText}>Scan</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.navItem} activeOpacity={0.7} onPress={() => router.replace("/(tabs)/collections")}>
-          <MaterialIcons name="collections" size={24} color="#BA9B77" />
-          <Text style={styles.navText}>Collections</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.navItem} activeOpacity={0.7} onPress={() => router.replace("/(tabs)/posts")}>
-          <Ionicons name="chatbubbles" size={24} color="#A77B4E"  />
+        <TouchableOpacity style={styles.navItem} onPress={() => router.replace("/(tabs)/GeoPosts")}>
+          <Ionicons name="chatbubbles" size={24} color="#A77B4E" />
           <Text style={[styles.navText, styles.navTextActive]}>Posts</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.navItem} onPress={() => setIsLogoutModalVisible(true)}>
+          <Ionicons name="log-out" size={24} color="#BA9B77" />
+          <Text style={styles.navText}>Log Out</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -160,10 +208,7 @@ export default function PostsScreen() {
 
 // CSS Stylesheet
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "white",
-  },
+  container: { flex: 1, backgroundColor: "white" },
   header: {
     paddingTop: 50,
     paddingHorizontal: 20,
@@ -244,12 +289,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  content: {
-    flex: 1,
-  },
-  postsContainer: {
-    padding: 20,
-  },
+  content: { flex: 1 },
+  postsContainer: { padding: 20 },
   postItem: {
     flexDirection: "row",
     marginBottom: 20,
@@ -271,33 +312,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginRight: 12,
   },
-  postImageText: {
-    color: "#6b7280",
-    fontSize: 12,
-  },
-  postContent: {
-    flex: 1,
-  },
+  postImageText: { color: "#6b7280", fontSize: 12 },
+  postContent: { flex: 1 },
   postHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 4,
   },
-  postName: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#1f2937",
-  },
-  postUser: {
-    fontSize: 14,
-    color: "#6b7280",
-    marginBottom: 8,
-  },
-  postActions: {
-    flexDirection: "row",
-    gap: 8,
-  },
+  postName: { fontSize: 16, fontWeight: "600", color: "#1f2937" },
+  postUser: { fontSize: 14, color: "#6b7280", marginBottom: 8 },
+  postActions: { flexDirection: "row", gap: 8 },
   actionButton: {
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -305,10 +330,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#d1d5db",
   },
-  actionButtonText: {
-    fontSize: 12,
-    color: "#6b7280",
-  },
+  actionButtonText: { fontSize: 12, color: "#6b7280" },
   bottomNav: {
     flexDirection: "row",
     backgroundColor: "white",
@@ -322,12 +344,72 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 8,
   },
-  navText: {
-    fontSize: 12,
-    marginTop: 4,
-    color: "#6b7280",
+  navText: { fontSize: 12, marginTop: 4, color: "#6b7280" },
+  navTextActive: { color: "#A77B4E" },
+
+  // Modal styles (from GeoHomepage)
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
   },
-  navTextActive: {
-    color: "#A77B4E",
+  modalContent: {
+    width: "90%",
+    backgroundColor: "white",
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#1f2937",
+    marginBottom: 12,
+  },
+  modalButtons: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    marginTop: 16,
+  },
+  saveButton: {
+    backgroundColor: "#A77B4E",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    marginLeft: 10,
+  },
+  saveButtonText: { color: "white", fontWeight: "600" },
+  cancelButton: {
+    backgroundColor: "#e5e7eb",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  cancelButtonText: { color: "#1f2937", fontWeight: "600" },
+  modalButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    backgroundColor: "#f3f4f6",
+    borderRadius: 8,
+    marginBottom: 12,
+    width: "100%",
+  },
+  modalButtonText: {
+    textAlign: "center",
+    color: "#1f2937",
+    fontSize: 16,
+  },
+  cancelText: {
+    marginTop: 8,
+    color: "#6b7280",
+    fontSize: 14,
+    textDecorationLine: "underline",
   },
 })
+
+

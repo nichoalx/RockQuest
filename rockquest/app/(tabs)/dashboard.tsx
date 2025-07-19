@@ -1,5 +1,16 @@
 "use client"
-import { View, Text, TouchableOpacity, ScrollView, StatusBar, StyleSheet, Dimensions } from "react-native"
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Dimensions,
+  Pressable,
+  GestureResponderEvent,
+  TextInput,
+} from "react-native"
 import { LinearGradient } from "expo-linear-gradient"
 import { useFonts, PressStart2P_400Regular } from "@expo-google-fonts/press-start-2p"
 import * as SplashScreen from "expo-splash-screen"
@@ -19,6 +30,13 @@ export default function Dashboard() {
   })
 
   const [showGreeting, setShowGreeting] = useState(true)
+  const [customMarkers, setCustomMarkers] = useState<
+    { id: number; x: number; y: number; detail: string; description: string }[]
+  >([])
+
+  const [selectedMarker, setSelectedMarker] = useState<
+    { id: number; x: number; y: number; detail: string; description: string } | null
+  >(null)
 
   useEffect(() => {
     if (fontsLoaded) {
@@ -26,9 +44,7 @@ export default function Dashboard() {
     }
   }, [fontsLoaded])
 
-  if (!fontsLoaded) {
-    return null
-  }
+  if (!fontsLoaded) return null
 
   const rockData = [
     { id: 1, name: "Granite" },
@@ -44,15 +60,14 @@ export default function Dashboard() {
       <View style={{ flex: 1, position: "relative" }}>
         {/* Header with Profile Icon */}
         <View style={styles.profileIconContainer}>
-          <TouchableOpacity style={styles.profileIcon} activeOpacity={0.8} onPress={() => router.replace("/(tabs)/profile")}>
+          <TouchableOpacity style={styles.profileIcon} onPress={() => router.replace("/(tabs)/profile")}>
             <Ionicons name="person" size={20} color="white" />
           </TouchableOpacity>
         </View>
 
-        {/* Greeting Banner - Dismissible */}
         {showGreeting && (
           <View style={styles.greetingPanelContainer}>
-            <TouchableOpacity style={styles.greetingPanel} activeOpacity={0.8} onPress={() => setShowGreeting(false)}>
+            <TouchableOpacity style={styles.greetingPanel} onPress={() => setShowGreeting(false)}>
               <View style={styles.greetingContent}>
                 <View style={styles.greetingLeft}>
                   <View style={styles.greetingIcon}>
@@ -69,9 +84,8 @@ export default function Dashboard() {
           </View>
         )}
 
-        {/* Quest Panel - Floating */}
         <View style={[styles.questPanelContainer, { top: showGreeting ? 160 : 80 }]}>
-          <TouchableOpacity style={styles.questPanel} activeOpacity={0.8}>
+          <TouchableOpacity style={styles.questPanel} onPress={() => router.push("/quest")}>
             <View style={styles.questContent}>
               <View style={styles.questLeft}>
                 <View style={styles.questIcon}>
@@ -90,12 +104,14 @@ export default function Dashboard() {
         {/* Map Area */}
         <MapComponent />
 
-        {/* Rocks Nearby Section */}
         <View style={styles.rocksSection}>
           <View style={styles.rocksSectionContent}>
             <View style={styles.rocksSectionHeader}>
               <Text style={styles.rocksSectionTitle}>Rocks Located...</Text>
-              <TouchableOpacity style={styles.addButton}>
+              <TouchableOpacity
+                style={styles.addButton}
+                onPress={() => alert("Tap anywhere on the map to add a marker!")}
+              >
                 <Ionicons name="add" size={16} color="white" />
               </TouchableOpacity>
             </View>
@@ -103,7 +119,7 @@ export default function Dashboard() {
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.rocksScroll}>
               <View style={styles.rocksContainer}>
                 {rockData.map((rock) => (
-                  <TouchableOpacity key={rock.id} style={styles.rockCard} activeOpacity={0.8}>
+                  <TouchableOpacity key={rock.id} style={styles.rockCard}>
                     <View style={styles.rockCardImage}>
                       <Text style={styles.rockCardText}>Rock</Text>
                     </View>
@@ -115,41 +131,87 @@ export default function Dashboard() {
           </View>
         </View>
 
-        {/* Bottom Navigation */}
         <View style={styles.bottomNav}>
-        <TouchableOpacity style={styles.navItem} activeOpacity={0.7} onPress={() => router.replace("/(tabs)/dashboard")}>
-          <Ionicons name="home" size={24} color="#A77B4E" />
-          <Text style={[styles.navText, styles.navTextActive]}>Home</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.navItem} activeOpacity={0.7} onPress={() => router.replace("/(tabs)/camera")}>
-          <Ionicons name="camera" size={24} color="#BA9B77" />
-          <Text style={styles.navText}>Scan</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.navItem} activeOpacity={0.7} onPress={() => router.replace("/(tabs)/collections")}>
-          <MaterialIcons name="collections" size={24} color="#BA9B77" />
-          <Text style={styles.navText}>Collections</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.navItem} activeOpacity={0.7} onPress={() => router.replace("/(tabs)/posts")}>
-          <Ionicons name="chatbubbles" size={24} color="#BA9B77" />
-          <Text style={styles.navText}>Posts</Text>
-        </TouchableOpacity>
+          <TouchableOpacity style={styles.navItem} onPress={() => router.replace("/(tabs)/dashboard")}>
+            <Ionicons name="home" size={24} color="#A77B4E" />
+            <Text style={[styles.navText, styles.navTextActive]}>Home</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.navItem} onPress={() => router.replace("/(tabs)/camera")}>
+            <Ionicons name="camera" size={24} color="#BA9B77" />
+            <Text style={styles.navText}>Scan</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.navItem} onPress={() => router.replace("/(tabs)/collections")}>
+            <MaterialIcons name="collections" size={24} color="#BA9B77" />
+            <Text style={styles.navText}>Collections</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.navItem} onPress={() => router.replace("/(tabs)/posts")}>
+            <Ionicons name="chatbubbles" size={24} color="#BA9B77" />
+            <Text style={styles.navText}>Posts</Text>
+          </TouchableOpacity>
         </View>
+
+        {selectedMarker && (
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              {/* Editable Rock Detail Title */}
+              <TextInput
+                style={styles.modalTitleInput}
+                placeholder="Custom Marker"
+                placeholderTextColor="#aaa"
+                value={selectedMarker.detail}
+                onChangeText={(text) => {
+                  setSelectedMarker({ ...selectedMarker, detail: text })
+                  setCustomMarkers((prev) =>
+                    prev.map((m) => (m.id === selectedMarker.id ? { ...m, detail: text } : m))
+                  )
+                }}
+                autoFocus
+              />
+
+              {/* Editable Description Field */}
+              <TextInput
+                style={styles.modalTextField}
+                placeholder="Enter details"
+                placeholderTextColor="#aaa"
+                value={selectedMarker.description}
+                onChangeText={(text) => {
+                  setSelectedMarker({ ...selectedMarker, description: text })
+                  setCustomMarkers((prev) =>
+                    prev.map((m) => (m.id === selectedMarker.id ? { ...m, description: text } : m))
+                  )
+                }}
+                multiline
+              />
+
+              <Text style={styles.modalSubtitle}>
+                Coordinates: X: {Math.round(selectedMarker.x)}, Y: {Math.round(selectedMarker.y)}
+              </Text>
+
+              <TouchableOpacity
+                style={styles.modalDeleteButton}
+                onPress={() => {
+                  setCustomMarkers(customMarkers.filter((m) => m.id !== selectedMarker.id))
+                  setSelectedMarker(null)
+                }}
+              >
+                <Text style={styles.modalDeleteText}>🗑 Remove Marker</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity onPress={() => setSelectedMarker(null)}>
+                <Text style={styles.modalCloseText}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
       </View>
     </View>
   )
 }
 
-// CSS IS ADJUSTED TO MY PHONE SO IT MIGHT NOT LOOK EXACTLY THE SAME ON YOURS
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f3f4f6",
-  },
-  mainContent: {
-    flex: 1,
   },
   profileIconContainer: {
     position: "absolute",
@@ -227,7 +289,6 @@ const styles = StyleSheet.create({
     left: 16,
     right: 72,
     zIndex: 15,
-    
   },
   questPanel: {
     backgroundColor: "rgba(255, 255, 255, 0.95)",
@@ -270,77 +331,6 @@ const styles = StyleSheet.create({
   questDescription: {
     fontSize: 12,
     color: "#6b7280",
-  },
-  mapContainer: {
-    flex: 1,
-    marginTop: 0,
-  },
-  mapGradient: {
-    flex: 1,
-    position: "relative",
-  },
-  mapGrid: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
-  gridRow: {
-    flex: 1,
-    flexDirection: "row",
-  },
-  gridColumn: {
-    flex: 1,
-    borderRightWidth: 1,
-    borderRightColor: "#d1d5db",
-  },
-  gridCell: {
-    flex: 1,
-    borderBottomWidth: 1,
-    borderBottomColor: "#d1d5db",
-  },
-  rockMarker: {
-    position: "absolute",
-    alignItems: "center",
-  },
-  rockIcon: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: "#A77B4E",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  rockText: {
-    color: "white",
-    fontSize: 12,
-    fontWeight: "bold",
-  },
-  rockLabel: {
-    fontSize: 12,
-    textAlign: "center",
-    marginTop: 4,
-  },
-  userLocation: {
-    position: "absolute",
-    bottom: 160,
-    left: width / 2 - 16,
-  },
-  userIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: "#BA9B77",
-    borderWidth: 2,
-    borderColor: "white",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  userText: {
-    color: "white",
-    fontSize: 10,
-    fontWeight: "bold",
   },
   rocksSection: {
     backgroundColor: "white",
@@ -419,5 +409,66 @@ const styles = StyleSheet.create({
   },
   navTextActive: {
     color: "#A77B4E",
+  },
+
+  // Modal Styles
+  modalOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 100,
+  },
+  modalContent: {
+    width: "80%",
+    backgroundColor: "white",
+    borderRadius: 12,
+    padding: 20,
+    alignItems: "center",
+  },
+  modalTitleInput: {
+    fontSize: 16,
+    fontWeight: "bold",
+    marginBottom: 8,
+    width: "100%",
+    borderBottomWidth: 1,
+    borderColor: "#ccc",
+    padding: 4,
+    textAlign: "center",
+  },
+  modalTextField: {
+    fontSize: 14,
+    marginBottom: 12,
+    width: "100%",
+    borderWidth: 1,
+    borderColor: "#ddd",
+    padding: 8,
+    borderRadius: 6,
+    backgroundColor: "#f9f9f9",
+  },
+  modalSubtitle: {
+    fontSize: 12,
+    color: "#666",
+    marginBottom: 16,
+  },
+  modalDeleteButton: {
+    backgroundColor: "#e53e3e",
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 6,
+    marginBottom: 12,
+  },
+  modalDeleteText: {
+    color: "white",
+    fontWeight: "bold",
+  },
+  modalCloseText: {
+    color: "#A77B4E",
+    fontWeight: "bold",
+    fontSize: 14,
   },
 })
