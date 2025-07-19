@@ -17,6 +17,7 @@ import * as SplashScreen from "expo-splash-screen"
 import { useEffect, useState } from "react"
 import { Ionicons, MaterialIcons } from "@expo/vector-icons"
 import { useRouter } from "expo-router"
+import MapComponent from "../../components/MapComponent"
 
 SplashScreen.preventAutoHideAsync()
 
@@ -29,9 +30,6 @@ export default function Dashboard() {
   })
 
   const [showGreeting, setShowGreeting] = useState(true)
-  const [mapLayout, setMapLayout] = useState({ x: 0, y: 0, width: 0, height: 0 })
-
-  // Each marker now has detail and description separately
   const [customMarkers, setCustomMarkers] = useState<
     { id: number; x: number; y: number; detail: string; description: string }[]
   >([])
@@ -55,10 +53,12 @@ export default function Dashboard() {
   ]
 
   return (
-    <View style={styles.container}>
+    <View style={{ flex: 1 }}>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
 
-      <View style={styles.mainContent}>
+      {/* Main Content */}
+      <View style={{ flex: 1, position: "relative" }}>
+        {/* Header with Profile Icon */}
         <View style={styles.profileIconContainer}>
           <TouchableOpacity style={styles.profileIcon} onPress={() => router.replace("/(tabs)/profile")}>
             <Ionicons name="person" size={20} color="white" />
@@ -101,90 +101,8 @@ export default function Dashboard() {
           </TouchableOpacity>
         </View>
 
-        <View style={styles.mapContainer}>
-          <Pressable
-            style={{ flex: 1 }}
-            onLayout={(e) => {
-              const { x, y, width, height } = e.nativeEvent.layout
-              setMapLayout({ x, y, width, height })
-            }}
-            onPress={(e: GestureResponderEvent) => {
-              const { pageX, pageY } = e.nativeEvent
-              const relativeX = pageX - mapLayout.x
-              const relativeY = pageY - mapLayout.y
-
-              const newMarker = {
-                id: Date.now(),
-                x: relativeX,
-                y: relativeY,
-                detail: "",
-                description: "",
-              }
-              setCustomMarkers((prev) => [...prev, newMarker])
-            }}
-          >
-            <LinearGradient colors={["#C0BAA9", "#CCCABC"]} style={styles.mapGradient}>
-              <View style={styles.mapGrid}>
-                <View style={styles.gridRow}>
-                  {[...Array(4)].map((_, i) => (
-                    <View key={i} style={styles.gridColumn}>
-                      {[...Array(6)].map((_, j) => (
-                        <View key={j} style={styles.gridCell} />
-                      ))}
-                    </View>
-                  ))}
-                </View>
-              </View>
-
-              <View style={[styles.rockMarker, { top: 60, left: 30 }]}>
-                <View style={styles.rockIcon}>
-                  <Text style={styles.rockText}>R</Text>
-                </View>
-                <Text style={styles.rockLabel}>rock</Text>
-              </View>
-
-              <View style={[styles.rockMarker, { top: 120, right: 50 }]}>
-                <View style={styles.rockIcon}>
-                  <Text style={styles.rockText}>R</Text>
-                </View>
-                <Text style={styles.rockLabel}>rock</Text>
-              </View>
-
-              <View style={[styles.rockMarker, { bottom: 120, left: 60 }]}>
-                <View style={styles.rockIcon}>
-                  <Text style={styles.rockText}>R</Text>
-                </View>
-                <Text style={styles.rockLabel}>rock</Text>
-              </View>
-
-              <View style={[styles.rockMarker, { bottom: 80, right: 30 }]}>
-                <View style={styles.rockIcon}>
-                  <Text style={styles.rockText}>R</Text>
-                </View>
-                <Text style={styles.rockLabel}>rock</Text>
-              </View>
-
-              {customMarkers.map((marker) => (
-                <TouchableOpacity
-                  key={marker.id}
-                  style={[styles.rockMarker, { top: marker.y, left: marker.x, position: "absolute" }]}
-                  onPress={() => setSelectedMarker(marker)}
-                >
-                  <View style={styles.rockIcon}>
-                    <Text style={styles.rockText}>★</Text>
-                  </View>
-                  <Text style={styles.rockLabel}>Custom</Text>
-                </TouchableOpacity>
-              ))}
-
-              <View style={styles.userLocation}>
-                <View style={styles.userIcon}>
-                  <Text style={styles.userText}>YOU</Text>
-                </View>
-              </View>
-            </LinearGradient>
-          </Pressable>
-        </View>
+        {/* Map Area */}
+        <MapComponent />
 
         <View style={styles.rocksSection}>
           <View style={styles.rocksSectionContent}>
@@ -294,9 +212,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f3f4f6",
-  },
-  mainContent: {
-    flex: 1,
   },
   profileIconContainer: {
     position: "absolute",
@@ -416,77 +331,6 @@ const styles = StyleSheet.create({
   questDescription: {
     fontSize: 12,
     color: "#6b7280",
-  },
-  mapContainer: {
-    flex: 1,
-    marginTop: 0,
-  },
-  mapGradient: {
-    flex: 1,
-    position: "relative",
-  },
-  mapGrid: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
-  gridRow: {
-    flex: 1,
-    flexDirection: "row",
-  },
-  gridColumn: {
-    flex: 1,
-    borderRightWidth: 1,
-    borderRightColor: "#d1d5db",
-  },
-  gridCell: {
-    flex: 1,
-    borderBottomWidth: 1,
-    borderBottomColor: "#d1d5db",
-  },
-  rockMarker: {
-    position: "absolute",
-    alignItems: "center",
-  },
-  rockIcon: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: "#A77B4E",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  rockText: {
-    color: "white",
-    fontSize: 12,
-    fontWeight: "bold",
-  },
-  rockLabel: {
-    fontSize: 12,
-    textAlign: "center",
-    marginTop: 4,
-  },
-  userLocation: {
-    position: "absolute",
-    bottom: 160,
-    left: width / 2 - 16,
-  },
-  userIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: "#BA9B77",
-    borderWidth: 2,
-    borderColor: "white",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  userText: {
-    color: "white",
-    fontSize: 10,
-    fontWeight: "bold",
   },
   rocksSection: {
     backgroundColor: "white",
@@ -628,4 +472,3 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
 })
-

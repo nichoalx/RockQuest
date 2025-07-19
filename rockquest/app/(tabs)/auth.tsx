@@ -1,10 +1,11 @@
-"use client"
-import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, Dimensions } from "react-native"
+import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, Dimensions, ActivityIndicator, KeyboardAvoidingView } from "react-native"
 import { LinearGradient } from "expo-linear-gradient"
 import { useFonts, PressStart2P_400Regular } from "@expo-google-fonts/press-start-2p"
 import * as SplashScreen from "expo-splash-screen"
 import { useEffect, useState } from "react"
 import { useRouter, useLocalSearchParams } from "expo-router"
+import { FIREBASE_AUTH } from "../../utils/firebase"
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth"
 
 SplashScreen.preventAutoHideAsync()
 
@@ -17,7 +18,9 @@ export default function AuthScreen() {
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [role, setRole] = useState("user")
+  const [loading, setLoading] = useState(false)
 
+  const auth = FIREBASE_AUTH
   const router = useRouter()
   const { mode } = useLocalSearchParams()
 
@@ -43,15 +46,28 @@ export default function AuthScreen() {
       return
     }
 
-    Alert.alert("Success", isLogin ? "Logged in!" : "Account created!")
+    setLoading(true)
+    const authMethod = isLogin
+      ? signInWithEmailAndPassword(auth, email, password)
+      : createUserWithEmailAndPassword(auth, email, password)
 
-    if (role === "geologist") {
-      router.replace("/GeoHomepage")
-    } else if (role === "admin") {
-      router.replace("/AdminDashboard")
-    } else {
-      router.replace("/(tabs)/dashboard")
-    }
+    authMethod
+      .then(() => {
+        setLoading(false)
+        Alert.alert("Success", isLogin ? "Logged in!" : "Account created!")
+
+        if (role === "geologist") {
+          router.replace("/GeoHomepage")
+        } else if (role === "admin") {
+          router.replace("/AdminDashboard")
+        } else {
+          router.replace("/(tabs)/dashboard")
+        }
+      })
+      .catch((error) => {
+        setLoading(false)
+        Alert.alert("Authentication Error", error.message)
+      })
   }
 
   const toggleAuthMode = () => {
@@ -68,91 +84,100 @@ export default function AuthScreen() {
   if (!fontsLoaded) return null
 
   return (
-    <View style={styles.container}>
-      <LinearGradient
-        colors={["#A77B4E", "#BA9B77", "#C0BAA9"]}
-        style={styles.gradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-      >
-        <View style={styles.content}>
-          <Text style={styles.title}>{isLogin ? "Login" : "Sign Up"}</Text>
+    <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
+      <View style={styles.container}>
+        <LinearGradient
+          colors={["#A77B4E", "#BA9B77", "#C0BAA9"]}
+          style={styles.gradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+        >
+          <View style={styles.content}>
+            <Text style={styles.title}>{isLogin ? "Login" : "Sign Up"}</Text>
 
-          <View style={styles.formContainer}>
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Login As</Text>
-              <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-                {["user", "geologist", "admin"].map((r) => (
-                  <TouchableOpacity
-                    key={r}
-                    style={[styles.roleButton, role === r && styles.roleButtonSelected]}
-                    onPress={() => setRole(r)}
-                  >
-                    <Text style={role === r ? styles.roleButtonTextSelected : styles.roleButtonText}>
-                      {r.charAt(0).toUpperCase() + r.slice(1)}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
+            <View style={styles.formContainer}>
+              {!isLogin && (
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Login As</Text>
+                  <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                    {["user", "geologist", "admin"].map((r) => (
+                      <TouchableOpacity
+                        key={r}
+                        style={[styles.roleButton, role === r && styles.roleButtonSelected]}
+                        onPress={() => setRole(r)}
+                      >
+                        <Text style={role === r ? styles.roleButtonTextSelected : styles.roleButtonText}>
+                          {r.charAt(0).toUpperCase() + r.slice(1)}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+              )}
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Email</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter your email"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Password</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter your password"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-            </View>
-
-            {!isLogin && (
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Confirm Password</Text>
+                <Text style={styles.label}>Email</Text>
                 <TextInput
                   style={styles.input}
-                  placeholder="Confirm your password"
-                  value={confirmPassword}
-                  onChangeText={setConfirmPassword}
+                  placeholder="Enter your email"
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Password</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter your password"
+                  value={password}
+                  onChangeText={setPassword}
                   secureTextEntry
                   autoCapitalize="none"
                   autoCorrect={false}
                 />
               </View>
-            )}
 
-            <TouchableOpacity style={styles.authButton} onPress={handleAuth} activeOpacity={0.8}>
-              <Text style={styles.authButtonText}>{isLogin ? "Login" : "Create Account"}</Text>
-            </TouchableOpacity>
+              {!isLogin && (
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Confirm Password</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Confirm your password"
+                    value={confirmPassword}
+                    onChangeText={setConfirmPassword}
+                    secureTextEntry
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                  />
+                </View>
+              )}
 
-            <TouchableOpacity onPress={toggleAuthMode} activeOpacity={0.7}>
-              <Text style={styles.toggleText}>
-                {isLogin ? "Don't have an account? Sign up" : "Already have an account? Login"}
-              </Text>
-            </TouchableOpacity>
+              <TouchableOpacity style={styles.authButton} onPress={handleAuth} activeOpacity={0.8}>
+                {loading ? (
+                  <ActivityIndicator size="small" color="white" />
+                ) : (
+                  <Text style={styles.authButtonText}>{isLogin ? "Login" : "Create Account"}</Text>
+                )}
+              </TouchableOpacity>
+
+              <TouchableOpacity onPress={toggleAuthMode} activeOpacity={0.7}>
+                <Text style={styles.toggleText}>
+                  {isLogin ? "Don't have an account? Sign up" : "Already have an account? Login"}
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
-      </LinearGradient>
-    </View>
+        </LinearGradient>
+      </View>
+    </KeyboardAvoidingView>
   )
 }
 
+// CSS StyleSheet
 const styles = StyleSheet.create({
   container: { flex: 1 },
   gradient: { flex: 1 },

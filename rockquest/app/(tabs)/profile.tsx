@@ -10,11 +10,13 @@ import {
   TextInput,
   Modal,
   Image,
+  Alert,
 } from "react-native"
 import { useFonts, PressStart2P_400Regular } from "@expo-google-fonts/press-start-2p"
 import * as SplashScreen from "expo-splash-screen"
 import { Ionicons, MaterialIcons } from "@expo/vector-icons"
 import { useRouter } from "expo-router"
+import { FIREBASE_AUTH } from "../../utils/firebase" // Adjust path if needed
 
 import pfp1 from "../../assets/images/pfp1.png"
 import pfp2 from "../../assets/images/pfp2.png"
@@ -155,7 +157,18 @@ export default function ProfileScreen() {
           <TouchableOpacity
             style={styles.actionButton}
             activeOpacity={0.8}
-            onPress={() => setIsLogoutModalVisible(true)}
+            onPress={async () => {
+              try {
+                await FIREBASE_AUTH.signOut()
+                router.replace("/(tabs)/auth")
+              } catch (error) {
+                const errorMessage =
+                  error instanceof Error && error.message
+                    ? error.message
+                    : "Failed to log out."
+                Alert.alert("Logout Error", errorMessage)
+              }
+            }}
           >
             <Ionicons name="log-out" size={20} color="#1f2937" />
             <Text style={styles.actionButtonText}>Log out</Text>
@@ -222,7 +235,10 @@ export default function ProfileScreen() {
               <TouchableOpacity style={styles.saveButton} onPress={saveDescription}>
                 <Text style={styles.saveButtonText}>Save</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.cancelButton} onPress={() => setIsModalVisible(false)}>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={() => setIsModalVisible(false)}
+              >
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
             </View>
@@ -235,11 +251,23 @@ export default function ProfileScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Choose Profile Picture</Text>
-            <View style={{ flexDirection: "row", justifyContent: "space-around", marginVertical: 10 }}>
-              <TouchableOpacity onPress={() => { setSelectedPfp(pfp1); setIsPfpModalVisible(false); }}>
+            <View
+              style={{ flexDirection: "row", justifyContent: "space-around", marginVertical: 10 }}
+            >
+              <TouchableOpacity
+                onPress={() => {
+                  setSelectedPfp(pfp1)
+                  setIsPfpModalVisible(false)
+                }}
+              >
                 <Image source={pfp1} style={styles.pfpOptionImage} />
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => { setSelectedPfp(pfp2); setIsPfpModalVisible(false); }}>
+              <TouchableOpacity
+                onPress={() => {
+                  setSelectedPfp(pfp2)
+                  setIsPfpModalVisible(false)
+                }}
+              >
                 <Image source={pfp2} style={styles.pfpOptionImage} />
               </TouchableOpacity>
             </View>
@@ -249,42 +277,10 @@ export default function ProfileScreen() {
           </View>
         </View>
       </Modal>
-
-      {/* Logout Confirmation Modal */}
-      <Modal
-        animationType="fade"
-        transparent={true}
-        visible={isLogoutModalVisible}
-        onRequestClose={() => setIsLogoutModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Are you sure you want to log out?</Text>
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={styles.cancelButton}
-                onPress={() => setIsLogoutModalVisible(false)}
-              >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.saveButton}
-                onPress={() => {
-                  setIsLogoutModalVisible(false)
-                  router.replace("/(tabs)/auth")
-                }}
-              >
-                <Text style={styles.saveButtonText}>Log out</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </View>
   )
 }
 
-// CSS Stylesheet
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -333,7 +329,7 @@ const styles = StyleSheet.create({
   profilePicture: {
     marginRight: 16,
   },
-  profilePicturePlaceholder: {
+  profilePictureImage: {
     width: 80,
     height: 80,
     borderRadius: 40,
@@ -480,6 +476,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
     color: "#6b7280",
   },
+
   // Modal styles
   modalOverlay: {
     flex: 1,
@@ -547,12 +544,6 @@ const styles = StyleSheet.create({
   cancelButtonText: {
     color: "#1f2937",
     fontWeight: "600",
-  },
-  profilePictureImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: "white",
   },
   pfpOptionImage: {
     width: 80,
