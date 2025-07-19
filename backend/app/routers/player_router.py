@@ -1,4 +1,4 @@
-from fastapi import Depends, APIRouter, HTTPException, Query
+from fastapi import Depends, APIRouter, HTTPException, Query, UploadFile, File
 from typing import List, Optional
 from datetime import datetime
 
@@ -29,9 +29,8 @@ def get_player_rocks(type: Optional[str] = Query(None), user=Depends(verify_toke
 def add_rock(rock: Rock, user=Depends(verify_token)):
     rock_data = rock.dict(exclude_unset=True)
     rock_data["createdAt"] = datetime.utcnow()
-    doc_ref = db.collection("rocks").document()
-    doc_ref.set(rock_data)
-    return {"message": "Rock added", "id": doc_ref.id}
+    db.collection("rocks").add(rock_data)
+    return {"message": "Rock added"}
 
 @player_router.delete("/delete-rock/{rock_id}")
 def delete_rock(rock_id: str, user=Depends(verify_token)):
@@ -39,7 +38,7 @@ def delete_rock(rock_id: str, user=Depends(verify_token)):
     if not doc.exists:
         raise HTTPException(status_code=404, detail="Rock not found")
     db.collection("rocks").document(rock_id).delete()
-    return {"message": "Rock deleted", "id": rock_id}
+    return {"message": "Rock deleted"}
 
 # QUESTS
 @player_router.get("/daily-quests")
@@ -52,6 +51,32 @@ def get_daily_quests(user=Depends(verify_token)):
         "completed": False
     }
 
+@player_router.post("/complete-quest/{quest_id}")
+def complete_quest(quest_id: str, lat: float = Query(...), lng: float = Query(...), user=Depends(verify_token)):
+    # Dummy logic, should use geofence comparison in production
+    db.collection("quest_completions").add({
+        "questId": quest_id,
+        "completedBy": user["uid"],
+        "lat": lat,
+        "lng": lng,
+        "completedAt": datetime.utcnow()
+    })
+    return {"message": f"Quest {quest_id} completed"}
+
+# GPS NEARBY ROCKS
+@player_router.get("/gps-rocks")
+def get_nearby_rocks(lat: float, lng: float, radius: float = 0.01, user=Depends(verify_token)):
+    # Simulate basic filtering (no Firestore geoqueries)
+    docs = db.collection("rocks").stream()
+    nearby = []
+    for doc in docs:
+        rock = doc.to_dict()
+        if "lat" in rock and "lng" in rock:
+            if abs(rock["lat"] - lat) <= radius and abs(rock["lng"] - lng) <= radius:
+                rock["id"] = doc.id
+                nearby.append(rock)
+    return nearby
+
 # ACHIEVEMENTS
 @player_router.get("/achievements")
 def get_achievements(user=Depends(verify_token)):
@@ -61,4 +86,14 @@ def get_achievements(user=Depends(verify_token)):
             {"title": "Explorer Level 1", "earned": True},
             {"title": "Geology Guru", "earned": False}
         ]
+    }
+
+# ROCK SCANNING (Still Mock)
+@player_router.post("/scan-rock")
+def scan_rock(file: UploadFile = File(...), user=Depends(verify_token)):
+    # Simulate prediction
+    return {
+        "predictedType": "Granite",
+        "confidenceScore": 0.87,
+        "details": "Grainy igneous rock with quartz and feldspar."
     }
