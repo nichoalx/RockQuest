@@ -8,7 +8,7 @@ export default function TabLayout() {
         options={{
           title: "Home",
           headerShown: false,
-          tabBarStyle: { display: "none" }, // Hide tab bar on home screen
+          tabBarStyle: { display: "none" }, 
         }}
       />
       <Tabs.Screen
