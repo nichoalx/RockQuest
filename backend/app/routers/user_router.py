@@ -13,11 +13,11 @@ def complete_profile(data: User, current_user: dict = Depends(verify_token)):
     uid = current_user["uid"]
 
     #ensure unique username
-    username_exists = db.collection("users").where("username", "==", data.username).stream()
+    username_exists = db.collection("user").where("username", "==", data.username).stream()
     if any(username_exists):
         raise HTTPException(status_code=400, detail="Username is already taken")
 
-    user_ref = db.collection("users").document(uid)
+    user_ref = db.collection("user").document(uid)
 
     update_data = {
         "avatar_id": 1,
