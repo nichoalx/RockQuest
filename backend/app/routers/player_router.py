@@ -28,7 +28,7 @@ def get_player_rocks(type: Optional[str] = Query(None), user=Depends(verify_toke
 @player_router.post("/add-rock")
 def add_rock(rock: Rock, user=Depends(verify_token)):
     rock_data = rock.dict(exclude_unset=True)
-    rock_data["createdAt"] = datetime.utcnow()
+    rock_data["createdAt"] = firestore.SERVER_TIMESTAMP
     db.collection("rocks").add(rock_data)
     return {"message": "Rock added"}
 
@@ -59,7 +59,7 @@ def complete_quest(quest_id: str, lat: float = Query(...), lng: float = Query(..
         "completedBy": user["uid"],
         "lat": lat,
         "lng": lng,
-        "completedAt": datetime.utcnow()
+        "completedAt": firestore.SERVER_TIMESTAMP
     })
     return {"message": f"Quest {quest_id} completed"}
 
