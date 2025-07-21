@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr
-from typing import Optional
+from typing import Optional, Literal
 from datetime import datetime
 
 class Rock(BaseModel):
@@ -15,8 +15,35 @@ class Rock(BaseModel):
 class User(BaseModel):
     username: str
     emailAddress: EmailStr
-    type: Optional[str] = "player"
-    createdAt: Optional[datetime] = None
+    type: Literal["player", "geologist", "admin"] = "player" #only allow player or geologist, default player
+    createdAt: datetime
     dob: Optional[datetime] = None
     description: Optional[str] = None
-    avatarId: Optional[int] = None
+    avatarId: int = 1
+    isActive: bool = True #True if user is active, False if user is suspended
+
+class announcement(BaseModel):
+    title: str
+    content: str
+    createdAt: datetime
+
+class post(BaseModel):
+    content: str
+    createdBy: str
+    createdAt: datetime
+    isApproved: bool = False
+    approvedBy: str
+
+class fact(BaseModel):
+    content: str
+    createdBy: str
+    createdAt: datetime
+
+class quest(BaseModel):
+    title: str
+    description: str
+
+class achivement(BaseModel):
+    title: str
+    description: str
+    badge: int
