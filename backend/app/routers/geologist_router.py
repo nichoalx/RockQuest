@@ -1,32 +1,45 @@
 from fastapi import Depends, APIRouter, HTTPException
 from datetime import datetime
-
+from firebase_admin import firestore
 from app.auth.dependencies import verify_token
 from app.firebase import db
+from app.models.models import Fact, UpdateFact
 
 geologist_router = APIRouter(prefix="/geologist", tags=["Geologist"])
 
 # FACT MANAGEMENT
 @geologist_router.post("/add-fact")
-def add_fact(data: dict, user=Depends(verify_token)):
-    data["createdAt"] = datetime.utcnow()
-    data["addedBy"] = user["uid"]
-    db.collection("facts").add(data)
+def add_fact(data: Fact, user=Depends(verify_token)):
+    fact_data = data.dict()
+    fact_data["createdBy"] = user["uid"]
+    fact_data["createdAt"] = firestore.SERVER_TIMESTAMP
+    db.collection("fact").add(fact_data)
     return {"message": "Fact added"}
 
 @geologist_router.put("/edit-fact/{fact_id}")
-def edit_fact(fact_id: str, data: dict, user=Depends(verify_token)):
-    ref = db.collection("facts").document(fact_id)
+def edit_fact(fact_id: str, data: UpdateFact, user=Depends(verify_token)):
+    ref = db.collection("fact").document(fact_id)
+
     if not ref.get().exists:
         raise HTTPException(status_code=404, detail="Fact not found")
-    ref.update(data)
+    
+    fact = ref.get().to_dict()
+    if fact.get("createdBy") != user["uid"]:
+        raise HTTPException(status_code=403, detail="You are not authorized to edit")
+    
+    update_data = {k: v for k, v in data.dict().items() if v is not None}
+    ref.update(update_data)
     return {"message": "Fact updated"}
 
 @geologist_router.delete("/delete-fact/{fact_id}")
 def delete_fact(fact_id: str, user=Depends(verify_token)):
-    ref = db.collection("facts").document(fact_id)
+    ref = db.collection("fact").document(fact_id)
+        
     if not ref.get().exists:
         raise HTTPException(status_code=404, detail="Fact not found")
+    fact = ref.get().to_dict()
+    if fact.get("createdBy") != user["uid"]:
+        raise HTTPException(status_code=403, detail="You are not authorized to delete")
     ref.delete()
     return {"message": "Fact deleted"}
 

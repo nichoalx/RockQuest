@@ -16,7 +16,7 @@ class Rock(BaseModel):
 
 class Announcement(BaseModel):
     title: str
-    content: str
+    description: str
     createdAt: datetime
 
 class Quest(BaseModel):
@@ -33,26 +33,40 @@ class User(BaseModel):
     username: str
     emailAddress: EmailStr
     type: Literal["player", "geologist", "admin"] = "player" #only allow player or geologist, default player
-    createdAt: datetime
+    createdAt: Optional[datetime] = None
     dob: Optional[datetime] = None
     description: Optional[str] = None
     avatarId: int = 1
     isActive: bool = True #True if user is active, False if user is suspended
 
 class Post(BaseModel):
-    content: str
-    createdBy: str
-    createdAt: datetime
+    #post section
+    rockname: str
+    description: str
+    information: str
+    image: str
+    createdBy: Optional[str] = None
+    createdAt: Optional[datetime] = None
+    #review section
     isApproved: bool = False
     approvedBy: Optional[str] = None
     rejectedBy: Optional[str] = None
+    #report section
     validReport: bool = False #False if not reported, True if reported
+    reportType: Optional[str] = None
+    reportedBy: Optional[str] = None
+    reportedIssue: Optional[str] = None
 
 #geologist
 class Fact(BaseModel):
-    content: str
-    createdBy: str
-    createdAt: datetime
+    title: str
+    description: str
+    createdBy: Optional[str] = None
+    createdAt: Optional[datetime] = None
+
+class UpdateFact(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
 
 #player
 class Collection(BaseModel):
@@ -60,5 +74,4 @@ class Collection(BaseModel):
     type: Optional[str] = None
     description: Optional[str] = None
     imageUrl: Optional[str] = None
-    lat: Optional[float] = None
     createdAt: Optional[datetime] = None
