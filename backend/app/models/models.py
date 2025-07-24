@@ -35,6 +35,16 @@ class Quest(BaseModel):
 class ReportDecisionRequest(BaseModel):
     action: Literal["approve", "reject"]
 
+class Report(BaseModel):
+    reportedItemId: str
+    reportedItemType: Literal["post", "fact", "comment"]  # adjust based on your app
+    reason: str
+    status: Literal["pending", "approve", "reject"] = "pending"
+    reportedBy: Optional[str] = None
+    reportedAt: Optional[datetime] = None
+    reviewedBy: Optional[str] = None
+    reviewedAt: Optional[datetime] = None
+    adminAction: Optional[str] = None
 
 #user
 class User(BaseModel):
