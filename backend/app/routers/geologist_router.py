@@ -75,7 +75,5 @@ def verify_rock(post_id: str, data: PostVerificationRequest, user=Depends(verify
             "rejectedReason": data.reason,
             "rejectedAt": firestore.SERVER_TIMESTAMP
         })
-    return {"message": "Rock rejected and left in review collection"}
-    
-    else:
-        raise HTTPException(status_code=400, detail="Invalid action. Must be 'approve' or 'reject'")
+        return {"message": "Rock rejected and left in review collection"}
+    raise HTTPException(status_code=400, detail="Invalid action. Must be 'approve' or 'reject'")
