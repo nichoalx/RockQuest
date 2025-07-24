@@ -12,7 +12,7 @@ player_router = APIRouter(prefix="/player", tags=["Player"])
 @player_router.get("/rocks", response_model=List[Rock])
 def get_player_rocks(type: Optional[str] = Query(None), user=Depends(verify_token)):
     try:
-        query = db.collection("rocks")
+        query = db.collection("rock")
         if type:
             query = query.where("type", "==", type)
         docs = query.stream()
@@ -29,15 +29,15 @@ def get_player_rocks(type: Optional[str] = Query(None), user=Depends(verify_toke
 def add_rock(rock: Rock, user=Depends(verify_token)):
     rock_data = rock.dict(exclude_unset=True)
     rock_data["createdAt"] = firestore.SERVER_TIMESTAMP
-    db.collection("rocks").add(rock_data)
+    db.collection("rock").add(rock_data)
     return {"message": "Rock added"}
 
 @player_router.delete("/delete-rock/{rock_id}")
 def delete_rock(rock_id: str, user=Depends(verify_token)):
-    doc = db.collection("rocks").document(rock_id).get()
+    doc = db.collection("rock").document(rock_id).get()
     if not doc.exists:
         raise HTTPException(status_code=404, detail="Rock not found")
-    db.collection("rocks").document(rock_id).delete()
+    db.collection("rock").document(rock_id).delete()
     return {"message": "Rock deleted"}
 
 # QUESTS
@@ -67,7 +67,7 @@ def complete_quest(quest_id: str, lat: float = Query(...), lng: float = Query(..
 @player_router.get("/gps-rocks")
 def get_nearby_rocks(lat: float, lng: float, radius: float = 0.01, user=Depends(verify_token)):
     # Simulate basic filtering (no Firestore geoqueries)
-    docs = db.collection("rocks").stream()
+    docs = db.collection("rock").stream()
     nearby = []
     for doc in docs:
         rock = doc.to_dict()

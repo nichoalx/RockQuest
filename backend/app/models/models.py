@@ -19,6 +19,10 @@ class Announcement(BaseModel):
     description: str
     createdAt: datetime
 
+class UpdateAnnouncement(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+
 class Quest(BaseModel):
     title: str
     description: str

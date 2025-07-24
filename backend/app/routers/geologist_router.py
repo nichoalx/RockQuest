@@ -38,6 +38,7 @@ def delete_fact(fact_id: str, user=Depends(verify_token)):
     if not ref.get().exists:
         raise HTTPException(status_code=404, detail="Fact not found")
     fact = ref.get().to_dict()
+    
     if fact.get("createdBy") != user["uid"]:
         raise HTTPException(status_code=403, detail="You are not authorized to delete")
     ref.delete()
