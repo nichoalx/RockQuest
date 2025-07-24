@@ -4,7 +4,8 @@ from typing import Optional
 from firebase_admin import firestore
 from app.auth.dependencies import verify_token
 from app.firebase import db
-from app.models.models import User, Rock, Fact, Announcement, UpdateAnnouncement
+from app.models.models import User, Rock, Fact, Announcement, UpdateAnnouncement, Quest
+from app.models.models import PostVerificationRequest, ReportDecisionRequest
 
 admin_router = APIRouter(prefix="/admin", tags=["Admin"])
 
@@ -29,9 +30,9 @@ def get_fact_count(user=Depends(verify_token)):
     count = len(list(db.collection("fact").stream()))
     return {"totalFacts": count}
 
-@admin_router.get("/dashboard/reports")
+@admin_router.get("/dashboard/report-count")
 def get_report_count(user=Depends(verify_token)):
-    count = len(list(db.collection("reports").stream()))
+    count = len(list(db.collection("report").stream()))
     return {"totalReports": count}
 
 # USER MANAGEMENT
@@ -60,9 +61,26 @@ def get_all_rocks(user=Depends(verify_token)):
     return [{"id": doc.id, **doc.to_dict()} for doc in docs]
 
 @admin_router.post("/add-rock")
-def add_rock(data: dict, user=Depends(verify_token)):
-    data["createdAt"] = firestore.SERVER_TIMESTAMP
-    db.collection("rock").add(data)
+def add_rock(data: Rock, user=Depends(verify_token)):
+    # Check for existing rock by name
+    existing = db.collection("rock").where("name", "==", data.name).stream()
+    if any(existing):
+        raise HTTPException(status_code=400, detail="Rock with this name already exists")
+
+    update_data = {
+        "name": data.name,
+        "type": data.type,
+        "description": data.description,
+        "imageUrl": data.imageUrl,
+        "lat": data.lat,
+        "lng": data.lng,
+        "confidence": data.confidence,
+        "addedBy": user["uid"],
+        "verified": False,
+        "createdAt": firestore.SERVER_TIMESTAMP
+    }
+
+    db.collection("rock").add(update_data)
     return {"message": "Rock added"}
 
 @admin_router.put("/edit-rock/{rock_id}")
@@ -81,27 +99,40 @@ def delete_rock(rock_id: str, user=Depends(verify_token)):
     ref.delete()
     return {"message": "Rock deleted"}
 
-# REPORT MANAGEMENT
-@admin_router.get("/reports")
-def get_reports(user=Depends(verify_token)):
-    docs = db.collection("reports").stream()
+# POST REVIEW
+@admin_router.get("/review")
+def review_pending_rocks(user=Depends(verify_token)):
+    docs = db.collection("post").stream()
     return [{"id": doc.id, **doc.to_dict()} for doc in docs]
 
-@admin_router.delete("/delete-report/{report_id}")
-def delete_report(report_id: str, user=Depends(verify_token)):
-    ref = db.collection("reports").document(report_id)
-    if not ref.get().exists:
-        raise HTTPException(status_code=404, detail="Report not found")
-    ref.delete()
-    return {"message": "Report deleted"}
+@admin_router.post("/verify-rock/{post_id}")
+def verify_rock(post_id: str, data: PostVerificationRequest, user=Depends(verify_token)):
+    review_ref = db.collection("post").document(post_id)
+    review_doc = review_ref.get()
+    if not review_doc.exists:
+        raise HTTPException(status_code=404, detail="Rock not found in review queue")
 
-@admin_router.put("/update-report/{report_id}")
-def update_report_status(report_id: str, status: str, user=Depends(verify_token)):
-    ref = db.collection("reports").document(report_id)
-    if not ref.get().exists:
-        raise HTTPException(status_code=404, detail="Report not found")
-    ref.update({"status": status, "updatedAt": firestore.SERVER_TIMESTAMP})
-    return {"message": "Report updated"}
+    rock_data = review_doc.to_dict()
+
+    if data.action == "approve":
+        rock_data.update({
+            "verified": True,
+            "verifiedBy": user["uid"],
+            "verifiedAt": datetime.utcnow()
+        })
+
+    elif data.action == "reject":
+        if not data.reason:
+            raise HTTPException(status_code=400, detail="Rejection reason is required")
+        review_ref.update({
+            "verified": False,
+            "rejectedReason": data.reason,
+            "rejectedAt": datetime.utcnow()
+        })
+        return {"message": "Rock rejected and left in review collection"}
+    
+    else:
+        raise HTTPException(status_code=400, detail="Invalid action. Must be 'approve' or 'reject'")
 
 # FACT MANAGEMENT
 @admin_router.get("/facts")
@@ -125,9 +156,12 @@ def get_announcements(user=Depends(verify_token)):
 
 @admin_router.post("/add-announcement")
 def add_announcement(data: Announcement, user=Depends(verify_token)):
-    a_data = data.dict()
-    a_data["createdAt"] = firestore.SERVER_TIMESTAMP
-    db.collection("announcement").add(a_data)
+    update_data = {
+        "title": data.title,
+        "content": data.content,
+        "createdAt": firestore.SERVER_TIMESTAMP
+    }
+    db.collection("announcement").add(update_data)
     return {"message": "Announcement added"}
 
 @admin_router.put("/update-announcement/{announcement_id}")
@@ -153,9 +187,13 @@ def get_quests(user=Depends(verify_token)):
     return [{"id": doc.id, **doc.to_dict()} for doc in docs]
 
 @admin_router.post("/add-quest")
-def add_quest(data: dict, user=Depends(verify_token)):
-    data["createdAt"] = firestore.SERVER_TIMESTAMP
-    db.collection("quest").add(data)
+def add_quest(data: Quest, user=Depends(verify_token)):
+    update_data = {
+        "title": data.title,
+        "description": data.description,
+        "createdAt": firestore.SERVER_TIMESTAMP
+    }
+    db.collection("quest").add(update_data)
     return {"message": "Quest added"}
 
 @admin_router.put("/edit-quest/{quest_id}")
@@ -168,7 +206,7 @@ def edit_quest(quest_id: str, data: dict, user=Depends(verify_token)):
 
 @admin_router.delete("/delete-quest/{quest_id}")
 def delete_quest(quest_id: str, user=Depends(verify_token)):
-    ref = db.collection("quests").document(quest_id)
+    ref = db.collection("quest").document(quest_id)
     if not ref.get().exists:
         raise HTTPException(status_code=404, detail="Quest not found")
     ref.delete()
@@ -180,8 +218,8 @@ def add_post(data: dict, user=Depends(verify_token)):
     data["createdAt"] = firestore.SERVER_TIMESTAMP
     data["role"] = "admin"
     data["uploadedBy"] = user["uid"]
-    db.collection("post").add(data)
-    return {"message": "Post added"}
+    post_ref = db.collection("post").add(data)
+    return {"message": "Post added", "post_id": post_ref[1].id}
 
 @admin_router.put("/edit-post/{post_id}")
 def edit_post(post_id: str, data: dict, user=Depends(verify_token)):
@@ -198,3 +236,47 @@ def delete_post(post_id: str, user=Depends(verify_token)):
         raise HTTPException(status_code=404, detail="Post not found")
     ref.delete()
     return {"message": "Post deleted"}
+
+# REPORT MANAGEMENT
+@admin_router.get("/reports")
+def get_reports(user=Depends(verify_token)):
+    docs = db.collection("report").stream()
+    return [{"id": doc.id, **doc.to_dict()} for doc in docs]
+
+@admin_router.post("/review-report/{report_id}")
+def review_report(report_id: str, data: ReportDecisionRequest, user=Depends(verify_token)):
+    ref = db.collection("report").document(report_id)
+    doc = ref.get()
+
+    if not doc.exists:
+        raise HTTPException(status_code=404, detail="Report not found")
+
+    report = doc.to_dict()
+    item_id = report.get("reportedItemId")
+    item_type = report.get("reportedItemType")
+
+    if not item_id or not item_type:
+        raise HTTPException(status_code=400, detail="Report is missing item reference")
+
+    update_data = {
+        "status": data.action,
+        "reviewedBy": user["uid"],
+        "reviewedAt": firestore.SERVER_TIMESTAMP
+    }
+
+    # If approved: delete the item
+    if data.action == "approve":
+        item_ref = db.collection(item_type).document(item_id)
+        if item_ref.get().exists:
+            item_ref.delete()
+            update_data["adminAction"] = f"{item_type} {item_id} deleted"
+        else:
+            update_data["adminAction"] = f"{item_type} {item_id} not found"
+
+    # Update the report document
+    ref.update(update_data)
+
+    return {
+        "message": f"Report {data.action}d successfully",
+        "itemAction": update_data.get("adminAction", "No action taken")
+    }

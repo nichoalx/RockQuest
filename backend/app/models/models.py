@@ -2,6 +2,10 @@ from pydantic import BaseModel, EmailStr
 from typing import Optional, Literal
 from datetime import datetime
 
+class PostVerificationRequest(BaseModel):
+    action: Literal["approve", "reject"]
+    reason: Optional[str] = None  # only needed if rejecting
+
 #admin
 #rock markers
 class Rock(BaseModel):
@@ -16,8 +20,8 @@ class Rock(BaseModel):
 
 class Announcement(BaseModel):
     title: str
-    description: str
-    createdAt: datetime
+    content: str
+    createdAt: Optional[datetime] = None
 
 class UpdateAnnouncement(BaseModel):
     title: Optional[str] = None
@@ -26,11 +30,11 @@ class UpdateAnnouncement(BaseModel):
 class Quest(BaseModel):
     title: str
     description: str
+    createdAt: Optional[datetime] = None
 
-class Achivement(BaseModel):
-    title: str
-    description: str
-    badge: int
+class ReportDecisionRequest(BaseModel):
+    action: Literal["approve", "reject"]
+
 
 #user
 class User(BaseModel):
@@ -52,14 +56,11 @@ class Post(BaseModel):
     createdBy: Optional[str] = None
     createdAt: Optional[datetime] = None
     #review section
-    isApproved: bool = False
-    approvedBy: Optional[str] = None
-    rejectedBy: Optional[str] = None
-    #report section
-    validReport: bool = False #False if not reported, True if reported
-    reportType: Optional[str] = None
-    reportedBy: Optional[str] = None
-    reportedIssue: Optional[str] = None
+    verified: bool = False
+    verifiedBy: Optional[str] = None
+    verifiedAt: Optional[datetime] = None
+    rejectedReason: Optional[str] = None
+    rejectedAt: Optional[datetime] = None
 
 #geologist
 class Fact(BaseModel):
