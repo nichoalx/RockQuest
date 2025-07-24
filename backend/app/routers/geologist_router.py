@@ -66,7 +66,9 @@ def verify_rock(post_id: str, data: PostVerificationRequest, user=Depends(verify
             "verifiedBy": user["uid"],
             "verifiedAt": firestore.SERVER_TIMESTAMP
         })
-       
+        review_ref.update(rock_data)
+        return {"message": "Rock approved and verified"}
+        
     elif data.action == "reject":
         if not data.reason:
             raise HTTPException(status_code=400, detail="Rejection reason is required")
