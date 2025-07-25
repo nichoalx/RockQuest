@@ -1,6 +1,12 @@
-import { useState, useEffect } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, useWindowDimensions } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
+import { useState, useEffect, useRef } from "react";
+import {
+  View,
+  TouchableOpacity,
+  StyleSheet,
+  useWindowDimensions,
+  SafeAreaView,
+  Animated,
+} from "react-native";
 import { useFonts, PressStart2P_400Regular } from "@expo-google-fonts/press-start-2p";
 import * as SplashScreen from "expo-splash-screen";
 import { useRouter } from "expo-router";
@@ -14,9 +20,36 @@ export default function StartScreen() {
   const router = useRouter();
   const [tapped, setTapped] = useState(false);
 
+  // Animated opacity value for flashing effect
+  const opacityAnim = useRef(new Animated.Value(1)).current;
+
   useEffect(() => {
     if (fontsLoaded) SplashScreen.hideAsync();
   }, [fontsLoaded]);
+
+  // Flashing animation loop
+  useEffect(() => {
+    if (!tapped) {
+      const flashing = Animated.loop(
+        Animated.sequence([
+          Animated.timing(opacityAnim, {
+            toValue: 0,
+            duration: 700,
+            useNativeDriver: true,
+          }),
+          Animated.timing(opacityAnim, {
+            toValue: 1,
+            duration: 700,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+      flashing.start();
+
+      // Clean up animation on unmount or tap
+      return () => flashing.stop();
+    }
+  }, [tapped, opacityAnim]);
 
   // Navigate on tap
   useEffect(() => {
@@ -28,40 +61,66 @@ export default function StartScreen() {
   if (!fontsLoaded) return null;
 
   return (
-    <TouchableOpacity activeOpacity={0.9} style={styles.container} onPress={() => setTapped(true)}>
-      <LinearGradient
-        colors={["#A77B4E", "#BA9B77", "#C0BAA9"]}
-        style={[styles.gradient, { width, height }]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-      >
-        <LottieView
-          source={require("../../assets/images/welcome-animation.json")}
-          autoPlay
-          loop={false}
-          style={{ width: width * 0.8, height: width * 0.8 }}
-        />
-        <Text style={styles.tap}>Tap to start</Text>
-      </LinearGradient>
+    <TouchableOpacity
+      activeOpacity={0.9}
+      style={styles.container}
+      onPress={() => setTapped(true)}
+    >
+      <View style={[styles.background, { width, height }]}>
+        <SafeAreaView style={styles.safeArea}>
+          <View style={styles.animationContainer}>
+            <LottieView
+              source={require("../../assets/images/welcome-animation.json")}
+              autoPlay
+              loop={false}
+              style={styles.lottie}
+              resizeMode="contain"
+            />
+            <Animated.Text style={[styles.tap, { opacity: opacityAnim }]}>
+              Tap to start
+            </Animated.Text>
+          </View>
+        </SafeAreaView>
+      </View>
     </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  gradient: {
+  background: {
+    flex: 1,
+    backgroundColor: "#bfa882",
+  },
+  safeArea: {
+    flex: 1,
+  },
+  animationContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
   },
+  lottie: {
+    width: "100%",
+    height: "100%",
+  },
   tap: {
+    position: "absolute",
+    top: "15%",
+    alignSelf: "center",
     fontFamily: "PressStart2P_400Regular",
-    fontSize: 14,
+    fontSize: 24,
     color: "white",
-    marginTop: 24,
-    textShadowColor: "rgba(0, 0, 0, 0.4)",
+    textShadowColor: "rgba(0, 0, 0, 0.6)",
     textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
+    textShadowRadius: 3,
+    zIndex: 10,
   },
 });
+
+
+
+
+
+
 
