@@ -25,11 +25,17 @@ def edit_fact(fact_id: str, data: UpdateFact, user=Depends(verify_token)):
     
     fact = ref.get().to_dict()
     if fact.get("createdBy") != user["uid"]:
-        raise HTTPException(status_code=403, detail="You are not authorized to edit")
+        raise HTTPException(status_code=403, detail="You are not authorized to edit this fact")
     
-    update_data = {k: v for k, v in data.dict().items() if v is not None}
+    update_data = {
+        **{k: v for k, v in data.dict().items() if v is not None},
+        "updatedAt": firestore.SERVER_TIMESTAMP,
+        "updatedBy": user["uid"]
+    }
+
     ref.update(update_data)
     return {"message": "Fact updated"}
+
 
 @geologist_router.delete("/delete-fact/{fact_id}")
 def delete_fact(fact_id: str, user=Depends(verify_token)):

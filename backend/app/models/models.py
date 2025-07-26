@@ -2,6 +2,7 @@ from pydantic import BaseModel, EmailStr
 from typing import Optional, Literal
 from datetime import datetime
 
+#admin n geo
 class PostVerificationRequest(BaseModel):
     action: Literal["approve", "reject"]
     reason: Optional[str] = None  # only needed if rejecting
@@ -17,11 +18,15 @@ class Rock(BaseModel):
     lng: Optional[float] = None
     createdAt: Optional[datetime] = None
     confidence: Optional[float] = None
+    updatedAt: Optional[datetime] = None
+    updatedBy: Optional[str] = None
 
 class Announcement(BaseModel):
     title: str
     content: str
     createdAt: Optional[datetime] = None
+    updatedAt: Optional[datetime] = None
+    updatedBy: Optional[str] = None
 
 class UpdateAnnouncement(BaseModel):
     title: Optional[str] = None
@@ -31,6 +36,8 @@ class Quest(BaseModel):
     title: str
     description: str
     createdAt: Optional[datetime] = None
+    updatedAt: Optional[datetime] = None
+    updatedBy: Optional[str] = None
 
 class ReportDecisionRequest(BaseModel):
     action: Literal["approve", "reject"]
@@ -46,17 +53,7 @@ class Report(BaseModel):
     reviewedAt: Optional[datetime] = None
     adminAction: Optional[str] = None
 
-#user
-class User(BaseModel):
-    username: str
-    emailAddress: EmailStr
-    type: Literal["player", "geologist", "admin"] = "player" #only allow player or geologist, default player
-    createdAt: Optional[datetime] = None
-    dob: Optional[datetime] = None
-    description: Optional[str] = None
-    avatarId: int = 1
-    isActive: bool = True #True if user is active, False if user is suspended
-
+#all three
 class Post(BaseModel):
     #post section
     rockname: str
@@ -71,6 +68,20 @@ class Post(BaseModel):
     verifiedAt: Optional[datetime] = None
     rejectedReason: Optional[str] = None
     rejectedAt: Optional[datetime] = None
+    #update section
+    updatedAt: Optional[datetime] = None
+    updatedBy: Optional[str] = None
+
+#user
+class User(BaseModel):
+    username: str
+    emailAddress: EmailStr
+    type: Literal["player", "geologist", "admin"] = "player" #only allow player or geologist, default player
+    createdAt: Optional[datetime] = None
+    dob: Optional[datetime] = None
+    description: Optional[str] = None
+    avatarId: int = 1
+    isActive: bool = True #True if user is active, False if user is suspended
 
 #geologist
 class Fact(BaseModel):
@@ -78,6 +89,8 @@ class Fact(BaseModel):
     description: str
     createdBy: Optional[str] = None
     createdAt: Optional[datetime] = None
+    updatedAt: Optional[datetime] = None
+    updatedBy: Optional[str] = None
 
 class UpdateFact(BaseModel):
     title: Optional[str] = None

@@ -88,7 +88,14 @@ def edit_rock(rock_id: str, data: dict, user=Depends(verify_token)):
     ref = db.collection("rock").document(rock_id)
     if not ref.get().exists:
         raise HTTPException(status_code=404, detail="Rock not found")
-    ref.update(data)
+    
+    update_data = {
+        **data,
+        "updatedAt": firestore.SERVER_TIMESTAMP,
+        "updatedBy": user["uid"]
+    }
+
+    ref.update(update_data)
     return {"message": "Rock updated"}
 
 @admin_router.delete("/delete-rock/{rock_id}")
@@ -169,7 +176,14 @@ def update_announcement(announcement_id: str, data: UpdateAnnouncement, user=Dep
     ref = db.collection("announcement").document(announcement_id)
     if not ref.get().exists:
         raise HTTPException(status_code=404, detail="Announcement not found")
-    ref.update(data)
+
+    update_data = {
+        **data.dict(exclude_unset=True),
+        "updatedAt": firestore.SERVER_TIMESTAMP,
+        "updatedBy": user["uid"]
+    }
+
+    ref.update(update_data)
     return {"message": "Announcement updated"}
 
 @admin_router.delete("/delete-announcement/{announcement_id}")
@@ -201,7 +215,14 @@ def edit_quest(quest_id: str, data: dict, user=Depends(verify_token)):
     ref = db.collection("quest").document(quest_id)
     if not ref.get().exists:
         raise HTTPException(status_code=404, detail="Quest not found")
-    ref.update(data)
+
+    update_data = {
+        **data,
+        "updatedAt": firestore.SERVER_TIMESTAMP,
+        "updatedBy": user["uid"]
+    }
+
+    ref.update(update_data)
     return {"message": "Quest updated"}
 
 @admin_router.delete("/delete-quest/{quest_id}")
@@ -226,7 +247,14 @@ def edit_post(post_id: str, data: dict, user=Depends(verify_token)):
     ref = db.collection("post").document(post_id)
     if not ref.get().exists:
         raise HTTPException(status_code=404, detail="Post not found")
-    ref.update(data)
+
+    update_data = {
+        **data,
+        "updatedAt": firestore.SERVER_TIMESTAMP,
+        "updatedBy": user["uid"]
+    }
+
+    ref.update(update_data)
     return {"message": "Post updated"}
 
 @admin_router.delete("/delete-post/{post_id}")
