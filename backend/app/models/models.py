@@ -10,8 +10,9 @@ class PostVerificationRequest(BaseModel):
 #admin
 #rock markers
 class Rock(BaseModel):
-    name: str
-    type: Optional[str] = None
+    rockId: int
+    rockName: str
+    rockType: Optional[str] = None
     description: Optional[str] = None
     imageUrl: Optional[str] = None
     lat: Optional[float] = None
@@ -22,9 +23,15 @@ class Rock(BaseModel):
     updatedBy: Optional[str] = None
 
 class Announcement(BaseModel):
+    announcementId: int
     title: str
-    content: str
+    description: str
+    createdBy: Optional[str] = None
     createdAt: Optional[datetime] = None
+    isVisible: Optional[bool] = None
+    pinned: Optional[bool] = None
+    imageUrl: Optional[str] = None
+    tags: Optional[str] = None
     updatedAt: Optional[datetime] = None
     updatedBy: Optional[str] = None
 
@@ -43,8 +50,8 @@ class ReportDecisionRequest(BaseModel):
     action: Literal["approve", "reject"]
 
 class Report(BaseModel):
-    reportedItemId: str
-    reportedItemType: Literal["post", "fact", "comment"]  # adjust based on your app
+    reportedId: str
+    reportedItemType: Literal["post", "fact"]
     reason: str
     status: Literal["pending", "approve", "reject"] = "pending"
     reportedBy: Optional[str] = None
