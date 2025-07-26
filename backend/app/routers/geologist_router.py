@@ -3,7 +3,7 @@ from datetime import datetime
 from firebase_admin import firestore
 from app.auth.dependencies import verify_token
 from app.firebase import db
-from app.models.models import Fact, UpdateFact
+from app.models.models import Fact, UpdateFact, PostVerificationRequest
 
 geologist_router = APIRouter(prefix="/geologist", tags=["Geologist"])
 
@@ -44,32 +44,38 @@ def delete_fact(fact_id: str, user=Depends(verify_token)):
     ref.delete()
     return {"message": "Fact deleted"}
 
-# ROCK VERIFICATION
-@geologist_router.get("/review-rocks")
+# ROCK VERIFICATION (review Post)
+@geologist_router.get("/review")
 def review_pending_rocks(user=Depends(verify_token)):
-    docs = db.collection("rocks").where("verified", "==", False).stream()
+    docs = db.collection("post").where("verified", "==", False).stream()
     return [{"id": doc.id, **doc.to_dict()} for doc in docs]
 
-@geologist_router.post("/approve-rock/{rock_id}")
-def approve_rock(rock_id: str, user=Depends(verify_token)):
-    ref = db.collection("rocks").document(rock_id)
-    if not ref.get().exists:
-        raise HTTPException(status_code=404, detail="Rock not found")
-    ref.update({"verified": True, "verifiedBy": user["uid"], "verifiedAt": datetime.utcnow()})
-    return {"message": "Rock approved"}
+#approve or reject rock post
+@geologist_router.post("/verify-rock/{post_id}")
+def verify_rock(post_id: str, data: PostVerificationRequest, user=Depends(verify_token)):
+    review_ref = db.collection("post").document(post_id)
+    review_doc = review_ref.get()
+    if not review_doc.exists:
+        raise HTTPException(status_code=404, detail="Rock not found in review queue")
 
-@geologist_router.post("/reject-rock/{rock_id}")
-def reject_rock(rock_id: str, reason: str, user=Depends(verify_token)):
-    ref = db.collection("rocks").document(rock_id)
-    if not ref.get().exists:
-        raise HTTPException(status_code=404, detail="Rock not found")
-    ref.update({"verified": False, "rejectedReason": reason, "rejectedAt": datetime.utcnow()})
-    return {"message": "Rock rejected"}
+    rock_data = review_doc.to_dict()
 
-# EXPERT COMMENT
-@geologist_router.post("/comment")
-def add_expert_comment(data: dict, user=Depends(verify_token)):
-    data["createdAt"] = datetime.utcnow()
-    data["author"] = user["uid"]
-    db.collection("comments").add(data)
-    return {"message": "Comment added"}
+    if data.action == "approve":
+        rock_data.update({
+            "verified": True,
+            "verifiedBy": user["uid"],
+            "verifiedAt": firestore.SERVER_TIMESTAMP
+        })
+        review_ref.update(rock_data)
+        return {"message": "Rock approved and verified"}
+        
+    elif data.action == "reject":
+        if not data.reason:
+            raise HTTPException(status_code=400, detail="Rejection reason is required")
+        review_ref.update({
+            "verified": False,
+            "rejectedReason": data.reason,
+            "rejectedAt": firestore.SERVER_TIMESTAMP
+        })
+        return {"message": "Rock rejected and left in review collection"}
+    raise HTTPException(status_code=400, detail="Invalid action. Must be 'approve' or 'reject'")
