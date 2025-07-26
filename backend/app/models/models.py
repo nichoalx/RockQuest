@@ -24,7 +24,7 @@ class UpdateAnnouncement(BaseModel):
 #----------------------------------------------------------------------------------------------------------------------
 #rock markers
 class Rock(BaseModel):
-    rockId: int
+    rockId: str
     rockName: str
     rockType: Optional[str] = None
     description: Optional[str] = None
@@ -37,7 +37,7 @@ class Rock(BaseModel):
     updatedBy: Optional[str] = None
 
 class Announcement(BaseModel):
-    announcementId: int
+    announcementId: str
     title: str
     description: str
     createdBy: Optional[str] = None

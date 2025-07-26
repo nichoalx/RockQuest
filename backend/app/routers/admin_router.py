@@ -242,12 +242,13 @@ def delete_quest(quest_id: str, user=Depends(verify_token)):
 # POST MANAGEMENT
 @admin_router.post("/add-post")
 def add_post(data: Post, user=Depends(verify_token)):
-    # Generate a new document with auto ID
-    post_ref = db.collection("post").document()  # ← auto ID
-    post_id = post_ref.id
+    if not data.postId:
+        raise HTTPException(status_code=400, detail="postId is required when manually setting ID")
+
+    post_ref = db.collection("post").document(data.postId)
 
     post_data = {
-        "postId": post_id,  # store it inside the doc for consistency
+        "postId": data.postId,
         "rockname": data.rockname,
         "description": data.description,
         "information": data.information,
@@ -257,8 +258,8 @@ def add_post(data: Post, user=Depends(verify_token)):
         "verified": False
     }
 
-    post_ref.set(post_data)  # save with that auto ID
-    return {"message": "Post added", "postId": post_id}
+    post_ref.set(post_data)
+    return {"message": "Post added", "postId": data.postId}
 
 @admin_router.put("/edit-post/{post_id}")
 def edit_post(post_id: str, data: Post, user=Depends(verify_token)):
