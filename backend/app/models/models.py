@@ -2,12 +2,26 @@ from pydantic import BaseModel, EmailStr
 from typing import Optional, Literal
 from datetime import datetime
 
-#admin n geo
+# admin n geo – DO NOT DELETE 
+# This model is required for admin and geologist to review posts.
+# ensuring consistent and minimal payloads for admin decision input.
 class PostVerificationRequest(BaseModel):
     action: Literal["approve", "reject"]
     reason: Optional[str] = None  # only needed if rejecting
 
+# admin – DO NOT DELETE 
+# This model handles admin decisions on user reports,
+# Keeping it separate ensures clarity and prevents misuse of the full Report model when only an action is needed.
 #admin
+class ReportDecisionRequest(BaseModel):
+    action: Literal["approve", "reject"]
+# This model is used specifically for updating announcements.
+# It allows partial updates without requiring all fields.
+class UpdateAnnouncement(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+
+#----------------------------------------------------------------------------------------------------------------------
 #rock markers
 class Rock(BaseModel):
     rockId: int
@@ -35,19 +49,12 @@ class Announcement(BaseModel):
     updatedAt: Optional[datetime] = None
     updatedBy: Optional[str] = None
 
-class UpdateAnnouncement(BaseModel):
-    title: Optional[str] = None
-    description: Optional[str] = None
-
 class Quest(BaseModel):
     title: str
     description: str
     createdAt: Optional[datetime] = None
     updatedAt: Optional[datetime] = None
     updatedBy: Optional[str] = None
-
-class ReportDecisionRequest(BaseModel):
-    action: Literal["approve", "reject"]
 
 class Report(BaseModel):
     reportedId: str
