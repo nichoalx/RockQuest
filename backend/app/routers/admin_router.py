@@ -64,9 +64,12 @@ def get_all_rocks(user=Depends(verify_token)):
 
 @admin_router.post("/add-rock")
 def add_rock(data: Rock, user=Depends(verify_token)):
-    existing = db.collection("rock").where("rockName", "==", data.rockName).stream()
-    if any(existing):
-        raise HTTPException(status_code=400, detail="Rock with this name already exists")
+    if not data.rockId:
+        raise HTTPException(status_code=400, detail="rockId is required")
+    # Use rockId as the Firestore document ID
+    ref = db.collection("rock").document(str(data.rockId))
+    if ref.get().exists:
+        raise HTTPException(status_code=400, detail="Rock with this rockId already exists")
 
     update_data = {
         "rockId": data.rockId,
@@ -80,8 +83,9 @@ def add_rock(data: Rock, user=Depends(verify_token)):
         "createdAt": firestore.SERVER_TIMESTAMP,
     }
 
-    db.collection("rock").add(update_data)
-    return {"message": "Rock added"}
+    ref.set(update_data)  # write using rockId as doc ID
+    return {"message": f"Rock added with rockId '{data.rockId}' as document ID"}
+
 
 @admin_router.put("/edit-rock/{rock_id}")
 def edit_rock(rock_id: str, data: Rock, user=Depends(verify_token)):
@@ -163,6 +167,12 @@ def get_announcements(user=Depends(verify_token)):
 
 @admin_router.post("/add-announcement")
 def add_announcement(data: Announcement, user=Depends(verify_token)):
+    if not data.announcementId:
+        raise HTTPException(status_code=400, detail="announcementId is required")
+    ref = db.collection("announcement").document(str(data.announcementId))
+    if ref.get().exists:
+        raise HTTPException(status_code=400, detail="Announcement with this ID already exists")
+
     update_data = {
         "announcementId": data.announcementId,
         "title": data.title,
@@ -174,8 +184,9 @@ def add_announcement(data: Announcement, user=Depends(verify_token)):
         "imageUrl": data.imageUrl,
         "tags": data.tags
     }
-    db.collection("announcement").add(update_data)
-    return {"message": "Announcement added"}
+
+    ref.set(update_data)
+    return {"message": f"Announcement added with ID '{data.announcementId}'"}
 
 @admin_router.put("/update-announcement/{announcement_id}")
 def update_announcement(announcement_id: str, data: UpdateAnnouncement, user=Depends(verify_token)):
@@ -208,13 +219,22 @@ def get_quests(user=Depends(verify_token)):
 
 @admin_router.post("/add-quest")
 def add_quest(data: Quest, user=Depends(verify_token)):
+    if not data.questId:
+        raise HTTPException(status_code=400, detail="questId is required")
+    ref = db.collection("quest").document(str(data.questId))
+    if ref.get().exists:
+        raise HTTPException(status_code=400, detail="Quest with this questId already exists")
+
     update_data = {
+        "questId": data.questId,
         "title": data.title,
         "description": data.description,
         "createdAt": firestore.SERVER_TIMESTAMP
     }
-    db.collection("quest").add(update_data)
-    return {"message": "Quest added"}
+
+    ref.set(update_data)
+    return {"message": f"Quest added with questId '{data.questId}' as document ID"}
+
 
 @admin_router.put("/edit-quest/{quest_id}")
 def edit_quest(quest_id: str, data: Quest, user=Depends(verify_token)):
@@ -244,8 +264,11 @@ def delete_quest(quest_id: str, user=Depends(verify_token)):
 def add_post(data: Post, user=Depends(verify_token)):
     if not data.postId:
         raise HTTPException(status_code=400, detail="postId is required when manually setting ID")
-
     post_ref = db.collection("post").document(data.postId)
+
+    # Check if postId already exists
+    if post_ref.get().exists:
+        raise HTTPException(status_code=400, detail=f"Post with postId '{data.postId}' already exists")
 
     post_data = {
         "postId": data.postId,

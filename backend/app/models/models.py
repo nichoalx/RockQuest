@@ -50,6 +50,7 @@ class Announcement(BaseModel):
     updatedBy: Optional[str] = None
 
 class Quest(BaseModel):
+    questId: str
     title: str
     description: str
     createdAt: Optional[datetime] = None
