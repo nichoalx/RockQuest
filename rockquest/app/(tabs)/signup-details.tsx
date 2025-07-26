@@ -4,14 +4,14 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from "reac
 
 export default function SignupDetailsScreen() {
   const router = useRouter()
-  const { role } = useLocalSearchParams()
+  const { type } = useLocalSearchParams()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
 
   useEffect(() => {
-    if (!role || (role !== "user" && role !== "geologist")) {
-      Alert.alert("Error", "Invalid role selected")
+    if (!type || (type !== "player" && type !== "geologist")) {
+      Alert.alert("Error", "Invalid type selected")
       router.replace("/welcomeScreen") // Fallback in case user accessed this screen directly
     }
   }, [])
@@ -31,19 +31,20 @@ export default function SignupDetailsScreen() {
       return
     }
 
-    router.push({
-      pathname: "/profile-info",
-      params: {
-        email,
-        password,
-        role,
-      },
-    })
+  router.push({
+    pathname: "/profile-info",
+    params: {
+      email,
+      password,
+      confirmPassword,
+      type,
+    },
+  })
   }
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Sign Up ({role === "user" ? "Player" : "Geologist"})</Text>
+      <Text style={styles.title}>Sign Up ({type === "player" ? "Player" : "Geologist"})</Text>
 
       <TextInput
         placeholder="Email"

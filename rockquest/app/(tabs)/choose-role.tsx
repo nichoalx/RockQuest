@@ -5,8 +5,8 @@ import { useRouter } from "expo-router"
 export default function ChooseRoleScreen() {
   const router = useRouter()
 
-  const handleRoleSelect = (role: "user" | "geologist") => {
-    router.push({ pathname: "/signup-details", params: { role } })
+  const handleRoleSelect = (type: "player" | "geologist") => {
+    router.push({ pathname: "/signup-details", params: { type } })
   }
 
   return (
@@ -14,12 +14,12 @@ export default function ChooseRoleScreen() {
       <Text style={styles.title}>Sign up as:</Text>
 
       <TouchableOpacity
-        onPress={() => handleRoleSelect("user")}
+        onPress={() => handleRoleSelect("player")}
         accessibilityRole="button"
         accessibilityLabel="Sign up as Player"
       >
         <Image
-  source={require("../../assets/player_button.png")}
+  source={require("../../assets/images/player_button.png")}
   style={styles.imageButton}
   resizeMode="contain"
 />
@@ -31,7 +31,7 @@ export default function ChooseRoleScreen() {
         accessibilityLabel="Sign up as Geologist"
       >
         <Image
-  source={require("../../assets/geologist_button.png")}
+  source={require("../../assets/images/geologist_button.png")}
   style={styles.imageButton}
   resizeMode="contain"
 />

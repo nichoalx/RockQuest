@@ -1,11 +1,25 @@
-import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, Dimensions, ActivityIndicator, KeyboardAvoidingView } from "react-native"
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  Alert,
+  StyleSheet,
+  Dimensions,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+} from "react-native"
 import { LinearGradient } from "expo-linear-gradient"
 import { useFonts, PressStart2P_400Regular } from "@expo-google-fonts/press-start-2p"
 import * as SplashScreen from "expo-splash-screen"
 import { useEffect, useState } from "react"
 import { useRouter, useLocalSearchParams } from "expo-router"
-import { FIREBASE_AUTH } from "../../utils/firebase"
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth"
+import { FIREBASE_AUTH, FIRESTORE } from "../../utils/firebase"
+import {
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+} from "firebase/auth"
+import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore"
 
 SplashScreen.preventAutoHideAsync()
 
@@ -17,7 +31,7 @@ export default function AuthScreen() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
-  const [role, setRole] = useState("user")
+  const [type, setType] = useState("user")
   const [loading, setLoading] = useState(false)
 
   const auth = FIREBASE_AUTH
@@ -25,14 +39,11 @@ export default function AuthScreen() {
   const { mode } = useLocalSearchParams()
 
   useEffect(() => {
-    if (fontsLoaded) {
-      SplashScreen.hideAsync()
-    }
+    if (fontsLoaded) SplashScreen.hideAsync()
   }, [fontsLoaded])
 
   useEffect(() => {
-    if (mode === "signup") setIsLogin(false)
-    else setIsLogin(true)
+    setIsLogin(mode !== "signup")
   }, [mode])
 
   const handleAuth = () => {
@@ -41,24 +52,22 @@ export default function AuthScreen() {
       return
     }
 
-    if (!isLogin && password !== confirmPassword) {
-      Alert.alert("Error", "Passwords don't match")
-      return
-    }
-
     setLoading(true)
-    const authMethod = isLogin
-      ? signInWithEmailAndPassword(auth, email, password)
-      : createUserWithEmailAndPassword(auth, email, password)
+    signInWithEmailAndPassword(auth, email, password)
+      .then(async (userCredential) => {
+        const { uid } = userCredential.user
 
-    authMethod
-      .then(() => {
+        // Get user type from Firestore
+        const userDoc = await getDoc(doc(FIRESTORE, "user", uid))
+        const userData = userDoc.data()
+        const userType = userData?.type || "user"
+
         setLoading(false)
-        Alert.alert("Success", isLogin ? "Logged in!" : "Account created!")
 
-        if (role === "geologist") {
+        // Redirect based on type
+        if (userType === "geologist") {
           router.replace("/GeoHomepage")
-        } else if (role === "admin") {
+        } else if (userType === "admin") {
           router.replace("/AdminDashboard")
         } else {
           router.replace("/(tabs)/dashboard")
@@ -72,7 +81,7 @@ export default function AuthScreen() {
 
   const toggleAuthMode = () => {
     if (isLogin) {
-      router.push("/choose-role") // Navigate to role selection on signup
+      router.push("/choose-role")
     } else {
       setIsLogin(true)
       setEmail("")
@@ -103,10 +112,12 @@ export default function AuthScreen() {
                     {["user", "geologist", "admin"].map((r) => (
                       <TouchableOpacity
                         key={r}
-                        style={[styles.roleButton, role === r && styles.roleButtonSelected]}
-                        onPress={() => setRole(r)}
+                        style={[styles.roleButton, type === r && styles.roleButtonSelected]}
+                        onPress={() => setType(r)}
                       >
-                        <Text style={role === r ? styles.roleButtonTextSelected : styles.roleButtonText}>
+                        <Text
+                          style={type === r ? styles.roleButtonTextSelected : styles.roleButtonText}
+                        >
                           {r.charAt(0).toUpperCase() + r.slice(1)}
                         </Text>
                       </TouchableOpacity>
@@ -177,7 +188,6 @@ export default function AuthScreen() {
   )
 }
 
-// CSS StyleSheet
 const styles = StyleSheet.create({
   container: { flex: 1 },
   gradient: { flex: 1 },
@@ -236,5 +246,3 @@ const styles = StyleSheet.create({
   roleButtonText: { color: "#A77B4E", fontWeight: "bold" },
   roleButtonTextSelected: { color: "white", fontWeight: "bold" },
 })
-
-
