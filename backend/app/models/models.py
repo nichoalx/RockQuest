@@ -63,6 +63,7 @@ class Report(BaseModel):
 #all three
 class Post(BaseModel):
     #post section
+    postId: Optional[str] = None 
     rockname: str
     description: str
     information: str

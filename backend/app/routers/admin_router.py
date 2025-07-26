@@ -121,6 +121,7 @@ def verify_rock(post_id: str, data: PostVerificationRequest, user=Depends(verify
 
     if data.action == "approve":
         review_ref.update({
+            "postId": post_id,  # ensure consistency
             "verified": True,
             "verifiedBy": user["uid"],
             "verifiedAt": datetime.utcnow()
@@ -131,12 +132,13 @@ def verify_rock(post_id: str, data: PostVerificationRequest, user=Depends(verify
         if not data.reason:
             raise HTTPException(status_code=400, detail="Rejection reason is required")
         review_ref.update({
+            "postId": post_id,  # ensure consistency
             "verified": False,
             "rejectedReason": data.reason,
             "rejectedAt": datetime.utcnow()
         })
         return {"message": "Rock rejected and left in review collection"}
-    
+
     raise HTTPException(status_code=400, detail="Invalid action. Must be 'approve' or 'reject'")
 
 # FACT MANAGEMENT
@@ -240,18 +242,23 @@ def delete_quest(quest_id: str, user=Depends(verify_token)):
 # POST MANAGEMENT
 @admin_router.post("/add-post")
 def add_post(data: Post, user=Depends(verify_token)):
+    # Generate a new document with auto ID
+    post_ref = db.collection("post").document()  # ← auto ID
+    post_id = post_ref.id
 
     post_data = {
+        "postId": post_id,  # store it inside the doc for consistency
         "rockname": data.rockname,
         "description": data.description,
         "information": data.information,
         "image": data.image,
         "createdBy": user["uid"],
         "createdAt": firestore.SERVER_TIMESTAMP,
+        "verified": False
     }
 
-    post_ref = db.collection("post").add(post_data)
-    return {"message": "Post added", "post_id": post_ref[0].id}
+    post_ref.set(post_data)  # save with that auto ID
+    return {"message": "Post added", "postId": post_id}
 
 @admin_router.put("/edit-post/{post_id}")
 def edit_post(post_id: str, data: Post, user=Depends(verify_token)):
@@ -260,6 +267,7 @@ def edit_post(post_id: str, data: Post, user=Depends(verify_token)):
         raise HTTPException(status_code=404, detail="Post not found")
 
     update_data = {
+        "postId": post_id,  # ensure it's stored in case it was missing before
         "rockname": data.rockname,
         "description": data.description,
         "information": data.information,
@@ -270,6 +278,7 @@ def edit_post(post_id: str, data: Post, user=Depends(verify_token)):
 
     ref.update(update_data)
     return {"message": "Post updated"}
+
 
 @admin_router.delete("/delete-post/{post_id}")
 def delete_post(post_id: str, user=Depends(verify_token)):
