@@ -18,8 +18,8 @@ export default function ChooseRoleScreen() {
 
   if (!fontsLoaded) return null
 
-  const handleRoleSelect = (role: "user" | "geologist") => {
-    router.push({ pathname: "/signup-details", params: { role } })
+  const handleRoleSelect = (type: "player" | "geologist") => {
+    router.push({ pathname: "/signup-details", params: { type } })
   }
 
   return (
@@ -28,6 +28,7 @@ export default function ChooseRoleScreen() {
         <Text style={styles.title}>Sign up as:</Text>
         <Text style={styles.subtitle}>Choose your role to start your adventure!</Text>
 
+<<<<<<< HEAD
         <TouchableOpacity
           onPress={() => handleRoleSelect("user")}
           accessibilityRole="button"
@@ -52,6 +53,31 @@ export default function ChooseRoleScreen() {
           />
         </TouchableOpacity>
       </View>
+=======
+      <TouchableOpacity
+        onPress={() => handleRoleSelect("player")}
+        accessibilityRole="button"
+        accessibilityLabel="Sign up as Player"
+      >
+        <Image
+  source={require("../../assets/images/player_button.png")}
+  style={styles.imageButton}
+  resizeMode="contain"
+/>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        onPress={() => handleRoleSelect("geologist")}
+        accessibilityRole="button"
+        accessibilityLabel="Sign up as Geologist"
+      >
+        <Image
+  source={require("../../assets/images/geologist_button.png")}
+  style={styles.imageButton}
+  resizeMode="contain"
+/>
+      </TouchableOpacity>
+>>>>>>> de88dec9a745e7084822bef2761bec79312bd69f
     </View>
   )
 }
