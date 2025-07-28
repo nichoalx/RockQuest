@@ -1,48 +1,26 @@
 from fastapi import APIRouter, HTTPException, Depends
 from firebase_admin import firestore
-from app.auth.dependencies import verify_token
+from app.auth.dependencies import require_player  
 from app.firebase import db
-from app.models.models import User
+from app.models.models import User, Post, ReportRequest
 from datetime import datetime
+from firebase_admin import auth as firebase_auth 
 
 router = APIRouter(prefix="", tags=["User"])
 
-# COMPLETE PROFILE
-@router.post("/complete-profile")
-def complete_profile(data: User, current_user: dict = Depends(verify_token)):
-    uid = current_user["uid"]
-
-    #ensure unique username
-    username_exists = db.collection("user").where("username", "==", data.username).stream()
-    if any(username_exists):
-        raise HTTPException(status_code=400, detail="Username is already taken")
-
-    user_ref = db.collection("user").document(uid)
-
-    update_data = {
-        "username": data.username,
-        "type": data.type,
-        "description": data.description,
-        "createdAt": firestore.SERVER_TIMESTAMP
-    }
-
-    user_ref.set(update_data, merge=True)
-    doc = user_ref.get()
-    return {"message": "Profile completed successfully", "user": doc.to_dict()}
-
 # POSTS
 @router.get("/my-posts")
-def get_my_posts(user=Depends(verify_token)):
+def get_my_posts(user=Depends(require_player)):
     docs = db.collection("post").where("uploadedBy", "==", user["uid"]).stream()
     return [{"id": doc.id, **doc.to_dict()} for doc in docs]
 
 @router.get("/all-posts")
-def get_all_posts(user=Depends(verify_token)):
+def get_all_posts(user=Depends(require_player)):
     docs = db.collection("post").stream()
     return [{"id": doc.id, **doc.to_dict()} for doc in docs]
 
 @router.post("/add-post")
-def add_post(data: dict, user=Depends(verify_token)):
+def add_post(data: dict, user=Depends(require_player)):
     data.update({
         "createdAt": firestore.SERVER_TIMESTAMP,
         "uploadedBy": user["uid"]
@@ -50,17 +28,17 @@ def add_post(data: dict, user=Depends(verify_token)):
     db.collection("post").add(data)
     return {"message": "Post added"}
 
-@router.put("/edit-post/{post_id}")
-def edit_post(post_id: str, data: dict, user=Depends(verify_token)):
-    ref = db.collection("post").document(post_id)
+@router.put("/edit-post/{postId}")
+def edit_post(postId: str, data: dict, user=Depends(require_player)):
+    ref = db.collection("post").document(postId)
     if not ref.get().exists:
         raise HTTPException(status_code=404, detail="Post not found")
     ref.update(data)
     return {"message": "Post updated"}
 
-@router.delete("/delete-post/{post_id}")
-def delete_post(post_id: str, user=Depends(verify_token)):
-    ref = db.collection("post").document(post_id)
+@router.delete("/delete-post/{postId}")
+def delete_post(postId: str, user=Depends(require_player)):
+    ref = db.collection("post").document(postId)
     if not ref.get().exists:
         raise HTTPException(status_code=404, detail="Post not found")
     ref.delete()
@@ -68,22 +46,22 @@ def delete_post(post_id: str, user=Depends(verify_token)):
 
 # FACTS
 @router.get("/facts")
-def get_facts(user=Depends(verify_token)):
+def get_facts(user=Depends(require_player)):
     docs = db.collection("fact").stream()
     return [{"id": doc.id, **doc.to_dict()} for doc in docs]
 
 # ANNOUNCEMENTS
 @router.get("/announcements")
-def get_announcements(user=Depends(verify_token)):
+def get_announcements(user=Depends(require_player)):
     docs = db.collection("announcement").stream()
     return [{"id": doc.id, **doc.to_dict()} for doc in docs]
 
 # REPORTING
 @router.post("/report-post")
-def report_post(post_id: str, reason: str, user=Depends(verify_token)):
+def report_post(data: ReportRequest, user=Depends(require_player)):
     db.collection("report").add({
-        "postId": post_id,
-        "reason": reason,
+        "postId": data.postId,
+        "reason": data.reason,
         "reportedAt": firestore.SERVER_TIMESTAMP,
         "reportedBy": user["uid"]
     })
@@ -91,18 +69,28 @@ def report_post(post_id: str, reason: str, user=Depends(verify_token)):
 
 # PROFILE
 @router.get("/profile")
-def get_profile(user=Depends(verify_token)):
+def get_profile(user=Depends(require_player)):
     doc = db.collection("user").document(user["uid"]).get()
     if not doc.exists:
         raise HTTPException(status_code=404, detail="User not found")
     return doc.to_dict()
 
 @router.put("/update-profile")
-def update_profile(data: dict, user=Depends(verify_token)):
+def update_profile(data: dict, user=Depends(require_player)):
     db.collection("user").document(user["uid"]).update(data)
     return {"message": "Profile updated"}
 
 @router.delete("/delete-account")
-def delete_account(user=Depends(verify_token)):
-    db.collection("user").document(user["uid"]).delete()
-    return {"message": "Account deleted"}
+def delete_account(user=Depends(require_player)):
+    uid = user["uid"]
+
+    # Delete from Firestore
+    db.collection("user").document(uid).delete()
+
+    # Delete from Firebase Auth
+    try:
+        firebase_auth.delete_user(uid)
+    except firebase_auth.AuthError as e:
+        raise HTTPException(status_code=500, detail=f"Failed to delete from Firebase Auth: {str(e)}")
+
+    return {"message": "Account deleted from Firestore and Firebase Auth"}

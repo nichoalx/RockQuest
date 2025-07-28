@@ -68,6 +68,11 @@ class Report(BaseModel):
     reviewedAt: Optional[datetime] = None
     adminAction: Optional[str] = None
 
+
+class ReportRequest(BaseModel):
+    postId: str
+    reason: str
+
 #all three
 class Post(BaseModel):
     #post section
@@ -90,8 +95,9 @@ class Post(BaseModel):
 
 #user
 class User(BaseModel):
+    userID: str
     username: str
-    emailAddress: EmailStr
+    email: EmailStr
     type: Literal["player", "geologist", "admin"] = "player" #only allow player or geologist, default player
     createdAt: Optional[datetime] = None
     dob: Optional[datetime] = None
