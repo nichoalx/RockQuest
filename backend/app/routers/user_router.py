@@ -20,10 +20,15 @@ def complete_profile(data: User, current_user: dict = Depends(verify_token)):
     user_ref = db.collection("user").document(uid)
 
     update_data = {
+        "userId": uid,
         "username": data.username,
         "type": data.type,
         "description": data.description,
-        "createdAt": firestore.SERVER_TIMESTAMP
+        "createdAt": firestore.SERVER_TIMESTAMP,
+        "dob": data.dob,
+        "avatarId": data.avatarId,
+        "isActive": True,
+        "email": data.emailAddress
     }
 
     user_ref.set(update_data, merge=True)
