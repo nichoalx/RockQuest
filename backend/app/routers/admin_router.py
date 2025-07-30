@@ -46,11 +46,13 @@ def suspend_user(user_id: str, user=Depends(verify_token)):
     ref.update({"isActive": False, "suspendedAt": firestore.SERVER_TIMESTAMP})
     return {"message": f"User {user_id} suspended"}
 
-@admin_router.post("/unsuspend-user/{user_id}")
+@admin_router.put("/unsuspend-user/{user_id}")
 def unsuspend_user(user_id: str, user=Depends(verify_token)):
-    user_ref = db.collection("users").document(user_id)
-    user_ref.update({"status": "Active"})
-    return {"message": "User unsuspended successfully"}
+    ref = db.collection("user").document(user_id)
+    if not ref.get().exists:
+        raise HTTPException(status_code=404, detail="User not found")
+    ref.update({"isActive": True, "unsuspendedAt": firestore.SERVER_TIMESTAMP})
+    return {"message": f"User {user_id} unsuspended"}
 
 # ROCK DATABASE MANAGEMENT
 @admin_router.get("/rocks")
