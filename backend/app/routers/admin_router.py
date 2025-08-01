@@ -17,22 +17,12 @@ def get_user_count(user=Depends(verify_token)):
     count = len(list(db.collection("user").stream()))
     return {"totalUsers": count}
 
-@admin_router.get("/dashboard/rocks")
-def get_rock_count(user=Depends(verify_token)):
-    count = len(list(db.collection("rock").stream()))
-    return {"totalRocks": count}
-
 @admin_router.get("/dashboard/posts")
 def get_post_count(user=Depends(verify_token)):
     count = len(list(db.collection("post").stream()))
     return {"totalPosts": count}
 
-@admin_router.get("/dashboard/facts")
-def get_fact_count(user=Depends(verify_token)):
-    count = len(list(db.collection("fact").stream()))
-    return {"totalFacts": count}
-
-@admin_router.get("/dashboard/report-count")
+@admin_router.get("/dashboard/reports")
 def get_report_count(user=Depends(verify_token)):
     count = len(list(db.collection("report").stream()))
     return {"totalReports": count}
@@ -55,6 +45,14 @@ def suspend_user(user_id: str, user=Depends(verify_token)):
         raise HTTPException(status_code=404, detail="User not found")
     ref.update({"isActive": False, "suspendedAt": firestore.SERVER_TIMESTAMP})
     return {"message": f"User {user_id} suspended"}
+
+@admin_router.put("/unsuspend-user/{user_id}")
+def unsuspend_user(user_id: str, user=Depends(verify_token)):
+    ref = db.collection("user").document(user_id)
+    if not ref.get().exists:
+        raise HTTPException(status_code=404, detail="User not found")
+    ref.update({"isActive": True, "unsuspendedAt": firestore.SERVER_TIMESTAMP})
+    return {"message": f"User {user_id} unsuspended"}
 
 # ROCK DATABASE MANAGEMENT
 @admin_router.get("/rocks")
@@ -260,6 +258,11 @@ def delete_quest(quest_id: str, user=Depends(verify_token)):
     return {"message": "Quest deleted"}
 
 # POST MANAGEMENT
+@admin_router.get("/posts")
+def get_all_posts(user=Depends(verify_token)):
+    docs = db.collection("post").stream()
+    return [{"id": doc.id, **doc.to_dict()} for doc in docs]
+
 @admin_router.post("/add-post")
 def add_post(data: Post, user=Depends(verify_token)):
     if not data.postId:
