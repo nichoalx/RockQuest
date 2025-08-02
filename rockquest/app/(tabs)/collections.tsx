@@ -1,11 +1,21 @@
 "use client"
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, StatusBar, ImageBackground } from "react-native"
+
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  StyleSheet,
+  StatusBar,
+  ImageBackground,
+} from "react-native"
 import { useFonts, PressStart2P_400Regular } from "@expo-google-fonts/press-start-2p"
 import * as SplashScreen from "expo-splash-screen"
 import { useEffect, useState } from "react"
 import { Ionicons, MaterialIcons } from "@expo/vector-icons"
 import { useRouter } from "expo-router"
-import cbg_rocks from "../../assets/images/cbg_rocks.png"
+
+import cbg_rocks from "../../assets/images/cbd_rocks.png"
 import cbg_badge from "../../assets/images/cbg_badge.png"
 
 SplashScreen.preventAutoHideAsync()
@@ -63,63 +73,62 @@ export default function CollectionsScreen() {
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
 
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerContent}>
-          <View>
-            <Text style={styles.title}>Collection</Text>
-          </View>
-          <TouchableOpacity style={styles.profileIcon} onPress={() => router.replace("/(tabs)/profile")}>
-            <Ionicons name="person" size={20} color="white" />
-          </TouchableOpacity>
-        </View>
+      {/* Floating Profile Icon with transparent background */}
+      <TouchableOpacity
+        style={styles.profileIcon}
+        onPress={() => router.replace("/(tabs)/profile")}
+      >
+        <Ionicons name="person" size={20} color="white" />
+      </TouchableOpacity>
 
-        {/* Tab Buttons */}
-        <View style={styles.tabContainer}>
-          <TouchableOpacity
-            style={[styles.tabButton, activeTab === "Rocks" && styles.tabButtonActive]}
-            onPress={() => setActiveTab("Rocks")}
-          >
-            <Text style={[styles.tabText, activeTab === "Rocks" && styles.tabTextActive]}>Rocks</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.tabButton, activeTab === "Badges" && styles.tabButtonActive]}
-            onPress={() => setActiveTab("Badges")}
-          >
-            <Text style={[styles.tabText, activeTab === "Badges" && styles.tabTextActive]}>Badges</Text>
-          </TouchableOpacity>
-        </View>
+      {/* Tab Buttons */}
+      <View style={styles.tabContainer}>
+        <TouchableOpacity
+          style={[styles.tabButton, activeTab === "Rocks" && styles.tabButtonActive]}
+          onPress={() => setActiveTab("Rocks")}
+        >
+          <Text style={[styles.tabText, activeTab === "Rocks" && styles.tabTextActive]}>Rocks</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tabButton, activeTab === "Badges" && styles.tabButtonActive]}
+          onPress={() => setActiveTab("Badges")}
+        >
+          <Text style={[styles.tabText, activeTab === "Badges" && styles.tabTextActive]}>Badges</Text>
+        </TouchableOpacity>
       </View>
 
-      {/* Content */}
+      {/* Background image and content */}
       <ImageBackground
-  source={activeTab === "Rocks" ? cbg_rocks : cbg_badge}
-  style={{ flex: 1 }}
-  resizeMode="cover"
->
-  <ScrollView style={styles.content} contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
-    {activeTab === "Rocks" ? (
-      <View style={styles.rocksContent}>
-        {rockCategories.map((category, index) => (
-          <View key={index} style={styles.categorySection}>
-            <View style={styles.categoryHeader}>
-              <Text style={styles.categoryTitle}>{category.title}</Text>
-              <View style={styles.categoryActions}>
-                <Ionicons name="chevron-forward" size={16} color="#6b7280" />
-                <MaterialIcons name="filter-list" size={20} color="#6b7280" style={styles.filterIcon} />
-              </View>
+        source={activeTab === "Rocks" ? cbg_rocks : cbg_badge}
+        style={{ flex: 1 }}
+        resizeMode="cover"
+      >
+        <ScrollView style={styles.content} contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
+          {activeTab === "Rocks" ? (
+            <View style={styles.rocksContent}>
+              {rockCategories.map((category, index) => (
+                <View key={index} style={styles.categorySection}>
+                  <View style={styles.categoryHeader}>
+                    <Text style={styles.categoryTitle}>{category.title}</Text>
+                    <View style={styles.categoryActions}>
+                      <Ionicons name="chevron-forward" size={16} color="#6b7280" />
+                      {/* Wrap filter icon in transparent container */}
+                      <View style={styles.filterIconContainer}>
+                        <MaterialIcons name="filter-list" size={20} color="#6b7280" />
+                      </View>
+                    </View>
+                  </View>
+                  <RockGrid rocks={category.rocks} />
+                </View>
+              ))}
             </View>
-            <RockGrid rocks={category.rocks} />
-          </View>
-        ))}
-      </View>
-    ) : (
-      <View style={styles.badgesContent}>
-        <Text style={styles.comingSoon}>Badges coming soon!</Text>
-      </View>
-    )}
-  </ScrollView>
-</ImageBackground>
+          ) : (
+            <View style={styles.badgesContent}>
+              <Text style={styles.comingSoon}>Badges coming soon!</Text>
+            </View>
+          )}
+        </ScrollView>
+      </ImageBackground>
 
       {/* Bottom Navigation */}
       <View style={styles.bottomNav}>
@@ -127,17 +136,14 @@ export default function CollectionsScreen() {
           <Ionicons name="home" size={24} color="#BA9B77" />
           <Text style={styles.navText}>Home</Text>
         </TouchableOpacity>
-
         <TouchableOpacity style={styles.navItem} activeOpacity={0.7} onPress={() => router.replace("/(tabs)/camera")}>
           <Ionicons name="camera" size={24} color="#BA9B77" />
           <Text style={styles.navText}>Scan</Text>
         </TouchableOpacity>
-
         <TouchableOpacity style={styles.navItem} activeOpacity={0.7} onPress={() => router.replace("/(tabs)/collections")}>
           <MaterialIcons name="collections" size={24} color="#A77B4E" />
           <Text style={[styles.navText, styles.navTextActive]}>Collections</Text>
         </TouchableOpacity>
-
         <TouchableOpacity style={styles.navItem} activeOpacity={0.7} onPress={() => router.replace("/(tabs)/posts")}>
           <Ionicons name="chatbubbles" size={24} color="#BA9B77" />
           <Text style={styles.navText}>Posts</Text>
@@ -152,41 +158,22 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#f3f4f6",
   },
-  header: {
-    backgroundColor: "white",
-    paddingTop: 50,
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-  },
-  headerContent: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: 20,
-  },
-  title: {
-    fontFamily: "PressStart2P_400Regular",
-    fontSize: 20,
-    color: "#1f2937",
-    marginBottom: 8,
-    marginTop: 20,
-  },
-  subtitle: {
-    fontSize: 18,
-    color: "#1f2937",
-    fontWeight: "600",
-  },
   profileIcon: {
+    position: "absolute",
+    top: 50,
+    right: 20,
+    zIndex: 10,
     width: 40,
     height: 40,
     borderRadius: 20,
-    marginTop: 10,
     backgroundColor: "#A77B4E",
     justifyContent: "center",
     alignItems: "center",
   },
   tabContainer: {
+    marginTop: 110,
     flexDirection: "row",
+    justifyContent: "center",
     gap: 12,
   },
   tabButton: {
@@ -230,8 +217,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
   },
-  filterIcon: {
-    marginLeft: 8,
+  filterIconContainer: {
+    backgroundColor: "transparent", // full transparent
+    padding: 4, // optional padding
+    borderRadius: 4,
   },
   rockGrid: {
     flexDirection: "row",
