@@ -27,8 +27,7 @@ export default function ChooseRoleScreen() {
       <View style={styles.contentWrapper}>
         <Text style={styles.title}>Sign up as:</Text>
         <Text style={styles.subtitle}>Choose your role to start your adventure!</Text>
-
-<<<<<<< HEAD
+        
         <TouchableOpacity
           onPress={() => handleRoleSelect("user")}
           accessibilityRole="button"
