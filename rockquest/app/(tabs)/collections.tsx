@@ -1,10 +1,12 @@
 "use client"
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, StatusBar } from "react-native"
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, StatusBar, ImageBackground } from "react-native"
 import { useFonts, PressStart2P_400Regular } from "@expo-google-fonts/press-start-2p"
 import * as SplashScreen from "expo-splash-screen"
 import { useEffect, useState } from "react"
 import { Ionicons, MaterialIcons } from "@expo/vector-icons"
 import { useRouter } from "expo-router"
+import cbg_rocks from "../../assets/images/cbg_rocks.png"
+import cbg_badge from "../../assets/images/cbg_badge.png"
 
 SplashScreen.preventAutoHideAsync()
 
@@ -90,28 +92,34 @@ export default function CollectionsScreen() {
       </View>
 
       {/* Content */}
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {activeTab === "Rocks" ? (
-          <View style={styles.rocksContent}>
-            {rockCategories.map((category, index) => (
-              <View key={index} style={styles.categorySection}>
-                <View style={styles.categoryHeader}>
-                  <Text style={styles.categoryTitle}>{category.title}</Text>
-                  <View style={styles.categoryActions}>
-                    <Ionicons name="chevron-forward" size={16} color="#6b7280" />
-                    <MaterialIcons name="filter-list" size={20} color="#6b7280" style={styles.filterIcon} />
-                  </View>
-                </View>
-                <RockGrid rocks={category.rocks} />
+      <ImageBackground
+  source={activeTab === "Rocks" ? cbg_rocks : cbg_badge}
+  style={{ flex: 1 }}
+  resizeMode="cover"
+>
+  <ScrollView style={styles.content} contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
+    {activeTab === "Rocks" ? (
+      <View style={styles.rocksContent}>
+        {rockCategories.map((category, index) => (
+          <View key={index} style={styles.categorySection}>
+            <View style={styles.categoryHeader}>
+              <Text style={styles.categoryTitle}>{category.title}</Text>
+              <View style={styles.categoryActions}>
+                <Ionicons name="chevron-forward" size={16} color="#6b7280" />
+                <MaterialIcons name="filter-list" size={20} color="#6b7280" style={styles.filterIcon} />
               </View>
-            ))}
+            </View>
+            <RockGrid rocks={category.rocks} />
           </View>
-        ) : (
-          <View style={styles.badgesContent}>
-            <Text style={styles.comingSoon}>Badges coming soon!</Text>
-          </View>
-        )}
-      </ScrollView>
+        ))}
+      </View>
+    ) : (
+      <View style={styles.badgesContent}>
+        <Text style={styles.comingSoon}>Badges coming soon!</Text>
+      </View>
+    )}
+  </ScrollView>
+</ImageBackground>
 
       {/* Bottom Navigation */}
       <View style={styles.bottomNav}>
