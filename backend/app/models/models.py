@@ -57,6 +57,12 @@ class Quest(BaseModel):
     updatedAt: Optional[datetime] = None
     updatedBy: Optional[str] = None
 
+class DailyQuest(BaseModel):
+    questId: str
+    title: str
+    description: str
+    createdAt: Optional[datetime] = None
+
 class Report(BaseModel):
     reportedId: str
     reportedItemType: Literal["post", "fact"]
@@ -101,6 +107,7 @@ class User(BaseModel):
 
 #geologist
 class Fact(BaseModel):
+    factId: Optional[str] = None
     title: str
     description: str
     createdBy: Optional[str] = None
@@ -114,8 +121,31 @@ class UpdateFact(BaseModel):
 
 #player
 class Collection(BaseModel):
-    name: str
-    type: Optional[str] = None
-    description: Optional[str] = None
-    imageUrl: Optional[str] = None
-    createdAt: Optional[datetime] = None
+    rockId: str #must match to an existing rockId in Rock
+    imageUrl: Optional[str] = None #hold the image from user
+    savedAt: Optional[datetime] = None
+    name: Optional[str] = None
+
+class DailyQuestStatus(BaseModel):
+    questId: str
+    title: str
+    description: str
+    completed: bool
+    completedAt: Optional[datetime] = None
+
+class Achievement(BaseModel):
+    achievementId: str
+    title: str
+    description: str
+    milestone: int  # e.g., 1, 5, 10
+    type: str  # e.g., "scan_rock", "save_rock"
+    badgeUrl: Optional[str] = None
+
+class PlayerAchievement(BaseModel):
+    achievementId: str
+    title: str
+    description: str
+    milestone: int
+    type: str
+    badgeUrl: Optional[str] = None
+    unlockedAt: Optional[datetime] = None

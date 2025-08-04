@@ -10,32 +10,38 @@ geologist_router = APIRouter(prefix="/geologist", tags=["Geologist"])
 # FACT MANAGEMENT
 @geologist_router.post("/add-fact")
 def add_fact(data: Fact, user=Depends(verify_token)):
-    fact_data = data.dict()
-    fact_data["createdBy"] = user["uid"]
-    fact_data["createdAt"] = firestore.SERVER_TIMESTAMP
-    db.collection("fact").add(fact_data)
-    return {"message": "Fact added"}
+    if not data.factId:
+        raise HTTPException(status_code=400, detail="factId is required")
+    ref = db.collection("fact").document(str(data.factId))
+    if ref.get().exists:
+        raise HTTPException(status_code=400, detail="Fact with this factId already exists")
+
+    update_data = {
+        "factId": data.factId,
+        "title": data.title,
+        "description": data.description,
+        "createdBy": user["uid"],
+        "createdAt": firestore.SERVER_TIMESTAMP
+    }
+
+    ref.set(update_data)
+    return {"message": f"Fact added with factId '{data.factId}' as document ID"}
 
 @geologist_router.put("/edit-fact/{fact_id}")
-def edit_fact(fact_id: str, data: UpdateFact, user=Depends(verify_token)):
+def edit_fact(fact_id: str, data:UpdateFact, user=Depends(verify_token)):
     ref = db.collection("fact").document(fact_id)
 
     if not ref.get().exists:
         raise HTTPException(status_code=404, detail="Fact not found")
     
-    fact = ref.get().to_dict()
-    if fact.get("createdBy") != user["uid"]:
-        raise HTTPException(status_code=403, detail="You are not authorized to edit this fact")
-    
     update_data = {
-        **{k: v for k, v in data.dict().items() if v is not None},
+        **data.dict(exclude_unset=True),
         "updatedAt": firestore.SERVER_TIMESTAMP,
         "updatedBy": user["uid"]
     }
-
+    
     ref.update(update_data)
     return {"message": "Fact updated"}
-
 
 @geologist_router.delete("/delete-fact/{fact_id}")
 def delete_fact(fact_id: str, user=Depends(verify_token)):
