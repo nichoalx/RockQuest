@@ -2,7 +2,7 @@ from fastapi import Depends, APIRouter, HTTPException, Query
 from datetime import datetime
 from typing import Optional
 from firebase_admin import firestore
-from app.auth.dependencies import verify_token
+from app.auth.dependencies import verify_admin_token
 from app.firebase import db
 from app.models.models import (
     User, Rock, Fact, Announcement, UpdateAnnouncement, Quest,
@@ -13,23 +13,23 @@ admin_router = APIRouter(prefix="/admin", tags=["Admin"])
 
 # DASHBOARD 
 @admin_router.get("/dashboard/users")
-def get_user_count(user=Depends(verify_token)):
+def get_user_count(user=Depends(verify_admin_token)):
     count = len(list(db.collection("user").stream()))
     return {"totalUsers": count}
 
 @admin_router.get("/dashboard/posts")
-def get_post_count(user=Depends(verify_token)):
+def get_post_count(user=Depends(verify_admin_token)):
     count = len(list(db.collection("post").stream()))
     return {"totalPosts": count}
 
 @admin_router.get("/dashboard/reports")
-def get_report_count(user=Depends(verify_token)):
+def get_report_count(user=Depends(verify_admin_token)):
     count = len(list(db.collection("report").stream()))
     return {"totalReports": count}
 
 # USER MANAGEMENT
 @admin_router.get("/users")
-def get_all_users(role: Optional[str] = None, email: Optional[str] = None, user=Depends(verify_token)):
+def get_all_users(role: Optional[str] = None, email: Optional[str] = None, user=Depends(verify_admin_token)):
     query = db.collection("user")
     if role:
         query = query.where("type", "==", role)
@@ -39,7 +39,7 @@ def get_all_users(role: Optional[str] = None, email: Optional[str] = None, user=
     return [{"id": doc.id, **doc.to_dict()} for doc in docs]
 
 @admin_router.put("/suspend-user/{user_id}")
-def suspend_user(user_id: str, user=Depends(verify_token)):
+def suspend_user(user_id: str, user=Depends(verify_admin_token)):
     ref = db.collection("user").document(user_id)
     if not ref.get().exists:
         raise HTTPException(status_code=404, detail="User not found")
@@ -47,7 +47,7 @@ def suspend_user(user_id: str, user=Depends(verify_token)):
     return {"message": f"User {user_id} suspended"}
 
 @admin_router.put("/unsuspend-user/{user_id}")
-def unsuspend_user(user_id: str, user=Depends(verify_token)):
+def unsuspend_user(user_id: str, user=Depends(verify_admin_token)):
     ref = db.collection("user").document(user_id)
     if not ref.get().exists:
         raise HTTPException(status_code=404, detail="User not found")
@@ -56,12 +56,12 @@ def unsuspend_user(user_id: str, user=Depends(verify_token)):
 
 # ROCK DATABASE MANAGEMENT
 @admin_router.get("/rocks")
-def get_all_rocks(user=Depends(verify_token)):
+def get_all_rocks(user=Depends(verify_admin_token)):
     docs = db.collection("rock").stream()
     return [{"id": doc.id, **doc.to_dict()} for doc in docs]
 
 @admin_router.post("/add-rock")
-def add_rock(data: Rock, user=Depends(verify_token)):
+def add_rock(data: Rock, user=Depends(verify_admin_token)):
     if not data.rockId:
         raise HTTPException(status_code=400, detail="rockId is required")
     # Use rockId as the Firestore document ID
@@ -86,7 +86,7 @@ def add_rock(data: Rock, user=Depends(verify_token)):
 
 
 @admin_router.put("/edit-rock/{rock_id}")
-def edit_rock(rock_id: str, data: Rock, user=Depends(verify_token)):
+def edit_rock(rock_id: str, data: Rock, user=Depends(verify_admin_token)):
     ref = db.collection("rock").document(rock_id)
     if not ref.get().exists:
         raise HTTPException(status_code=404, detail="Rock not found")
@@ -101,7 +101,7 @@ def edit_rock(rock_id: str, data: Rock, user=Depends(verify_token)):
     return {"message": "Rock updated"}
 
 @admin_router.delete("/delete-rock/{rock_id}")
-def delete_rock(rock_id: str, user=Depends(verify_token)):
+def delete_rock(rock_id: str, user=Depends(verify_admin_token)):
     ref = db.collection("rock").document(rock_id)
     if not ref.get().exists:
         raise HTTPException(status_code=404, detail="Rock not found")
@@ -110,12 +110,12 @@ def delete_rock(rock_id: str, user=Depends(verify_token)):
 
 # POST REVIEW
 @admin_router.get("/review")
-def review_pending_rocks(user=Depends(verify_token)):
+def review_pending_rocks(user=Depends(verify_admin_token)):
     docs = db.collection("post").stream()
     return [{"id": doc.id, **doc.to_dict()} for doc in docs]
 
 @admin_router.post("/verify-rock/{post_id}")
-def verify_rock(post_id: str, data: PostVerificationRequest, user=Depends(verify_token)):
+def verify_rock(post_id: str, data: PostVerificationRequest, user=Depends(verify_admin_token)):
     review_ref = db.collection("post").document(post_id)
     review_doc = review_ref.get()
     if not review_doc.exists:
@@ -145,12 +145,12 @@ def verify_rock(post_id: str, data: PostVerificationRequest, user=Depends(verify
 
 # FACT MANAGEMENT
 @admin_router.get("/facts")
-def get_all_facts(user=Depends(verify_token)):
+def get_all_facts(user=Depends(verify_admin_token)):
     docs = db.collection("fact").stream()
     return [{"id": doc.id, **doc.to_dict()} for doc in docs]
 
 @admin_router.delete("/delete-fact/{fact_id}")
-def delete_fact(fact_id: str, user=Depends(verify_token)):
+def delete_fact(fact_id: str, user=Depends(verify_admin_token)):
     ref = db.collection("fact").document(fact_id)
     if not ref.get().exists:
         raise HTTPException(status_code=404, detail="Fact not found")
@@ -159,12 +159,12 @@ def delete_fact(fact_id: str, user=Depends(verify_token)):
 
 # ANNOUNCEMENTS 
 @admin_router.get("/announcements")
-def get_announcements(user=Depends(verify_token)):
+def get_announcements(user=Depends(verify_admin_token)):
     docs = db.collection("announcement").stream()
     return [{"id": doc.id, **doc.to_dict()} for doc in docs]
 
 @admin_router.post("/add-announcement")
-def add_announcement(data: Announcement, user=Depends(verify_token)):
+def add_announcement(data: Announcement, user=Depends(verify_admin_token)):
     if not data.announcementId:
         raise HTTPException(status_code=400, detail="announcementId is required")
     ref = db.collection("announcement").document(str(data.announcementId))
@@ -187,7 +187,7 @@ def add_announcement(data: Announcement, user=Depends(verify_token)):
     return {"message": f"Announcement added with ID '{data.announcementId}'"}
 
 @admin_router.put("/update-announcement/{announcement_id}")
-def update_announcement(announcement_id: str, data: UpdateAnnouncement, user=Depends(verify_token)):
+def update_announcement(announcement_id: str, data: UpdateAnnouncement, user=Depends(verify_admin_token)):
     ref = db.collection("announcement").document(announcement_id)
     if not ref.get().exists:
         raise HTTPException(status_code=404, detail="Announcement not found")
@@ -202,7 +202,7 @@ def update_announcement(announcement_id: str, data: UpdateAnnouncement, user=Dep
     return {"message": "Announcement updated"}
 
 @admin_router.delete("/delete-announcement/{announcement_id}")
-def delete_announcement(announcement_id: str, user=Depends(verify_token)):
+def delete_announcement(announcement_id: str, user=Depends(verify_admin_token)):
     ref = db.collection("announcement").document(announcement_id)
     if not ref.get().exists:
         raise HTTPException(status_code=404, detail="Announcement not found")
@@ -211,12 +211,12 @@ def delete_announcement(announcement_id: str, user=Depends(verify_token)):
 
 # QUEST MANAGEMENT
 @admin_router.get("/quests")
-def get_quests(user=Depends(verify_token)):
+def get_quests(user=Depends(verify_admin_token)):
     docs = db.collection("quest").stream()
     return [{"id": doc.id, **doc.to_dict()} for doc in docs]
 
 @admin_router.post("/add-quest")
-def add_quest(data: Quest, user=Depends(verify_token)):
+def add_quest(data: Quest, user=Depends(verify_admin_token)):
     if not data.questId:
         raise HTTPException(status_code=400, detail="questId is required")
     ref = db.collection("quest").document(str(data.questId))
@@ -235,7 +235,7 @@ def add_quest(data: Quest, user=Depends(verify_token)):
 
 
 @admin_router.put("/edit-quest/{quest_id}")
-def edit_quest(quest_id: str, data: Quest, user=Depends(verify_token)):
+def edit_quest(quest_id: str, data: Quest, user=Depends(verify_admin_token)):
     ref = db.collection("quest").document(quest_id)
     if not ref.get().exists:
         raise HTTPException(status_code=404, detail="Quest not found")
@@ -250,7 +250,7 @@ def edit_quest(quest_id: str, data: Quest, user=Depends(verify_token)):
     return {"message": "Quest updated"}
 
 @admin_router.delete("/delete-quest/{quest_id}")
-def delete_quest(quest_id: str, user=Depends(verify_token)):
+def delete_quest(quest_id: str, user=Depends(verify_admin_token)):
     ref = db.collection("quest").document(quest_id)
     if not ref.get().exists:
         raise HTTPException(status_code=404, detail="Quest not found")
@@ -259,12 +259,12 @@ def delete_quest(quest_id: str, user=Depends(verify_token)):
 
 # POST MANAGEMENT
 @admin_router.get("/posts")
-def get_all_posts(user=Depends(verify_token)):
+def get_all_posts(user=Depends(verify_admin_token)):
     docs = db.collection("post").stream()
     return [{"id": doc.id, **doc.to_dict()} for doc in docs]
 
 @admin_router.post("/add-post")
-def add_post(data: Post, user=Depends(verify_token)):
+def add_post(data: Post, user=Depends(verify_admin_token)):
     if not data.postId:
         raise HTTPException(status_code=400, detail="postId is required when manually setting ID")
     post_ref = db.collection("post").document(data.postId)
@@ -288,7 +288,7 @@ def add_post(data: Post, user=Depends(verify_token)):
     return {"message": "Post added", "postId": data.postId}
 
 @admin_router.put("/edit-post/{post_id}")
-def edit_post(post_id: str, data: Post, user=Depends(verify_token)):
+def edit_post(post_id: str, data: Post, user=Depends(verify_admin_token)):
     ref = db.collection("post").document(post_id)
     if not ref.get().exists:
         raise HTTPException(status_code=404, detail="Post not found")
@@ -308,7 +308,7 @@ def edit_post(post_id: str, data: Post, user=Depends(verify_token)):
 
 
 @admin_router.delete("/delete-post/{post_id}")
-def delete_post(post_id: str, user=Depends(verify_token)):
+def delete_post(post_id: str, user=Depends(verify_admin_token)):
     ref = db.collection("post").document(post_id)
     if not ref.get().exists:
         raise HTTPException(status_code=404, detail="Post not found")
@@ -317,12 +317,12 @@ def delete_post(post_id: str, user=Depends(verify_token)):
 
 # REPORT MANAGEMENT
 @admin_router.get("/reports")
-def get_reports(user=Depends(verify_token)):
+def get_reports(user=Depends(verify_admin_token)):
     docs = db.collection("report").stream()
     return [{"id": doc.id, **doc.to_dict()} for doc in docs]
 
 @admin_router.post("/review-report/{report_id}")
-def review_report(report_id: str, data: ReportDecisionRequest, user=Depends(verify_token)):
+def review_report(report_id: str, data: ReportDecisionRequest, user=Depends(verify_admin_token)):
     ref = db.collection("report").document(report_id)
     doc = ref.get()
 
