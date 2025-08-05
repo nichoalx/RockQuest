@@ -4,13 +4,12 @@ import { useFonts, PressStart2P_400Regular } from "@expo-google-fonts/press-star
 import * as SplashScreen from "expo-splash-screen"
 import { useEffect, useState } from "react"
 import { Ionicons, MaterialIcons } from "@expo/vector-icons"
-import { useRouter } from "expo-router";
-
+import { useRouter } from "expo-router"
 
 SplashScreen.preventAutoHideAsync()
 
 export default function CollectionsScreen() {
-  const router = useRouter();
+  const router = useRouter()
   const [fontsLoaded] = useFonts({
     PressStart2P_400Regular,
   })
@@ -45,11 +44,15 @@ export default function CollectionsScreen() {
   const RockGrid = ({ rocks }: { rocks: any[] }) => (
     <View style={styles.rockGrid}>
       {rocks.map((rock, index) => (
-        <View key={index} style={styles.rockItem}>
+        <TouchableOpacity
+          key={index}
+          style={styles.rockItem}
+          onPress={() => router.push("/(tabs)/collection-rock")}
+        >
           <View style={styles.rockImage}>
             <Text style={styles.rockImageText}>Rock</Text>
           </View>
-        </View>
+        </TouchableOpacity>
       ))}
     </View>
   )
@@ -113,12 +116,12 @@ export default function CollectionsScreen() {
       {/* Bottom Navigation */}
       <View style={styles.bottomNav}>
         <TouchableOpacity style={styles.navItem} activeOpacity={0.7} onPress={() => router.replace("/(tabs)/dashboard")}>
-        <Ionicons name="home" size={24} color="#BA9B77" />
-        <Text style={styles.navText}>Home</Text>
+          <Ionicons name="home" size={24} color="#BA9B77" />
+          <Text style={styles.navText}>Home</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.navItem} activeOpacity={0.7} onPress={() => router.replace("/(tabs)/camera")}>
-          <Ionicons name="camera" size={24} color="#BA9B77"  />
+          <Ionicons name="camera" size={24} color="#BA9B77" />
           <Text style={styles.navText}>Scan</Text>
         </TouchableOpacity>
 

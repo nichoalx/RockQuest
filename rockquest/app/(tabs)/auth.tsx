@@ -1,77 +1,96 @@
-import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, Dimensions, ActivityIndicator, KeyboardAvoidingView } from "react-native"
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  Alert,
+  StyleSheet,
+  Dimensions,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+} from "react-native"
 import { LinearGradient } from "expo-linear-gradient"
 import { useFonts, PressStart2P_400Regular } from "@expo-google-fonts/press-start-2p"
 import * as SplashScreen from "expo-splash-screen"
 import { useEffect, useState } from "react"
-import { useRouter } from "expo-router";
-import { FIREBASE_AUTH } from "../../utils/firebase" 
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
+import { useRouter, useLocalSearchParams } from "expo-router"
+import { FIREBASE_AUTH, FIRESTORE } from "../../utils/firebase"
+import {
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+} from "firebase/auth"
+import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore"
 
-// Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync()
 
 const { width, height } = Dimensions.get("window")
 
 export default function AuthScreen() {
-  const [fontsLoaded] = useFonts({
-    PressStart2P_400Regular,
-  })
-
+  const [fontsLoaded] = useFonts({ PressStart2P_400Regular })
   const [isLogin, setIsLogin] = useState(true)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
+  const [type, setType] = useState("user")
   const [loading, setLoading] = useState(false)
-  const auth = FIREBASE_AUTH;
-  const router = useRouter();
+
+  const auth = FIREBASE_AUTH
+  const router = useRouter()
+  const { mode } = useLocalSearchParams()
 
   useEffect(() => {
-    if (fontsLoaded) {
-      SplashScreen.hideAsync()
-    }
+    if (fontsLoaded) SplashScreen.hideAsync()
   }, [fontsLoaded])
+
+  useEffect(() => {
+    setIsLogin(mode !== "signup")
+  }, [mode])
 
   const handleAuth = () => {
     if (!email || !password) {
-      Alert.alert("Error", "Please fill in all fields");
-      return;
+      Alert.alert("Error", "Please fill in all fields")
+      return
     }
 
-    if (!isLogin && password !== confirmPassword) {
-      Alert.alert("Error", "Passwords don't match");
-      return;
-    }
     setLoading(true)
-    try {
-      const authMethod = isLogin
-      ? signInWithEmailAndPassword(auth, email, password)
-      : createUserWithEmailAndPassword(auth, email, password);
+    signInWithEmailAndPassword(auth, email, password)
+      .then(async (userCredential) => {
+        const { uid } = userCredential.user
 
-      authMethod
-      .then(() => {
-        setLoading(false);
-        router.replace("/(tabs)/dashboard"); // or your desired route
+        // Get user type from Firestore
+        const userDoc = await getDoc(doc(FIRESTORE, "user", uid))
+        const userData = userDoc.data()
+        const userType = userData?.type || "user"
+
+        setLoading(false)
+
+        // Redirect based on type
+        if (userType === "geologist") {
+          router.replace("/GeoHomepage")
+        } else if (userType === "admin") {
+          router.replace("/AdminDashboard")
+        } else {
+          router.replace("/(tabs)/dashboard")
+        }
       })
       .catch((error) => {
-        setLoading(false);
-        Alert.alert("Authentication Error", error.message);
-      });
-    } catch (error: any) {
-      setLoading(false);
-      Alert.alert("Authentication Error", error.message || "An error occurred");
-    }
-  };
-  
-  const toggleAuthMode = () => {
-    setIsLogin(!isLogin)
-    setEmail("")
-    setPassword("")
-    setConfirmPassword("")
+        setLoading(false)
+        Alert.alert("Authentication Error", error.message)
+      })
   }
 
-  if (!fontsLoaded) {
-    return null
+  const toggleAuthMode = () => {
+    if (isLogin) {
+      router.push("/choose-role")
+    } else {
+      setIsLogin(true)
+      setEmail("")
+      setPassword("")
+      setConfirmPassword("")
+    }
   }
+
+  if (!fontsLoaded) return null
 
   return (
     <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
@@ -83,12 +102,30 @@ export default function AuthScreen() {
           end={{ x: 1, y: 1 }}
         >
           <View style={styles.content}>
-            {/* Title */}
             <Text style={styles.title}>{isLogin ? "Login" : "Sign Up"}</Text>
 
-            {/* Form Container */}
             <View style={styles.formContainer}>
-              {/* Email Input */}
+              {!isLogin && (
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Login As</Text>
+                  <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                    {["user", "geologist", "admin"].map((r) => (
+                      <TouchableOpacity
+                        key={r}
+                        style={[styles.roleButton, type === r && styles.roleButtonSelected]}
+                        onPress={() => setType(r)}
+                      >
+                        <Text
+                          style={type === r ? styles.roleButtonTextSelected : styles.roleButtonText}
+                        >
+                          {r.charAt(0).toUpperCase() + r.slice(1)}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+              )}
+
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Email</Text>
                 <TextInput
@@ -102,7 +139,6 @@ export default function AuthScreen() {
                 />
               </View>
 
-              {/* Password Input */}
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Password</Text>
                 <TextInput
@@ -110,13 +146,12 @@ export default function AuthScreen() {
                   placeholder="Enter your password"
                   value={password}
                   onChangeText={setPassword}
-                  secureTextEntry = {true}
+                  secureTextEntry
                   autoCapitalize="none"
                   autoCorrect={false}
                 />
               </View>
 
-              {/* Confirm Password Input (only for signup) */}
               {!isLogin && (
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>Confirm Password</Text>
@@ -125,20 +160,21 @@ export default function AuthScreen() {
                     placeholder="Confirm your password"
                     value={confirmPassword}
                     onChangeText={setConfirmPassword}
-                    secureTextEntry= {true}
+                    secureTextEntry
                     autoCapitalize="none"
                     autoCorrect={false}
                   />
                 </View>
               )}
 
-              {/* Auth Button */}
               <TouchableOpacity style={styles.authButton} onPress={handleAuth} activeOpacity={0.8}>
-                { loading ? <ActivityIndicator size ="small" color="white" /> : 
-                <Text style={styles.authButtonText}>{isLogin ? "Login" : "Sign Up"}</Text>}
+                {loading ? (
+                  <ActivityIndicator size="small" color="white" />
+                ) : (
+                  <Text style={styles.authButtonText}>{isLogin ? "Login" : "Create Account"}</Text>
+                )}
               </TouchableOpacity>
 
-              {/* Toggle Auth Mode */}
               <TouchableOpacity onPress={toggleAuthMode} activeOpacity={0.7}>
                 <Text style={styles.toggleText}>
                   {isLogin ? "Don't have an account? Sign up" : "Already have an account? Login"}
@@ -153,17 +189,9 @@ export default function AuthScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  gradient: {
-    flex: 1,
-  },
-  content: {
-    flex: 1,
-    justifyContent: "center",
-    paddingHorizontal: 32,
-  },
+  container: { flex: 1 },
+  gradient: { flex: 1 },
+  content: { flex: 1, justifyContent: "center", paddingHorizontal: 32 },
   title: {
     fontFamily: "PressStart2P_400Regular",
     fontSize: 24,
@@ -185,15 +213,8 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
     elevation: 5,
   },
-  inputGroup: {
-    marginBottom: 16,
-  },
-  label: {
-    color: "#374151",
-    fontSize: 14,
-    fontWeight: "600",
-    marginBottom: 8,
-  },
+  inputGroup: { marginBottom: 16 },
+  label: { color: "#374151", fontSize: 14, fontWeight: "600", marginBottom: 8 },
   input: {
     borderWidth: 1,
     borderColor: "#d1d5db",
@@ -209,25 +230,19 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     marginBottom: 16,
   },
-  authButtonText: {
-    color: "white",
-    textAlign: "center",
-    fontSize: 16,
-    fontWeight: "bold",
+  authButtonText: { color: "white", textAlign: "center", fontSize: 16, fontWeight: "bold" },
+  toggleText: { color: "#A77B4E", textAlign: "center", fontSize: 14 },
+  roleButton: {
+    flex: 1,
+    marginHorizontal: 4,
+    paddingVertical: 10,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "#A77B4E",
+    backgroundColor: "white",
+    alignItems: "center",
   },
-  toggleText: {
-    color: "#A77B4E",
-    textAlign: "center",
-    fontSize: 14,
-  },
-  backButton: {
-    marginTop: 32,
-    paddingVertical: 12,
-  },
-  backButtonText: {
-    color: "white",
-    textAlign: "center",
-    fontSize: 14,
-    textDecorationLine: "underline",
-  },
+  roleButtonSelected: { backgroundColor: "#A77B4E" },
+  roleButtonText: { color: "#A77B4E", fontWeight: "bold" },
+  roleButtonTextSelected: { color: "white", fontWeight: "bold" },
 })
