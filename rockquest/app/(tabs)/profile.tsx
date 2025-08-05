@@ -1,16 +1,40 @@
 "use client"
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, StatusBar, Alert } from "react-native"
+import React, { useState, useEffect } from "react"
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  StyleSheet,
+  StatusBar,
+  TextInput,
+  Modal,
+  Image,
+  Alert,
+} from "react-native"
 import { useFonts, PressStart2P_400Regular } from "@expo-google-fonts/press-start-2p"
 import * as SplashScreen from "expo-splash-screen"
-import { useEffect } from "react"
 import { Ionicons, MaterialIcons } from "@expo/vector-icons"
-import { useRouter } from "expo-router";
-import { FIREBASE_AUTH } from "../../utils/firebase" // Adjust the import path as needed
+import { useRouter } from "expo-router"
+import { FIREBASE_AUTH } from "../../utils/firebase" // Adjust path if needed
+
+import pfp1 from "../../assets/images/pfp1.png"
+import pfp2 from "../../assets/images/pfp2.png"
 
 SplashScreen.preventAutoHideAsync()
 
 export default function ProfileScreen() {
-  const router = useRouter();
+  const router = useRouter()
+  const [username, setUsername] = useState("Username")
+  const [birthday, setBirthday] = useState("Birthday")
+  const [description, setDescription] = useState("")
+  const [tempDescription, setTempDescription] = useState("")
+  const [isModalVisible, setIsModalVisible] = useState(false)
+  const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false)
+  const [isPfpModalVisible, setIsPfpModalVisible] = useState(false)
+  const [selectedPfp, setSelectedPfp] = useState(pfp1)
+  const maxLength = 150
+
   const [fontsLoaded] = useFonts({
     PressStart2P_400Regular,
   })
@@ -21,9 +45,12 @@ export default function ProfileScreen() {
     }
   }, [fontsLoaded])
 
-  if (!fontsLoaded) {
-    return null
+  const saveDescription = () => {
+    setDescription(tempDescription)
+    setIsModalVisible(false)
   }
+
+  if (!fontsLoaded) return null
 
   return (
     <View style={styles.container}>
@@ -32,9 +59,7 @@ export default function ProfileScreen() {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerContent}>
-          <View>
-            <Text style={styles.title}>Profile</Text>
-          </View>
+          <Text style={styles.title}>Profile</Text>
           <TouchableOpacity style={styles.profileIcon} onPress={() => router.replace("/(tabs)/profile")}>
             <Ionicons name="person" size={20} color="white" />
           </TouchableOpacity>
@@ -43,34 +68,39 @@ export default function ProfileScreen() {
 
       {/* Content */}
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Profile Card */}
         <View style={styles.profileCard}>
-          {/* Profile Picture and Info */}
+          {/* Profile */}
           <View style={styles.profileSection}>
-            <View style={styles.profilePicture}>
-              <View style={styles.profilePicturePlaceholder} />
-            </View>
+            <TouchableOpacity onPress={() => setIsPfpModalVisible(true)} style={styles.profilePicture}>
+              <Image source={selectedPfp} style={styles.profilePictureImage} />
+            </TouchableOpacity>
             <View style={styles.profileInfo}>
-              <Text style={styles.username}>Username</Text>
+              <Text style={styles.username}>{username}</Text>
               <Text style={styles.playerLabel}>Player</Text>
               <View style={styles.birthdayContainer}>
                 <Ionicons name="gift" size={16} color="#A77B4E" />
-                <Text style={styles.birthdayText}>Birthday</Text>
+                <Text style={styles.birthdayText}>{birthday}</Text>
               </View>
             </View>
           </View>
 
           {/* Description */}
           <View style={styles.descriptionSection}>
-            <Text style={styles.descriptionText}>
-              Add a short description about yourself.{"\n"}
-              Set a character limit to the text field.
-            </Text>
+            <TouchableOpacity
+              onPress={() => {
+                setTempDescription(description)
+                setIsModalVisible(true)
+              }}
+            >
+              <Text style={styles.descriptionText}>
+                {description || "Add a short description about yourself."}
+              </Text>
+            </TouchableOpacity>
           </View>
 
           {/* Achievements */}
           <View style={styles.achievementsSection}>
-            <Text style={styles.sectionTitle}>Achievements:</Text>
+            <Text style={styles.sectionTitle}>Badges:</Text>
             <View style={styles.achievementsGrid}>
               {[1, 2, 3].map((item) => (
                 <View key={item} style={styles.achievementBox}>
@@ -102,14 +132,26 @@ export default function ProfileScreen() {
 
         {/* Action Buttons */}
         <View style={styles.actionButtons}>
-          <TouchableOpacity style={styles.actionButton} activeOpacity={0.8}>
+          <TouchableOpacity
+            style={styles.actionButton}
+            activeOpacity={0.8}
+            onPress={() =>
+              router.replace({ pathname: "/(tabs)/edit-profile", params: { role: "player" } })
+            }
+          >
             <Ionicons name="create" size={20} color="#1f2937" />
             <Text style={styles.actionButtonText}>Edit Profile</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.actionButton} activeOpacity={0.8}>
+          <TouchableOpacity
+            style={styles.actionButton}
+            activeOpacity={0.8}
+            onPress={() =>
+              router.replace({ pathname: "/(tabs)/collections", params: { tab: "Badges" } })
+            }
+          >
             <Ionicons name="trophy" size={20} color="#1f2937" />
-            <Text style={styles.actionButtonText}>Achievements</Text>
+            <Text style={styles.actionButtonText}>Badges</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -117,11 +159,14 @@ export default function ProfileScreen() {
             activeOpacity={0.8}
             onPress={async () => {
               try {
-                await FIREBASE_AUTH.signOut();
-                router.replace("/(tabs)/auth");
+                await FIREBASE_AUTH.signOut()
+                router.replace("/(tabs)/auth")
               } catch (error) {
-                const errorMessage = (error instanceof Error && error.message) ? error.message : "Failed to log out.";
-                Alert.alert("Logout Error", errorMessage);
+                const errorMessage =
+                  error instanceof Error && error.message
+                    ? error.message
+                    : "Failed to log out."
+                Alert.alert("Logout Error", errorMessage)
               }
             }}
           >
@@ -133,26 +178,105 @@ export default function ProfileScreen() {
 
       {/* Bottom Navigation */}
       <View style={styles.bottomNav}>
-        <TouchableOpacity style={styles.navItem} activeOpacity={0.7} onPress={() => router.replace("/(tabs)/dashboard")}>
+        <TouchableOpacity
+          style={styles.navItem}
+          activeOpacity={0.7}
+          onPress={() => router.replace("/(tabs)/dashboard")}
+        >
           <Ionicons name="home" size={24} color="#BA9B77" />
           <Text style={styles.navText}>Home</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.navItem} activeOpacity={0.7} onPress={() => router.replace("/(tabs)/camera")}>
+        <TouchableOpacity
+          style={styles.navItem}
+          activeOpacity={0.7}
+          onPress={() => router.replace("/(tabs)/camera")}
+        >
           <Ionicons name="camera" size={24} color="#BA9B77" />
           <Text style={styles.navText}>Scan</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.navItem} activeOpacity={0.7} onPress={() => router.replace("/(tabs)/collections")}>
+        <TouchableOpacity
+          style={styles.navItem}
+          activeOpacity={0.7}
+          onPress={() => router.replace("/(tabs)/collections")}
+        >
           <MaterialIcons name="collections" size={24} color="#BA9B77" />
           <Text style={styles.navText}>Collections</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.navItem} activeOpacity={0.7} onPress={() => router.replace("/(tabs)/posts")}>
-          <Ionicons name="chatbubbles" size={24} color="#BA9B77"  />
+        <TouchableOpacity
+          style={styles.navItem}
+          activeOpacity={0.7}
+          onPress={() => router.replace("/(tabs)/posts")}
+        >
+          <Ionicons name="chatbubbles" size={24} color="#BA9B77" />
           <Text style={styles.navText}>Posts</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Description Modal */}
+      <Modal animationType="slide" transparent={true} visible={isModalVisible}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Edit Description</Text>
+            <TextInput
+              style={styles.descriptionInput}
+              value={tempDescription}
+              onChangeText={setTempDescription}
+              multiline
+              maxLength={maxLength}
+              placeholder="Write something about yourself..."
+            />
+            <Text style={styles.charCount}>
+              {tempDescription.length}/{maxLength}
+            </Text>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity style={styles.saveButton} onPress={saveDescription}>
+                <Text style={styles.saveButtonText}>Save</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={() => setIsModalVisible(false)}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Profile Picture Modal */}
+      <Modal animationType="slide" transparent={true} visible={isPfpModalVisible}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Choose Profile Picture</Text>
+            <View
+              style={{ flexDirection: "row", justifyContent: "space-around", marginVertical: 10 }}
+            >
+              <TouchableOpacity
+                onPress={() => {
+                  setSelectedPfp(pfp1)
+                  setIsPfpModalVisible(false)
+                }}
+              >
+                <Image source={pfp1} style={styles.pfpOptionImage} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => {
+                  setSelectedPfp(pfp2)
+                  setIsPfpModalVisible(false)
+                }}
+              >
+                <Image source={pfp2} style={styles.pfpOptionImage} />
+              </TouchableOpacity>
+            </View>
+            <TouchableOpacity style={styles.cancelButton} onPress={() => setIsPfpModalVisible(false)}>
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   )
 }
@@ -178,11 +302,6 @@ const styles = StyleSheet.create({
     color: "#1f2937",
     marginBottom: 8,
     marginTop: 20,
-  },
-  subtitle: {
-    fontSize: 18,
-    color: "#1f2937",
-    fontWeight: "600",
   },
   profileIcon: {
     width: 40,
@@ -210,7 +329,7 @@ const styles = StyleSheet.create({
   profilePicture: {
     marginRight: 16,
   },
-  profilePicturePlaceholder: {
+  profilePictureImage: {
     width: 80,
     height: 80,
     borderRadius: 40,
@@ -356,5 +475,81 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 4,
     color: "#6b7280",
+  },
+
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContent: {
+    width: "90%",
+    backgroundColor: "white",
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#1f2937",
+    marginBottom: 12,
+  },
+  descriptionInput: {
+    fontSize: 14,
+    color: "#1f2937",
+    lineHeight: 20,
+    borderWidth: 1,
+    borderColor: "#d1d5db",
+    borderRadius: 8,
+    padding: 10,
+    backgroundColor: "white",
+    minHeight: 80,
+    textAlignVertical: "top",
+  },
+  charCount: {
+    alignSelf: "flex-end",
+    marginTop: 6,
+    fontSize: 12,
+    color: "#6b7280",
+  },
+  modalButtons: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    marginTop: 16,
+  },
+  saveButton: {
+    backgroundColor: "#A77B4E",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    marginLeft: 10,
+  },
+  saveButtonText: {
+    color: "white",
+    fontWeight: "600",
+  },
+  cancelButton: {
+    backgroundColor: "#e5e7eb",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  cancelButtonText: {
+    color: "#1f2937",
+    fontWeight: "600",
+  },
+  pfpOptionImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 2,
+    borderColor: "#A77B4E",
   },
 })
