@@ -35,7 +35,7 @@ class Announcement(BaseModel):
     title: str
     description: str
     type: str
-    publishDate: Optional[datetime] = None  # ✅ Added this line
+    publishDate: Optional[datetime] = None 
     createdBy: Optional[str] = None
     createdAt: Optional[datetime] = None
     isVisible: Optional[bool] = None
