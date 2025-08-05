@@ -12,7 +12,11 @@ def verify_admin_token(authorization: str = Header(...)):
     if payload.get("sub") != "admin@rockquest.com" or payload.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Forbidden: Not an admin")
 
-    return payload
+    # Add a fallback uid
+    return {
+        "uid": payload.get("uid", "admin"),  # Default to 'admin' if not in token
+        "role": "admin"
+    }
 
 # Token verification
 async def verify_token(authorization: str = Header(...)):

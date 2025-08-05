@@ -163,7 +163,7 @@ def get_announcements(user=Depends(verify_admin_token)):
     docs = db.collection("announcement").stream()
     return [{"id": doc.id, **doc.to_dict()} for doc in docs]
 
-@admin_router.post("/add-announcement")
+@admin_router.post("/announcements")
 def add_announcement(data: Announcement, user=Depends(verify_admin_token)):
     if not data.announcementId:
         raise HTTPException(status_code=400, detail="announcementId is required")
@@ -175,18 +175,19 @@ def add_announcement(data: Announcement, user=Depends(verify_admin_token)):
         "announcementId": data.announcementId,
         "title": data.title,
         "description": data.description,
+        "type": data.type,
+        "publishDate": data.publishDate,
         "createdAt": firestore.SERVER_TIMESTAMP,
         "createdBy": user["uid"],
         "isVisible": data.isVisible,
         "pinned": data.pinned,
         "imageUrl": data.imageUrl,
-        "tags": data.tags
     }
 
     ref.set(update_data)
     return {"message": f"Announcement added with ID '{data.announcementId}'"}
 
-@admin_router.put("/update-announcement/{announcement_id}")
+@admin_router.put("/announcements/{announcement_id}")
 def update_announcement(announcement_id: str, data: UpdateAnnouncement, user=Depends(verify_admin_token)):
     ref = db.collection("announcement").document(announcement_id)
     if not ref.get().exists:
@@ -201,7 +202,7 @@ def update_announcement(announcement_id: str, data: UpdateAnnouncement, user=Dep
     ref.update(update_data)
     return {"message": "Announcement updated"}
 
-@admin_router.delete("/delete-announcement/{announcement_id}")
+@admin_router.delete("/announcements/{announcement_id}")
 def delete_announcement(announcement_id: str, user=Depends(verify_admin_token)):
     ref = db.collection("announcement").document(announcement_id)
     if not ref.get().exists:
