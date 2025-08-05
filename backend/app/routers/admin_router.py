@@ -6,7 +6,7 @@ from app.auth.dependencies import verify_admin_token
 from app.firebase import db
 from app.models.models import (
     User, Rock, Fact, Announcement, UpdateAnnouncement, Quest, UpdateQuest,
-    Post, PostVerificationRequest, ReportDecisionRequest
+    Post, PostVerificationRequest, ReportDecisionRequest, RockSpawn
 )
 
 admin_router = APIRouter(prefix="/admin", tags=["Admin"])
@@ -64,26 +64,22 @@ def get_all_rocks(user=Depends(verify_admin_token)):
 def add_rock(data: Rock, user=Depends(verify_admin_token)):
     if not data.rockId:
         raise HTTPException(status_code=400, detail="rockId is required")
-    # Use rockId as the Firestore document ID
-    ref = db.collection("rock").document(str(data.rockId))
+
+    ref = db.collection("rock").document(str(data.rockId))  # this line ensures doc ID = rockId
+
     if ref.get().exists:
         raise HTTPException(status_code=400, detail="Rock with this rockId already exists")
 
-    update_data = {
+    ref.set({
         "rockId": data.rockId,
         "rockName": data.rockName,
         "rockType": data.rockType,
         "description": data.description,
         "imageUrl": data.imageUrl,
-        "lat": data.lat,
-        "lng": data.lng,
-        "confidence": data.confidence,
-        "createdAt": firestore.SERVER_TIMESTAMP,
-    }
+        "createdAt": firestore.SERVER_TIMESTAMP
+    })
 
-    ref.set(update_data)  # write using rockId as doc ID
-    return {"message": f"Rock added with rockId '{data.rockId}' as document ID"}
-
+    return {"message": f"Rock added with rockId '{data.rockId}'"}
 
 @admin_router.put("/edit-rock/{rock_id}")
 def edit_rock(rock_id: str, data: Rock, user=Depends(verify_admin_token)):
@@ -354,3 +350,48 @@ def review_report(report_id: str, data: ReportDecisionRequest, user=Depends(veri
         "message": f"Report {data.action}d successfully",
         "itemAction": update_data.get("adminAction", "No action taken")
     }
+
+# SPAWNED ROCK MANAGEMENT
+@admin_router.get("/spawns")
+def get_all_spawns(user=Depends(verify_admin_token)):
+    docs = db.collection("spawnedRock").stream()
+    return [{"id": doc.id, **doc.to_dict()} for doc in docs]
+
+@admin_router.post("/spawns")
+def create_spawn(data: RockSpawn, user=Depends(verify_admin_token)):
+    if not data.rockId:
+        raise HTTPException(status_code=400, detail="rockId is required")
+
+    doc_ref = db.collection("spawnedRock").document()
+    spawn_data = {
+        "rockId": data.rockId,
+        "lat": data.lat,
+        "lng": data.lng,
+        "confidence": data.confidence,
+        "spawnedAt": firestore.SERVER_TIMESTAMP,
+        "spawnedBy": user["uid"]
+    }
+    doc_ref.set(spawn_data)
+    return {"message": "Spawned rock created", "id": doc_ref.id}
+
+@admin_router.put("/spawns/{spawn_id}")
+def update_spawn(spawn_id: str, data: RockSpawn, user=Depends(verify_admin_token)):
+    ref = db.collection("spawnedRock").document(spawn_id)
+    if not ref.get().exists:
+        raise HTTPException(status_code=404, detail="Spawned rock not found")
+
+    update_data = {
+        **data.dict(exclude_unset=True),
+        "updatedAt": firestore.SERVER_TIMESTAMP,
+        "updatedBy": user["uid"]
+    }
+    ref.update(update_data)
+    return {"message": f"Spawned rock '{spawn_id}' updated."}
+
+@admin_router.delete("/spawns/{spawn_id}")
+def delete_spawn(spawn_id: str, user=Depends(verify_admin_token)):
+    ref = db.collection("spawnedRock").document(spawn_id)
+    if not ref.get().exists:
+        raise HTTPException(status_code=404, detail="Spawned rock not found")
+    ref.delete()
+    return {"message": f"Spawned rock '{spawn_id}' deleted."}

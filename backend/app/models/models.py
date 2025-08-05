@@ -9,21 +9,30 @@ class PostVerificationRequest(BaseModel):
 class ReportDecisionRequest(BaseModel):
     action: Literal["approve", "reject"]
 
-#----------------------------------------------------------------------------------------------------------------------
-#rock markers
+# ----------------------------------------------------------------------------------------------------------------------
+# Rock markers (Database Reference)
 class Rock(BaseModel):
     rockId: str
     rockName: str
     rockType: Optional[str] = None
     description: Optional[str] = None
     imageUrl: Optional[str] = None
-    lat: Optional[float] = None
-    lng: Optional[float] = None
     createdAt: Optional[datetime] = None
-    confidence: Optional[float] = None
     updatedAt: Optional[datetime] = None
     updatedBy: Optional[str] = None
 
+# Rock Distribution (Spawned Rock Marker)
+class RockSpawn(BaseModel):
+    rockId: str  # must match to an existing rockId in Rock
+    lat: float
+    lng: float
+    confidence: Optional[float] = None
+    spawnedAt: Optional[datetime] = None
+    spawnedBy: Optional[str] = None
+    updatedAt: Optional[datetime] = None
+    updatedBy: Optional[str] = None
+
+# ----------------------------------------------------------------------------------------------------------------------
 class Announcement(BaseModel):
     announcementId: str
     title: str
@@ -52,7 +61,7 @@ class Quest(BaseModel):
     difficulty: Literal["Easy", "Medium", "Hard"]
     location: str
     reward: str
-    status: Literal["Draft", "Active", "Past"] = "Active"  # Default to Active
+    status: Literal["Draft", "Active", "Past"] = "Active"
     createdAt: Optional[datetime] = None
     updatedAt: Optional[datetime] = None
     updatedBy: Optional[str] = None
@@ -65,7 +74,6 @@ class UpdateQuest(BaseModel):
     location: Optional[str] = None
     reward: Optional[str] = None
     status: Optional[Literal["Draft", "Active", "Past"]] = None
-
 
 class DailyQuest(BaseModel):
     questId: str
@@ -84,9 +92,7 @@ class Report(BaseModel):
     reviewedAt: Optional[datetime] = None
     adminAction: Optional[str] = None
 
-#all three
 class Post(BaseModel):
-    #post section
     postId: Optional[str] = None 
     rockname: str
     description: str
@@ -94,28 +100,26 @@ class Post(BaseModel):
     image: str
     createdBy: Optional[str] = None
     createdAt: Optional[datetime] = None
-    #review section
     verified: bool = False
     verifiedBy: Optional[str] = None
     verifiedAt: Optional[datetime] = None
     rejectedReason: Optional[str] = None
     rejectedAt: Optional[datetime] = None
-    #update section
     updatedAt: Optional[datetime] = None
     updatedBy: Optional[str] = None
 
-#user
+# User
 class User(BaseModel):
     username: str
     emailAddress: EmailStr
-    type: Literal["player", "geologist", "admin"] = "player" #only allow player or geologist, default player
+    type: Literal["player", "geologist", "admin"] = "player"
     createdAt: Optional[datetime] = None
     dob: Optional[datetime] = None
     description: Optional[str] = None
     avatarId: int = 1
-    isActive: bool = True #True if user is active, False if user is suspended
+    isActive: bool = True
 
-#geologist
+# Geologist
 class Fact(BaseModel):
     factId: Optional[str] = None
     title: str
@@ -129,10 +133,10 @@ class UpdateFact(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
 
-#player
+# Player
 class Collection(BaseModel):
-    rockId: str #must match to an existing rockId in Rock
-    imageUrl: Optional[str] = None #hold the image from user
+    rockId: str
+    imageUrl: Optional[str] = None
     savedAt: Optional[datetime] = None
     name: Optional[str] = None
 
@@ -147,8 +151,8 @@ class Achievement(BaseModel):
     achievementId: str
     title: str
     description: str
-    milestone: int  # e.g., 1, 5, 10
-    type: str  # e.g., "scan_rock", "save_rock"
+    milestone: int
+    type: str
     badgeUrl: Optional[str] = None
 
 class PlayerAchievement(BaseModel):
