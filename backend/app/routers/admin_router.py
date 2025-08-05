@@ -5,7 +5,7 @@ from firebase_admin import firestore
 from app.auth.dependencies import verify_admin_token
 from app.firebase import db
 from app.models.models import (
-    User, Rock, Fact, Announcement, UpdateAnnouncement, Quest,
+    User, Rock, Fact, Announcement, UpdateAnnouncement, Quest, UpdateQuest,
     Post, PostVerificationRequest, ReportDecisionRequest
 )
 
@@ -220,23 +220,21 @@ def get_quests(user=Depends(verify_admin_token)):
 def add_quest(data: Quest, user=Depends(verify_admin_token)):
     if not data.questId:
         raise HTTPException(status_code=400, detail="questId is required")
-    ref = db.collection("quest").document(str(data.questId))
+
+    ref = db.collection("quest").document(data.questId)
     if ref.get().exists:
-        raise HTTPException(status_code=400, detail="Quest with this questId already exists")
+        raise HTTPException(status_code=400, detail="Quest already exists")
 
     update_data = {
-        "questId": data.questId,
-        "title": data.title,
-        "description": data.description,
-        "createdAt": firestore.SERVER_TIMESTAMP
+        **data.dict(exclude={"createdAt", "updatedAt", "updatedBy"}),
+        "createdAt": firestore.SERVER_TIMESTAMP,
     }
 
     ref.set(update_data)
-    return {"message": f"Quest added with questId '{data.questId}' as document ID"}
-
+    return {"message": f"Quest '{data.questId}' added."}
 
 @admin_router.put("/edit-quest/{quest_id}")
-def edit_quest(quest_id: str, data: Quest, user=Depends(verify_admin_token)):
+def edit_quest(quest_id: str, data: UpdateQuest, user=Depends(verify_admin_token)):
     ref = db.collection("quest").document(quest_id)
     if not ref.get().exists:
         raise HTTPException(status_code=404, detail="Quest not found")
@@ -246,9 +244,8 @@ def edit_quest(quest_id: str, data: Quest, user=Depends(verify_admin_token)):
         "updatedAt": firestore.SERVER_TIMESTAMP,
         "updatedBy": user["uid"]
     }
-
     ref.update(update_data)
-    return {"message": "Quest updated"}
+    return {"message": f"Quest '{quest_id}' updated."}
 
 @admin_router.delete("/delete-quest/{quest_id}")
 def delete_quest(quest_id: str, user=Depends(verify_admin_token)):
@@ -256,7 +253,7 @@ def delete_quest(quest_id: str, user=Depends(verify_admin_token)):
     if not ref.get().exists:
         raise HTTPException(status_code=404, detail="Quest not found")
     ref.delete()
-    return {"message": "Quest deleted"}
+    return {"message": f"Quest '{quest_id}' deleted."}
 
 # POST MANAGEMENT
 @admin_router.get("/posts")

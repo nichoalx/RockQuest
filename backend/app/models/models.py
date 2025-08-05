@@ -9,12 +9,6 @@ class PostVerificationRequest(BaseModel):
 class ReportDecisionRequest(BaseModel):
     action: Literal["approve", "reject"]
 
-class UpdateAnnouncement(BaseModel):
-    title: Optional[str] = None
-    description: Optional[str] = None
-    publishDate: Optional[datetime] = None
-    type: Optional[str] = None
-
 #----------------------------------------------------------------------------------------------------------------------
 #rock markers
 class Rock(BaseModel):
@@ -44,13 +38,34 @@ class Announcement(BaseModel):
     updatedAt: Optional[datetime] = None
     updatedBy: Optional[str] = None
 
+class UpdateAnnouncement(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    publishDate: Optional[datetime] = None
+    type: Optional[str] = None
+
 class Quest(BaseModel):
     questId: str
     title: str
     description: str
+    type: Literal["GPS-based", "Collection", "Identification"]
+    difficulty: Literal["Easy", "Medium", "Hard"]
+    location: str
+    reward: str
+    status: Literal["Draft", "Active", "Past"] = "Active"  # Default to Active
     createdAt: Optional[datetime] = None
     updatedAt: Optional[datetime] = None
     updatedBy: Optional[str] = None
+
+class UpdateQuest(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    type: Optional[Literal["GPS-based", "Collection", "Identification"]] = None
+    difficulty: Optional[Literal["Easy", "Medium", "Hard"]] = None
+    location: Optional[str] = None
+    reward: Optional[str] = None
+    status: Optional[Literal["Draft", "Active", "Past"]] = None
+
 
 class DailyQuest(BaseModel):
     questId: str
