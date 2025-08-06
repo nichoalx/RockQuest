@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, View, Text, Dimensions, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, Text, Dimensions, ActivityIndicator, Image } from 'react-native';
 import MapView, { Marker, Region } from 'react-native-maps';
 import * as Location from 'expo-location';
 
@@ -44,23 +44,38 @@ const MapComponent = () => {
         showsMyLocationButton
         loadingEnabled
       >
-        {/* Static Rock Markers */}
-        <Marker
-          coordinate={{
-            latitude: region.latitude + 0.0005,
-            longitude: region.longitude + 0.0005,
-          }}
-          title="Granite"
-          description="Igneous rock"
-        />
-        <Marker
-          coordinate={{
-            latitude: region.latitude + 0.0003,
-            longitude: region.longitude + 0.0007,
-          }}
-          title="Sandstone"
-          description="Sedimentary rock"
-        />
+    <Marker
+      coordinate={{
+        latitude: region.latitude + 0.0005,
+        longitude: region.longitude + 0.0005,
+      }}
+      title="Granite"
+      description="Igneous rock"
+    >
+      <View style={styles.customMarker}>
+        <View style={styles.markerImageWrapper}>
+          <Image
+              source={require("../assets/images/GneissRock_Metamorphic.png")}
+              style={styles.markerImage}
+            />
+        </View>
+      </View>
+    </Marker>
+
+    <Marker
+      coordinate={{
+        latitude: region.latitude + 0.0003,
+        longitude: region.longitude + 0.0007,
+      }}
+      title="Sandstone"
+      description="Sedimentary rock"
+    >
+      <View style={styles.customMarker}>
+        <View style={styles.markerImageWrapper}>
+          <Text style={styles.markerText}>🪨</Text>
+        </View>
+      </View>
+    </Marker>
       </MapView>
     </View>
   );
@@ -68,7 +83,7 @@ const MapComponent = () => {
 
 const styles = StyleSheet.create({
   mapContainer: {
-    height: height * 0.65, // takes most of the screen like your design
+    height: height * 0.65, 
     width: '100%',
     overflow: 'hidden',
     borderTopLeftRadius: 0,
@@ -86,6 +101,38 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 10,
     color: '#6b7280',
+  },
+    customMarker: {
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "white",
+    borderRadius: 50,
+    borderWidth: 2,
+    borderColor: "#A77B4E",
+    width: 50,
+    height: 50,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 4,
+  },
+
+  markerImageWrapper: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#C0BAA9",
+  },
+
+  markerText: {
+    fontSize: 20,
+  },
+  markerImage: {
+    width: 50,
+    height: 40,
+    resizeMode: "contain", 
   },
 });
 
