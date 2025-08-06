@@ -77,9 +77,14 @@ def get_daily_quests(user=Depends(verify_token)):
     quests_doc = quest_ref.stream()
     #track whether user has done any activity today
     completed_actions = {
-        "scan_rock": False,
+        "scan_sedimentary": False,
+        "scan_igneous": False,
+        "scan_metamorphic": False,
+        "scan_3rocks": False,
         "save_rock": False,
-        "submit_post": False
+        "save_3rocks": False,
+        "submit_post": False,
+        "view_fact": False
     }
     #track user quest completion
     #check whether user has scan and saved a rock into collection today
@@ -102,12 +107,22 @@ def get_daily_quests(user=Depends(verify_token)):
         quest["questId"] = doc.id
 
         #determine if completed based on action keywords or questId or title
-        if "scan" in quest["title"].lower():
-            quest["completed"] = completed_actions["scan_rock"]
+        if "scan 1 sedimentary" in quest["title"].lower():
+            quest["completed"] = completed_actions["scan_sedimentary"]
         elif "save" in quest["title"].lower():
+            quest["completed"] = completed_actions["scan_igneous"]
+        elif "post" in quest["title"].lower():
+            quest["completed"] = completed_actions["scan_metamorphic"]
+        elif "post" in quest["title"].lower():
+            quest["completed"] = completed_actions["scan_3rocks"]
+        elif "post" in quest["title"].lower():
             quest["completed"] = completed_actions["save_rock"]
         elif "post" in quest["title"].lower():
+            quest["completed"] = completed_actions["save_3rocks"]
+        elif "post" in quest["title"].lower():
             quest["completed"] = completed_actions["submit_post"]
+        elif "post" in quest["title"].lower():
+            quest["completed"] = completed_actions["view_fact"]
         else:
             quest["completed"] = False
         daily_quest.append(quest)
