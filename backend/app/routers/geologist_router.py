@@ -1,4 +1,4 @@
-from fastapi import Depends, APIRouter, HTTPException
+from fastapi import Depends, APIRouter, HTTPException, Query
 from datetime import datetime
 from firebase_admin import firestore
 from app.auth.dependencies import verify_token
@@ -28,7 +28,7 @@ def add_fact(data: Fact, user=Depends(verify_token)):
     return {"message": f"Fact added with factId '{data.factId}' as document ID"}
 
 @geologist_router.put("/edit-fact/{fact_id}")
-def edit_fact(fact_id: str, data:UpdateFact, user=Depends(verify_token)):
+def edit_fact(fact_id: str, data: UpdateFact, user=Depends(verify_token)):
     ref = db.collection("fact").document(fact_id)
 
     if not ref.get().exists:
@@ -62,7 +62,7 @@ def review_pending_rocks(user=Depends(verify_token)):
     docs = db.collection("post").where("verified", "==", False).stream()
     return [{"id": doc.id, **doc.to_dict()} for doc in docs]
 
-#approve or reject rock post
+# Approve or reject rock post
 @geologist_router.post("/verify-rock/{post_id}")
 def verify_rock(post_id: str, data: PostVerificationRequest, user=Depends(verify_token)):
     review_ref = db.collection("post").document(post_id)
@@ -76,7 +76,9 @@ def verify_rock(post_id: str, data: PostVerificationRequest, user=Depends(verify
         rock_data.update({
             "verified": True,
             "verifiedBy": user["uid"],
-            "verifiedAt": firestore.SERVER_TIMESTAMP
+            "verifiedAt": firestore.SERVER_TIMESTAMP,
+            "rejectedReason": firestore.DELETE_FIELD,  # remove rejectedReason if previously rejected
+            "rejectedAt": firestore.DELETE_FIELD
         })
         review_ref.update(rock_data)
         return {"message": "Rock approved and verified"}
@@ -90,4 +92,15 @@ def verify_rock(post_id: str, data: PostVerificationRequest, user=Depends(verify
             "rejectedAt": firestore.SERVER_TIMESTAMP
         })
         return {"message": "Rock rejected and left in review collection"}
+    
     raise HTTPException(status_code=400, detail="Invalid action. Must be 'approve' or 'reject'")
+
+
+# REPORT FILTERING (with query param)
+@geologist_router.get("/reports")
+def get_reports_by_status(
+    status: str = Query("pending", regex="^(pending|approve|reject)$"),
+    user=Depends(verify_token)
+):
+    docs = db.collection("report").where("status", "==", status).stream()
+    return [{"id": doc.id, **doc.to_dict()} for doc in docs]
