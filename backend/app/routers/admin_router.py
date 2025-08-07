@@ -24,8 +24,10 @@ def get_post_count(user=Depends(verify_admin_token)):
 
 @admin_router.get("/dashboard/reports")
 def get_report_count(user=Depends(verify_admin_token)):
-    count = len(list(db.collection("report").stream()))
+    query = db.collection("report").where("status", "==", "pending")
+    count = len(list(query.stream()))
     return {"totalReports": count}
+
 
 # USER MANAGEMENT
 @admin_router.get("/users")
