@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react"
 import { Ionicons, MaterialIcons } from "@expo/vector-icons"
 import { useRouter } from "expo-router"
 import { CameraView, useCameraPermissions } from "expo-camera"
+import BottomNav from "@/components/BottomNav";
 
 SplashScreen.preventAutoHideAsync()
 
@@ -70,7 +71,7 @@ export default function CameraScreen() {
       <View style={styles.header}>
         <View style={styles.headerContent}>
           <Text style={styles.title}>Scan Rock</Text>
-          <TouchableOpacity style={styles.profileIcon} onPress={() => router.replace("/(tabs)/profile")}>
+          <TouchableOpacity style={styles.profileIcon} onPress={() => router.replace("/(tabs)/players/profile")}>
             <Ionicons name="person" size={20} color="white" />
           </TouchableOpacity>
         </View>
@@ -103,24 +104,30 @@ export default function CameraScreen() {
       </View>
 
       {/* Bottom Navigation */}
-      <View style={styles.bottomNav}>
-        <TouchableOpacity style={styles.navItem} onPress={() => router.replace("/(tabs)/dashboard")}>
-          <Ionicons name="home" size={24} color="#BA9B77" />
-          <Text style={styles.navText}>Home</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} onPress={() => router.replace("/(tabs)/camera")}>
-          <Ionicons name="camera" size={24} color="#A77B4E" />
-          <Text style={[styles.navText, styles.navTextActive]}>Scan</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} onPress={() => router.replace("/(tabs)/collections")}>
-          <MaterialIcons name="collections" size={24} color="#BA9B77" />
-          <Text style={styles.navText}>Collections</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} onPress={() => router.replace("/(tabs)/posts")}>
-          <Ionicons name="chatbubbles" size={24} color="#BA9B77" />
-          <Text style={styles.navText}>Posts</Text>
-        </TouchableOpacity>
-      </View>
+      <BottomNav
+        items={[
+          {
+            label: "Home",
+            route: "/(tabs)/players/dashboard",
+            icon: { lib: "ion", name: "home" },
+          },
+          {
+            label: "Scan",
+            route: "/(tabs)/players/camera",
+            icon: { lib: "ion", name: "camera" },
+          },
+          {
+            label: "Collections",
+            route: "/(tabs)/players/collections",
+            icon: { lib: "mat", name: "collections" },
+          },
+          {
+            label: "Posts",
+            route: "/(tabs)/players/posts",
+            icon: { lib: "ion", name: "chatbubbles" },
+          },
+        ]}
+      />
     </View>
   )
 }

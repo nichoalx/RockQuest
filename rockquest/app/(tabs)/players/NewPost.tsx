@@ -13,12 +13,13 @@ import {
   View,
   Modal,
 } from "react-native"
+import BottomNav from "@/components/BottomNav"
 
 export default function NewPostScreen() {
   const router = useRouter()
   const { role = "geologist" } = useLocalSearchParams()
 
-  const [image, setImage] = useState(null)
+  const [image, setImage] = useState<string | null>(null)
   const [rockName, setRockName] = useState("")
   const [shortDescription, setShortDescription] = useState("")
   const [information, setInformation] = useState("")
@@ -47,11 +48,11 @@ export default function NewPostScreen() {
   }
 
   const handleSubmit = () => {
-    router.replace(`/(tabs)/${role === "player" ? "posts" : "GeoPosts"}`)
+    router.replace(`/(tabs)/${role === "player" ? "players/posts" : "geologistsGeoPosts"}` as any)
   }
 
   const handleReturn = () => {
-    router.replace(`/(tabs)/${role === "player" ? "posts" : "GeoPosts"}`)
+    router.replace(`/(tabs)/${role === "player" ? "players/posts" : "geologistsGeoPosts"}` as any)
   }
 
   const handleReset = () => {
@@ -63,7 +64,7 @@ export default function NewPostScreen() {
 
   const confirmLogout = () => {
     setIsLogoutModalVisible(false)
-    router.replace("/(tabs)/auth")
+    router.replace("/(tabs)/auth" as any)
   }
 
   return (
@@ -78,7 +79,7 @@ export default function NewPostScreen() {
           <TouchableOpacity
             style={styles.profileIcon}
             onPress={() =>
-              router.replace(`/(tabs)/${role === "player" ? "profile" : "GeoProfile"}`)
+              router.replace(`/(tabs)/${role === "player" ? "players/profile" : "geologists/GeoProfile"}`)
             }
           >
             <Ionicons name="person" size={20} color="white" />
@@ -140,35 +141,38 @@ export default function NewPostScreen() {
 
       {/* Bottom Navigation Bar (Role-Based) */}
       {role === "player" ? (
-        <View style={styles.bottomNav}>
-          <TouchableOpacity style={styles.navItem} onPress={() => router.replace("/(tabs)/dashboard")}>
-            <Ionicons name="home" size={24} color="#BA9B77" />
-            <Text style={styles.navText}>Home</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.navItem} onPress={() => router.replace("/(tabs)/camera")}>
-            <Ionicons name="camera" size={24} color="#BA9B77" />
-            <Text style={styles.navText}>Scan</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.navItem} onPress={() => router.replace("/(tabs)/collections")}>
-            <Ionicons name="images" size={24} color="#BA9B77" />
-            <Text style={styles.navText}>Collections</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.navItem} onPress={() => router.replace("/(tabs)/posts")}>
-            <Ionicons name="chatbubbles" size={24} color="#A77B4E" />
-            <Text style={[styles.navText, styles.navTextActive]}>Posts</Text>
-          </TouchableOpacity>
-        </View>
+      <BottomNav
+        items={[
+          {
+            label: "Home",
+            route: "/(tabs)/players/dashboard",
+            icon: { lib: "ion", name: "home" },
+          },
+          {
+            label: "Scan",
+            route: "/(tabs)/players/camera",
+            icon: { lib: "ion", name: "camera" },
+          },
+          {
+            label: "Collections",
+            route: "/(tabs)/players/collections",
+            icon: { lib: "mat", name: "collections" },
+          },
+          {
+            label: "Posts",
+            route: "/(tabs)/players/posts",
+            icon: { lib: "ion", name: "chatbubbles" },
+          },
+        ]}
+      />
       ) : (
         <View style={styles.bottomNav}>
-          <TouchableOpacity style={styles.navItem} onPress={() => router.replace("/(tabs)/GeoHomepage")}>
+          <TouchableOpacity style={styles.navItem} onPress={() => router.replace("/(tabs)/geologists/GeoHomepage")}>
             <Ionicons name="home" size={24} color="#BA9B77" />
             <Text style={styles.navText}>Home</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.navItem} onPress={() => router.replace("/(tabs)/GeoPosts")}>
+          <TouchableOpacity style={styles.navItem} onPress={() => router.replace("/(tabs)/geologists/GeoPosts")}>
             <Ionicons name="chatbubbles" size={24} color="#A77B4E" />
             <Text style={[styles.navText, styles.navTextActive]}>Posts</Text>
           </TouchableOpacity>

@@ -110,9 +110,9 @@ export default function EditProfilePage() {
         <TouchableOpacity
           onPress={() => {
             if (role === "player") {
-              router.replace("/(tabs)/profile")
+              router.replace("/(tabs)/players/profile")
             } else {
-              router.replace("/(tabs)/GeoProfile")
+              router.replace("/(tabs)/geologists/GeoProfile")
             }
           }}
           style={styles.returnButton}

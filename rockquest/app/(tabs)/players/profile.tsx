@@ -16,10 +16,11 @@ import { useFonts, PressStart2P_400Regular } from "@expo-google-fonts/press-star
 import * as SplashScreen from "expo-splash-screen"
 import { Ionicons, MaterialIcons } from "@expo/vector-icons"
 import { useRouter } from "expo-router"
-import { FIREBASE_AUTH } from "../../utils/firebase" // Adjust path if needed
+import { FIREBASE_AUTH } from "../../../utils/firebase" // Adjust path if needed
+import BottomNav from "@/components/BottomNav"
 
-import pfp1 from "../../assets/images/pfp1.png"
-import pfp2 from "../../assets/images/pfp2.png"
+import pfp1 from "../../../assets/images/pfp1.png"
+import pfp2 from "../../../assets/images/pfp2.png"
 
 SplashScreen.preventAutoHideAsync()
 
@@ -60,7 +61,7 @@ export default function ProfileScreen() {
       <View style={styles.header}>
         <View style={styles.headerContent}>
           <Text style={styles.title}>Profile</Text>
-          <TouchableOpacity style={styles.profileIcon} onPress={() => router.replace("/(tabs)/profile")}>
+          <TouchableOpacity style={styles.profileIcon} onPress={() => router.replace("/(tabs)/players/profile")}>
             <Ionicons name="person" size={20} color="white" />
           </TouchableOpacity>
         </View>
@@ -136,7 +137,7 @@ export default function ProfileScreen() {
             style={styles.actionButton}
             activeOpacity={0.8}
             onPress={() =>
-              router.replace({ pathname: "/(tabs)/edit-profile", params: { role: "player" } })
+              router.replace({ pathname: "/(tabs)/players/edit-profile", params: { role: "player" } })
             }
           >
             <Ionicons name="create" size={20} color="#1f2937" />
@@ -147,7 +148,7 @@ export default function ProfileScreen() {
             style={styles.actionButton}
             activeOpacity={0.8}
             onPress={() =>
-              router.replace({ pathname: "/(tabs)/collections", params: { tab: "Badges" } })
+              router.replace({ pathname: "/(tabs)/players/collections", params: { tab: "Badges" } })
             }
           >
             <Ionicons name="trophy" size={20} color="#1f2937" />
@@ -160,7 +161,7 @@ export default function ProfileScreen() {
             onPress={async () => {
               try {
                 await FIREBASE_AUTH.signOut()
-                router.replace("/(tabs)/auth")
+                router.replace("/(tabs)/auth" as any)
               } catch (error) {
                 const errorMessage =
                   error instanceof Error && error.message
@@ -177,43 +178,30 @@ export default function ProfileScreen() {
       </ScrollView>
 
       {/* Bottom Navigation */}
-      <View style={styles.bottomNav}>
-        <TouchableOpacity
-          style={styles.navItem}
-          activeOpacity={0.7}
-          onPress={() => router.replace("/(tabs)/dashboard")}
-        >
-          <Ionicons name="home" size={24} color="#BA9B77" />
-          <Text style={styles.navText}>Home</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.navItem}
-          activeOpacity={0.7}
-          onPress={() => router.replace("/(tabs)/camera")}
-        >
-          <Ionicons name="camera" size={24} color="#BA9B77" />
-          <Text style={styles.navText}>Scan</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.navItem}
-          activeOpacity={0.7}
-          onPress={() => router.replace("/(tabs)/collections")}
-        >
-          <MaterialIcons name="collections" size={24} color="#BA9B77" />
-          <Text style={styles.navText}>Collections</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.navItem}
-          activeOpacity={0.7}
-          onPress={() => router.replace("/(tabs)/posts")}
-        >
-          <Ionicons name="chatbubbles" size={24} color="#BA9B77" />
-          <Text style={styles.navText}>Posts</Text>
-        </TouchableOpacity>
-      </View>
+      <BottomNav
+        items={[
+          {
+            label: "Home",
+            route: "/(tabs)/players/dashboard",
+            icon: { lib: "ion", name: "home" },
+          },
+          {
+            label: "Scan",
+            route: "/(tabs)/players/camera",
+            icon: { lib: "ion", name: "camera" },
+          },
+          {
+            label: "Collections",
+            route: "/(tabs)/players/collections",
+            icon: { lib: "mat", name: "collections" },
+          },
+          {
+            label: "Posts",
+            route: "/(tabs)/players/posts",
+            icon: { lib: "ion", name: "chatbubbles" },
+          },
+        ]}
+      />
 
       {/* Description Modal */}
       <Modal animationType="slide" transparent={true} visible={isModalVisible}>

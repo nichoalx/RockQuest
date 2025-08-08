@@ -3,7 +3,7 @@ import { useState, useEffect } from "react"
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from "react-native"
 import { createUserWithEmailAndPassword, getAuth } from "firebase/auth"
 import { doc, setDoc, serverTimestamp } from "firebase/firestore"
-import { FIREBASE_AUTH, FIRESTORE } from "../../utils/firebase"
+import { FIREBASE_AUTH, FIRESTORE } from "../../../utils/firebase"
 
 
 export default function ProfileInfoScreen() {
@@ -36,8 +36,8 @@ export default function ProfileInfoScreen() {
     try {
       const userCredential = await createUserWithEmailAndPassword(
         FIREBASE_AUTH,
-        email,
-        password
+        Array.isArray(email) ? email[0] : email,
+        Array.isArray(password) ? password[0] : password
       )
       const uid = getAuth().currentUser?.uid
       if (!uid) throw new Error("UID not available")
@@ -55,11 +55,9 @@ export default function ProfileInfoScreen() {
 
       // Redirect based on type
       if (type === "geologist") {
-        router.replace("/GeoHomepage")
-      } else if (type === "admin") {
-        router.replace("/AdminDashboard")
+        router.replace("/geologists/GeoHomepage")
       } else {
-        router.replace("/(tabs)/dashboard")
+        router.replace("/(tabs)/players/dashboard")
       }
     } catch (error: any) {
       setLoading(false)

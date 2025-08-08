@@ -17,7 +17,8 @@ import * as SplashScreen from "expo-splash-screen"
 import { useEffect, useState } from "react"
 import { Ionicons, MaterialIcons } from "@expo/vector-icons"
 import { useRouter } from "expo-router"
-import MapComponent from "../../components/MapComponent"
+import MapComponent from "../../../components/MapComponent"
+import BottomNav from "@/components/BottomNav"
 
 SplashScreen.preventAutoHideAsync()
 
@@ -60,7 +61,7 @@ export default function Dashboard() {
       <View style={{ flex: 1, position: "relative" }}>
         {/* Header with Profile Icon */}
         <View style={styles.profileIconContainer}>
-          <TouchableOpacity style={styles.profileIcon} onPress={() => router.replace("/(tabs)/profile")}>
+          <TouchableOpacity style={styles.profileIcon} onPress={() => router.replace("/(tabs)/players/profile")}>
             <Ionicons name="person" size={20} color="white" />
           </TouchableOpacity>
         </View>
@@ -85,7 +86,7 @@ export default function Dashboard() {
         )}
 
         <View style={[styles.questPanelContainer, { top: showGreeting ? 160 : 80 }]}>
-          <TouchableOpacity style={styles.questPanel} onPress={() => router.push("/quest")}>
+          <TouchableOpacity style={styles.questPanel} onPress={() => router.push("/players/quest")}>
             <View style={styles.questContent}>
               <View style={styles.questLeft}>
                 <View style={styles.questIcon}>
@@ -131,24 +132,30 @@ export default function Dashboard() {
           </View>
         </View>
 
-        <View style={styles.bottomNav}>
-          <TouchableOpacity style={styles.navItem} onPress={() => router.replace("/(tabs)/dashboard")}>
-            <Ionicons name="home" size={24} color="#A77B4E" />
-            <Text style={[styles.navText, styles.navTextActive]}>Home</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.navItem} onPress={() => router.replace("/(tabs)/camera")}>
-            <Ionicons name="camera" size={24} color="#BA9B77" />
-            <Text style={styles.navText}>Scan</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.navItem} onPress={() => router.replace("/(tabs)/collections")}>
-            <MaterialIcons name="collections" size={24} color="#BA9B77" />
-            <Text style={styles.navText}>Collections</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.navItem} onPress={() => router.replace("/(tabs)/posts")}>
-            <Ionicons name="chatbubbles" size={24} color="#BA9B77" />
-            <Text style={styles.navText}>Posts</Text>
-          </TouchableOpacity>
-        </View>
+        <BottomNav
+          items={[
+            {
+              label: "Home",
+              route: "/(tabs)/players/dashboard",
+              icon: { lib: "ion", name: "home" },
+            },
+            {
+              label: "Scan",
+              route: "/(tabs)/players/camera",
+              icon: { lib: "ion", name: "camera" },
+            },
+            {
+              label: "Collections",
+              route: "/(tabs)/players/collections",
+              icon: { lib: "mat", name: "collections" },
+            },
+            {
+              label: "Posts",
+              route: "/(tabs)/players/posts",
+              icon: { lib: "ion", name: "chatbubbles" },
+            },
+          ]}
+        />
 
         {selectedMarker && (
           <View style={styles.modalOverlay}>

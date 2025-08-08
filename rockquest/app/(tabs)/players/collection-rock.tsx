@@ -11,6 +11,7 @@ import {
 import { Ionicons, MaterialIcons } from '@expo/vector-icons'
 import { useFonts, PressStart2P_400Regular } from '@expo-google-fonts/press-start-2p'
 import { useRouter } from 'expo-router'
+import BottomNav from '@/components/BottomNav'
 
 export default function RockCollectionScreen() {
   const router = useRouter()
@@ -32,7 +33,7 @@ export default function RockCollectionScreen() {
           </View>
           <TouchableOpacity
             style={styles.profileIcon}
-            onPress={() => router.replace('/(tabs)/profile')}
+            onPress={() => router.replace('/(tabs)/players/profile')}
           >
             <Ionicons name="person" size={20} color="white" />
           </TouchableOpacity>
@@ -81,43 +82,30 @@ export default function RockCollectionScreen() {
       </ScrollView>
 
       {/* Bottom Navigation */}
-      <View style={styles.bottomNav}>
-        <TouchableOpacity
-          style={styles.navItem}
-          activeOpacity={0.7}
-          onPress={() => router.replace('/(tabs)/dashboard')}
-        >
-          <Ionicons name="home" size={24} color="#BA9B77" />
-          <Text style={styles.navText}>Home</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.navItem}
-          activeOpacity={0.7}
-          onPress={() => router.replace('/(tabs)/camera')}
-        >
-          <Ionicons name="camera" size={24} color="#BA9B77" />
-          <Text style={styles.navText}>Scan</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.navItem}
-          activeOpacity={0.7}
-          onPress={() => router.replace('/(tabs)/collections')}
-        >
-          <MaterialIcons name="collections" size={24} color="#BA9B77" />
-          <Text style={styles.navText}>Collections</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.navItem}
-          activeOpacity={0.7}
-          onPress={() => router.replace('/(tabs)/posts')}
-        >
-          <Ionicons name="chatbubbles" size={24} color="#A77B4E" />
-          <Text style={[styles.navText, styles.navTextActive]}>Posts</Text>
-        </TouchableOpacity>
-      </View>
+      <BottomNav
+        items={[
+          {
+            label: "Home",
+            route: "/(tabs)/players/dashboard",
+            icon: { lib: "ion", name: "home" },
+          },
+          {
+            label: "Scan",
+            route: "/(tabs)/players/camera",
+            icon: { lib: "ion", name: "camera" },
+          },
+          {
+            label: "Collections",
+            route: "/(tabs)/players/collections",
+            icon: { lib: "mat", name: "collections" },
+          },
+          {
+            label: "Posts",
+            route: "/(tabs)/players/posts",
+            icon: { lib: "ion", name: "chatbubbles" },
+          },
+        ]}
+      />
     </View>
   )
 }

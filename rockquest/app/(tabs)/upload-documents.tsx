@@ -6,7 +6,7 @@ import * as DocumentPicker from "expo-document-picker";
 export default function UploadDocsScreen() {
   const router = useRouter();
   const { email, password, role, username, description } = useLocalSearchParams();
-  const [document, setDocument] = useState(null);
+  const [document, setDocument] = useState<DocumentPicker.DocumentPickerResult | null>(null);
   const [paramsChecked, setParamsChecked] = useState(false);
 
   useEffect(() => {
@@ -27,7 +27,7 @@ export default function UploadDocsScreen() {
       multiple: false,
     });
 
-    if (result.type === "success") {
+    if (!result.canceled && result.assets && result.assets.length > 0) {
       setDocument(result);
     }
   };
@@ -66,7 +66,9 @@ export default function UploadDocsScreen() {
 
       <TouchableOpacity style={styles.uploadButton} onPress={pickDocument}>
         <Text style={styles.uploadButtonText}>
-          {document ? `Selected: ${document.name}` : "Choose File"}
+          {document && document.assets && document.assets.length > 0
+            ? `Selected: ${document.assets[0].name}`
+            : "Choose File"}
         </Text>
       </TouchableOpacity>
 

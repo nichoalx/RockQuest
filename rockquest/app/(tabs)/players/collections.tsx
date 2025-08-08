@@ -5,6 +5,7 @@ import * as SplashScreen from "expo-splash-screen"
 import { useEffect, useState } from "react"
 import { Ionicons, MaterialIcons } from "@expo/vector-icons"
 import { useRouter } from "expo-router"
+import BottomNav from "@/components/BottomNav"
 
 SplashScreen.preventAutoHideAsync()
 
@@ -47,7 +48,7 @@ export default function CollectionsScreen() {
         <TouchableOpacity
           key={index}
           style={styles.rockItem}
-          onPress={() => router.push("/(tabs)/collection-rock")}
+          onPress={() => router.push("/(tabs)/players/collection-rock")}
         >
           <View style={styles.rockImage}>
             <Text style={styles.rockImageText}>Rock</Text>
@@ -67,7 +68,7 @@ export default function CollectionsScreen() {
           <View>
             <Text style={styles.title}>Collection</Text>
           </View>
-          <TouchableOpacity style={styles.profileIcon} onPress={() => router.replace("/(tabs)/profile")}>
+          <TouchableOpacity style={styles.profileIcon} onPress={() => router.replace("/(tabs)/players/profile")}>
             <Ionicons name="person" size={20} color="white" />
           </TouchableOpacity>
         </View>
@@ -114,27 +115,30 @@ export default function CollectionsScreen() {
       </ScrollView>
 
       {/* Bottom Navigation */}
-      <View style={styles.bottomNav}>
-        <TouchableOpacity style={styles.navItem} activeOpacity={0.7} onPress={() => router.replace("/(tabs)/dashboard")}>
-          <Ionicons name="home" size={24} color="#BA9B77" />
-          <Text style={styles.navText}>Home</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.navItem} activeOpacity={0.7} onPress={() => router.replace("/(tabs)/camera")}>
-          <Ionicons name="camera" size={24} color="#BA9B77" />
-          <Text style={styles.navText}>Scan</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.navItem} activeOpacity={0.7} onPress={() => router.replace("/(tabs)/collections")}>
-          <MaterialIcons name="collections" size={24} color="#A77B4E" />
-          <Text style={[styles.navText, styles.navTextActive]}>Collections</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.navItem} activeOpacity={0.7} onPress={() => router.replace("/(tabs)/posts")}>
-          <Ionicons name="chatbubbles" size={24} color="#BA9B77" />
-          <Text style={styles.navText}>Posts</Text>
-        </TouchableOpacity>
-      </View>
+      <BottomNav
+        items={[
+          {
+            label: "Home",
+            route: "/(tabs)/players/dashboard",
+            icon: { lib: "ion", name: "home" },
+          },
+          {
+            label: "Scan",
+            route: "/(tabs)/players/camera",
+            icon: { lib: "ion", name: "camera" },
+          },
+          {
+            label: "Collections",
+            route: "/(tabs)/players/collections",
+            icon: { lib: "mat", name: "collections" },
+          },
+          {
+            label: "Posts",
+            route: "/(tabs)/players/posts",
+            icon: { lib: "ion", name: "chatbubbles" },
+          },
+        ]}
+      />
     </View>
   )
 }
