@@ -2,12 +2,12 @@ from pydantic import BaseModel, EmailStr
 from typing import Optional, Literal
 from datetime import datetime
 
-# ⬇️ Moved up for clarity, no change in logic
+# Moved up for clarity, no change in logic
 class PostVerificationRequest(BaseModel):
     action: Literal["approve", "reject"]
     reason: Optional[str] = None  # only needed if rejecting
 
-# ✅ Fully compatible with FastAPI validation
+# Fully compatible with FastAPI validation
 class ReportDecisionRequest(BaseModel):
     action: Literal["approve", "reject"]
 
