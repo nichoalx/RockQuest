@@ -87,48 +87,71 @@ def get_daily_quests(user=Depends(verify_token)):
         "view_fact": False
     }
     #track user quest completion
-    #check whether user has scan and saved a rock into collection today
+    #check whether user has scan rocks based on type
+    scan_ref = db.collection("rock_scans").document(user["uid"]).collection("scans")
+    scans_today = list(scan_ref.where("scannedAt", ">=", start_of_day).stream())
+
+    rock_scan_counts = {"sedimentary": 0,"igneous": 0,"metamorphic": 0}
+    for scan in scans_today:
+        data = scan.to_dict()
+        rock_type = data.get("rockType", "").lower()
+        if rock_type in rock_scan_counts:
+            rock_scan_counts[rock_type] += 1
+
+    if rock_scan_counts["sedimentary"] >= 1:
+        completed_actions["scan_sedimentary"] = True
+    if rock_scan_counts["igneous"] >= 1:
+        completed_actions["scan_igneous"] = True
+    if rock_scan_counts["metamorphic"] >= 1:
+        completed_actions["scan_metamorphic"] = True
+    if sum(rock_scan_counts.values()) >= 3:
+        completed_actions["scan_3rocks"] = True
+    #check whether user has saved a rock into collection today
     saved_ref = db.collection("collection").document(user["uid"]).collection("saved")
     saved_today = list(saved_ref.where("savedAt", ">=", start_of_day).stream())
-    if saved_today:
-        completed_actions["scan_rock"] = True
+    if len(saved_today) >= 1:
         completed_actions["save_rock"] = True
+    #check whether user has saved 3 rocks into collection today
+    if len(saved_today) >= 3:
+        completed_actions["save_3rocks"] = True
     #check if user created a post today
-    post_ref = db.collection("post")
-    posts_today = list(post_ref.where("createdBy", "==", user["uid"])
+    posts_today = list(db.collection("post").where("createdBy", "==", user["uid"])
                 .where("createdAt", ">=", start_of_day).stream())
-    if posts_today:
+    if len(posts_today) >= 1:
         completed_actions["submit_post"] = True
-
-
+    #check if user view fact today
+    factView_ref = db.collection("fact_viewed").document(user["uid"]).collection("views").document(today)
+    if factView_ref.get().exists:
+        completed_actions["view_fact"] = True
+    
     daily_quest = []
     for doc in quests_doc:
         quest = doc.to_dict()
         quest["questId"] = doc.id
 
-        #determine if completed based on action keywords or questId or title
+        #determine if completed based on quest title
         if "scan 1 sedimentary" in quest["title"].lower():
             quest["completed"] = completed_actions["scan_sedimentary"]
-        elif "save" in quest["title"].lower():
+        elif "scan 1 igneous rock" in quest["title"].lower():
             quest["completed"] = completed_actions["scan_igneous"]
-        elif "post" in quest["title"].lower():
+        elif "scan 1 metamorphic" in quest["title"].lower():
             quest["completed"] = completed_actions["scan_metamorphic"]
-        elif "post" in quest["title"].lower():
+        elif "scan any 3 rocks" in quest["title"].lower():
             quest["completed"] = completed_actions["scan_3rocks"]
-        elif "post" in quest["title"].lower():
+        elif "save 1 rock to collection" in quest["title"].lower():
             quest["completed"] = completed_actions["save_rock"]
-        elif "post" in quest["title"].lower():
+        elif "save 3 rocks to collection" in quest["title"].lower():
             quest["completed"] = completed_actions["save_3rocks"]
-        elif "post" in quest["title"].lower():
+        elif "create a post" in quest["title"].lower():
             quest["completed"] = completed_actions["submit_post"]
-        elif "post" in quest["title"].lower():
+        elif "view fact" in quest["title"].lower():
             quest["completed"] = completed_actions["view_fact"]
         else:
             quest["completed"] = False
         daily_quest.append(quest)
 
         #if quest is completed, log into DailyQuestStatus
-        if completed:
+        if quest["completed"]:
             status_ref = db.collection("user_daily_quests")\
                 .document(user["uid"])\
                 .collection("dates")\
@@ -203,15 +226,26 @@ def scan_rock(file: UploadFile = File(...), user=Depends(verify_token)):
     # Simulate prediction
 
 
+    predicted_rock_type = "igneous"  # simulate prediction result 
+    #save user scan activity
+    db.collection("rock_scans").document(user["uid"]).collection("scans").add({
+        "rockType": predicted_rock_type.lower(),  # validated value
+        "scannedAt": firestore.SERVER_TIMESTAMP
+    })
+    # Save to global scan tracking for achievements
+    db.collection("scan").add({
+        "userId": user["uid"],
+        "scannedAt": firestore.SERVER_TIMESTAMP
+    })
 
+    # Check and award achievements
+    scan_count = db.collection("scan").where("userId", "==", user["uid"]).stream()
+    scan_count_list = list(scan_count)
 
-    # After saving scan activity
-    scan_count = db.collection("scan").where("userId", "==", user["uid"]).get()
-    check_and_award_achievements(user["uid"], "scan_rock", len(scan_count))
-
+    check_and_award_achievements(user["uid"], "scan_rock", len(scan_count_list))
 
     return {
-        "predictedType": "Granite",
+        "predictedType": predicted_rock_type,
         "confidenceScore": 0.87,
         "details": "Grainy igneous rock with quartz and feldspar."
     }

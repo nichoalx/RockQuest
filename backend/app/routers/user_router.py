@@ -74,6 +74,16 @@ def delete_post(post_id: str, user=Depends(verify_token)):
 # FACTS
 @router.get("/facts")
 def get_facts(user=Depends(verify_token)):
+    # Log that user accessed facts today (no duplicates per day)
+    today = datetime.now().strftime("%Y-%m-%d")
+    
+    view_doc_ref = db.collection("fact_viewed").document(user["uid"]).collection("views").document(today)
+
+    if not view_doc_ref.get().exists:
+        view_doc_ref.set({
+            "viewedAt": firestore.SERVER_TIMESTAMP
+        })
+
     docs = db.collection("fact").stream()
     return [{"id": doc.id, **doc.to_dict()} for doc in docs]
 
