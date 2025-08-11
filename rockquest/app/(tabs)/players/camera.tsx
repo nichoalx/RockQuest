@@ -1,12 +1,12 @@
 "use client"
-import { View, Text, TouchableOpacity, StyleSheet, StatusBar, Dimensions } from "react-native"
+import { View, Text, TouchableOpacity, StyleSheet, StatusBar, Dimensions, Alert } from "react-native"
 import { useFonts, PressStart2P_400Regular } from "@expo-google-fonts/press-start-2p"
 import * as SplashScreen from "expo-splash-screen"
 import { useEffect, useRef, useState } from "react"
 import { Ionicons, MaterialIcons } from "@expo/vector-icons"
 import { useRouter } from "expo-router"
 import { CameraView, useCameraPermissions } from "expo-camera"
-import BottomNav from "@/components/BottomNav";
+import * as MediaLibrary from "expo-media-library"
 
 SplashScreen.preventAutoHideAsync()
 
@@ -16,11 +16,15 @@ export default function CameraScreen() {
   const router = useRouter()
   const [fontsLoaded] = useFonts({ PressStart2P_400Regular })
   const [permission, requestPermission] = useCameraPermissions()
+  const [mediaPermission, requestMediaPermission] = MediaLibrary.usePermissions()
   const cameraRef = useRef<any>(null)
+  
 
   useEffect(() => {
     if (fontsLoaded) SplashScreen.hideAsync()
-  }, [fontsLoaded])
+    if (!permission?.granted) requestPermission()
+    if (!mediaPermission?.granted) requestMediaPermission()
+  }, [fontsLoaded, permission])
 
   // Debug: Log permission status
   console.log("Permission status:", permission)
@@ -49,16 +53,21 @@ export default function CameraScreen() {
   }
 
   const handleCapture = async () => {
-    if (cameraRef.current) {
+  if (cameraRef.current) {
       try {
-        const photo = await cameraRef.current.takePictureAsync({
-          base64: true,
-          quality: 0.8,
-        })
-        console.log("Captured:", photo.uri)
-        // router.push({ pathname: "/(tabs)/scan-result", params: { uri: photo.uri } })
+        const photo = await cameraRef.current.takePictureAsync({ base64: false })
+
+        const asset = await MediaLibrary.createAssetAsync(photo.uri)
+        console.log("Saved to gallery:", asset)
+
+        Alert.alert("Success", "Photo saved to your gallery!")
+
+        // Future transition: Send to ML endpoint here
+        // await uploadToPredictionAPI(photo.uri)
+
       } catch (error) {
-        console.error("Error taking picture:", error)
+        console.error("Error taking/saving picture:", error)
+        Alert.alert("Error", "Failed to take or save the picture.")
       }
     }
   }
@@ -71,7 +80,7 @@ export default function CameraScreen() {
       <View style={styles.header}>
         <View style={styles.headerContent}>
           <Text style={styles.title}>Scan Rock</Text>
-          <TouchableOpacity style={styles.profileIcon} onPress={() => router.replace("/(tabs)/players/profile")}>
+          <TouchableOpacity style={styles.profileIcon} onPress={() => router.replace("/(tabs)/profile")}>
             <Ionicons name="person" size={20} color="white" />
           </TouchableOpacity>
         </View>
@@ -84,7 +93,7 @@ export default function CameraScreen() {
           style={styles.camera}
           facing="back"
         >
-          {/* Overlay with brackets */}
+        </CameraView>
           <View style={styles.overlay}>
             <View style={styles.viewfinder}>
               <View style={[styles.bracket, styles.topLeft]} />
@@ -93,7 +102,6 @@ export default function CameraScreen() {
               <View style={[styles.bracket, styles.bottomRight]} />
             </View>
           </View>
-        </CameraView>
       </View>
 
       {/* Capture Button */}
@@ -104,30 +112,24 @@ export default function CameraScreen() {
       </View>
 
       {/* Bottom Navigation */}
-      <BottomNav
-        items={[
-          {
-            label: "Home",
-            route: "/(tabs)/players/dashboard",
-            icon: { lib: "ion", name: "home" },
-          },
-          {
-            label: "Scan",
-            route: "/(tabs)/players/camera",
-            icon: { lib: "ion", name: "camera" },
-          },
-          {
-            label: "Collections",
-            route: "/(tabs)/players/collections",
-            icon: { lib: "mat", name: "collections" },
-          },
-          {
-            label: "Posts",
-            route: "/(tabs)/players/posts",
-            icon: { lib: "ion", name: "chatbubbles" },
-          },
-        ]}
-      />
+      <View style={styles.bottomNav}>
+        <TouchableOpacity style={styles.navItem} onPress={() => router.replace("/(tabs)/dashboard")}>
+          <Ionicons name="home" size={24} color="#BA9B77" />
+          <Text style={styles.navText}>Home</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.navItem} onPress={() => router.replace("/(tabs)/camera")}>
+          <Ionicons name="camera" size={24} color="#A77B4E" />
+          <Text style={[styles.navText, styles.navTextActive]}>Scan</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.navItem} onPress={() => router.replace("/(tabs)/collections")}>
+          <MaterialIcons name="collections" size={24} color="#BA9B77" />
+          <Text style={styles.navText}>Collections</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.navItem} onPress={() => router.replace("/(tabs)/posts")}>
+          <Ionicons name="chatbubbles" size={24} color="#BA9B77" />
+          <Text style={styles.navText}>Posts</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   )
 }
@@ -141,7 +143,7 @@ const styles = StyleSheet.create({
     paddingTop: 50, 
     paddingHorizontal: 20, 
     paddingBottom: 20,
-    backgroundColor: "rgba(0,0,0,0.3)", // Semi-transparent overlay
+    backgroundColor: "rgba(0, 0, 0, 0.3)", // Semi-transparent overlay
     position: "absolute",
     top: 0,
     left: 0,
@@ -176,6 +178,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   overlay: {
+    ...StyleSheet.absoluteFillObject,
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
@@ -197,9 +200,14 @@ const styles = StyleSheet.create({
   bottomLeft: { bottom: 0, left: 0, borderRightWidth: 0, borderTopWidth: 0 },
   bottomRight: { bottom: 0, right: 0, borderLeftWidth: 0, borderTopWidth: 0 },
   captureContainer: { 
-    alignItems: "center", 
+    position: "absolute",
+    bottom: 85,
+    left: 0,
+    right: 0,
+    alignItems: "center",
     paddingVertical: 40,
-    backgroundColor: "rgba(0,0,0,0.3)", // Semi-transparent overlay
+    backgroundColor: "rgba(0, 0, 0, 0.3)",
+    zIndex: 2,
   },
   captureButton: {
     width: 80,

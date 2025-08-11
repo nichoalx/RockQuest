@@ -51,7 +51,8 @@
     "react-native-web": "^0.20.0",
     "react-native-web-maps": "^0.3.0",
     "react-native-webview": "13.13.5",
-    "tslib": "^2.8.1"
+    "tslib": "^2.8.1",
+    "expo-media-library": "~17.1.7"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
