@@ -68,14 +68,14 @@ const MapComponent = () => {
               name: 'Granite',
               description:
                 'Granite is a coarse-grained igneous rock composed of quartz and feldspar. It forms from the slow crystallization of magma below Earth\'s surface.',
-              image: require('../assets/images/GneissRock_Metamorphic.png'),
+              image: require('../assets/images/rocks/Gneiss.png'),
             })
           }
         >
           <View style={styles.customMarker}>
             <View style={styles.markerImageWrapper}>
               <Image
-                source={require('../assets/images/GneissRock_Metamorphic.png')}
+                source={require('../assets/images/rocks/Gneiss.png')}
                 style={styles.markerImage}
               />
             </View>
