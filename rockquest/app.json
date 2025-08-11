@@ -13,6 +13,11 @@
       "supportsTablet": true,
       "infoPlist": {
         "NSCameraUsageDescription": "This app uses the camera to identify rocks."
+      },
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyB6qRvMLyLnOf5cnH6DUrsWd06XIK32XmI"
+        }
       }
     },
 
@@ -22,7 +27,12 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyCcHBKc8K5qybrv2xR6nRQkO4EsLddHDIY"
+        }
+      }
     },
 
     "web": {
