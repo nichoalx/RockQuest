@@ -66,11 +66,9 @@ export default function AuthScreen() {
 
         // Redirect based on type
         if (userType === "geologist") {
-          router.replace("/GeoHomepage")
-        } else if (userType === "admin") {
-          router.replace("/AdminDashboard")
+          router.replace("/(tabs)/geologists/GeoHomepage")
         } else {
-          router.replace("/(tabs)/dashboard")
+          router.replace("/(tabs)/players/dashboard")
         }
       })
       .catch((error) => {
