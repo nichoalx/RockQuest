@@ -343,7 +343,8 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     borderTopWidth: 1,
     borderTopColor: "#e5e7eb",
-    height: height * 0.25,
+    flex: 1,
+    minHeight: 200,
   },
   rocksSectionContent: {
     padding: 16,
