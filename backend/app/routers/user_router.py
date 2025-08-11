@@ -43,7 +43,7 @@ def get_my_posts(user=Depends(verify_token)):
 
 @router.get("/all-posts")
 def get_all_posts(user=Depends(verify_token)):
-    docs = db.collection("post").stream()
+    docs = (db.collection("post").order_by("createdAt", direction=firestore.Query.DESCENDING).stream())
     return [{"id": doc.id, **doc.to_dict()} for doc in docs]
 
 @router.post("/add-post")
@@ -84,13 +84,13 @@ def get_facts(user=Depends(verify_token)):
             "viewedAt": firestore.SERVER_TIMESTAMP
         })
 
-    docs = db.collection("fact").stream()
+    docs = (db.collection("fact").order_by("createdAt", direction=firestore.Query.DESCENDING).stream())
     return [{"id": doc.id, **doc.to_dict()} for doc in docs]
 
 # ANNOUNCEMENTS
 @router.get("/announcements")
 def get_announcements(user=Depends(verify_token)):
-    docs = db.collection("announcement").stream()
+    docs = (db.collection("announcement").order_by("createdAt", direction=firestore.Query.DESCENDING).stream())
     return [{"id": doc.id, **doc.to_dict()} for doc in docs]
 
 # REPORTING

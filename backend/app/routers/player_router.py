@@ -40,6 +40,7 @@ def add_rock(data: Collection, user=Depends(verify_token)):
 
     #create the path in Collection: /collection/{userId}/saved/{rockId}
     collection_ref = db.collection("collection").document(user["uid"]).collection("saved").document(data.rockId)
+    
     collection_ref.set({
         "savedAt": firestore.SERVER_TIMESTAMP,
         "imageUrl": data.imageUrl, #save uploaded rock image from user
