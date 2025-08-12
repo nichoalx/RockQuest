@@ -13,17 +13,22 @@ def complete_profile(data: User, current_user: dict = Depends(verify_token)):
     uid = current_user["uid"]
 
     #ensure unique username
-    username_exists = db.collection("users").where("username", "==", data.username).stream()
+    username_exists = db.collection("user").where("username", "==", data.username).stream()
     if any(username_exists):
         raise HTTPException(status_code=400, detail="Username is already taken")
 
-    user_ref = db.collection("users").document(uid)
+    user_ref = db.collection("user").document(uid)
 
     update_data = {
+        "userId": uid,
         "username": data.username,
         "type": data.type,
         "description": data.description,
-        "createdAt": firestore.SERVER_TIMESTAMP
+        "createdAt": firestore.SERVER_TIMESTAMP,
+        "dob": data.dob,
+        "avatarId": data.avatarId,
+        "isActive": True,
+        "email": data.emailAddress
     }
 
     user_ref.set(update_data, merge=True)
@@ -33,26 +38,26 @@ def complete_profile(data: User, current_user: dict = Depends(verify_token)):
 # POSTS
 @router.get("/my-posts")
 def get_my_posts(user=Depends(verify_token)):
-    docs = db.collection("posts").where("uploadedBy", "==", user["uid"]).stream()
+    docs = db.collection("post").where("uploadedBy", "==", user["uid"]).stream()
     return [{"id": doc.id, **doc.to_dict()} for doc in docs]
 
 @router.get("/all-posts")
 def get_all_posts(user=Depends(verify_token)):
-    docs = db.collection("posts").stream()
+    docs = (db.collection("post").order_by("createdAt", direction=firestore.Query.DESCENDING).stream())
     return [{"id": doc.id, **doc.to_dict()} for doc in docs]
 
 @router.post("/add-post")
 def add_post(data: dict, user=Depends(verify_token)):
     data.update({
-        "createdAt": datetime.utcnow(),
+        "createdAt": firestore.SERVER_TIMESTAMP,
         "uploadedBy": user["uid"]
     })
-    db.collection("posts").add(data)
+    db.collection("post").add(data)
     return {"message": "Post added"}
 
 @router.put("/edit-post/{post_id}")
 def edit_post(post_id: str, data: dict, user=Depends(verify_token)):
-    ref = db.collection("posts").document(post_id)
+    ref = db.collection("post").document(post_id)
     if not ref.get().exists:
         raise HTTPException(status_code=404, detail="Post not found")
     ref.update(data)
@@ -60,7 +65,7 @@ def edit_post(post_id: str, data: dict, user=Depends(verify_token)):
 
 @router.delete("/delete-post/{post_id}")
 def delete_post(post_id: str, user=Depends(verify_token)):
-    ref = db.collection("posts").document(post_id)
+    ref = db.collection("post").document(post_id)
     if not ref.get().exists:
         raise HTTPException(status_code=404, detail="Post not found")
     ref.delete()
@@ -69,22 +74,32 @@ def delete_post(post_id: str, user=Depends(verify_token)):
 # FACTS
 @router.get("/facts")
 def get_facts(user=Depends(verify_token)):
-    docs = db.collection("facts").stream()
+    # Log that user accessed facts today (no duplicates per day)
+    today = datetime.now().strftime("%Y-%m-%d")
+    
+    view_doc_ref = db.collection("fact_viewed").document(user["uid"]).collection("views").document(today)
+
+    if not view_doc_ref.get().exists:
+        view_doc_ref.set({
+            "viewedAt": firestore.SERVER_TIMESTAMP
+        })
+
+    docs = (db.collection("fact").order_by("createdAt", direction=firestore.Query.DESCENDING).stream())
     return [{"id": doc.id, **doc.to_dict()} for doc in docs]
 
 # ANNOUNCEMENTS
 @router.get("/announcements")
 def get_announcements(user=Depends(verify_token)):
-    docs = db.collection("announcements").stream()
+    docs = (db.collection("announcement").order_by("createdAt", direction=firestore.Query.DESCENDING).stream())
     return [{"id": doc.id, **doc.to_dict()} for doc in docs]
 
 # REPORTING
 @router.post("/report-post")
 def report_post(post_id: str, reason: str, user=Depends(verify_token)):
-    db.collection("reports").add({
+    db.collection("report").add({
         "postId": post_id,
         "reason": reason,
-        "reportedAt": datetime.utcnow(),
+        "reportedAt": firestore.SERVER_TIMESTAMP,
         "reportedBy": user["uid"]
     })
     return {"message": "Post reported"}
@@ -92,17 +107,17 @@ def report_post(post_id: str, reason: str, user=Depends(verify_token)):
 # PROFILE
 @router.get("/profile")
 def get_profile(user=Depends(verify_token)):
-    doc = db.collection("users").document(user["uid"]).get()
+    doc = db.collection("user").document(user["uid"]).get()
     if not doc.exists:
         raise HTTPException(status_code=404, detail="User not found")
     return doc.to_dict()
 
 @router.put("/update-profile")
 def update_profile(data: dict, user=Depends(verify_token)):
-    db.collection("users").document(user["uid"]).update(data)
+    db.collection("user").document(user["uid"]).update(data)
     return {"message": "Profile updated"}
 
 @router.delete("/delete-account")
 def delete_account(user=Depends(verify_token)):
-    db.collection("users").document(user["uid"]).delete()
+    db.collection("user").document(user["uid"]).delete()
     return {"message": "Account deleted"}
