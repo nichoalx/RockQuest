@@ -339,6 +339,7 @@ def review_report(report_id: str, data: ReportDecisionRequest, user=Depends(veri
     }
 
     if data.action == "approve":
+        # Delete the reported item
         item_ref = db.collection(item_type).document(item_id)
         if item_ref.get().exists:
             item_ref.delete()
@@ -346,11 +347,18 @@ def review_report(report_id: str, data: ReportDecisionRequest, user=Depends(veri
         else:
             update_data["adminAction"] = f"{item_type} {item_id} not found"
 
+    elif data.action == "reject":
+        if not data.reason:
+            raise HTTPException(status_code=400, detail="Rejection reason is required")
+        update_data["rejectedReason"] = data.reason
+
+    # Save updates to the report
     ref.update(update_data)
 
     return {
         "message": f"Report {data.action}d successfully",
-        "itemAction": update_data.get("adminAction", "No action taken")
+        "itemAction": update_data.get("adminAction", "No action taken"),
+        "rejectedReason": update_data.get("rejectedReason")
     }
 
 # SPAWNED ROCK MANAGEMENT

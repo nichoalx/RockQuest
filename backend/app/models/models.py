@@ -10,6 +10,7 @@ class PostVerificationRequest(BaseModel):
 # Fully compatible with FastAPI validation
 class ReportDecisionRequest(BaseModel):
     action: Literal["approve", "reject"]
+    reason: Optional[str] = None
 
 # ----------------------------------------------------------------------------------------------------------------------
 # Rock markers (Database Reference)
