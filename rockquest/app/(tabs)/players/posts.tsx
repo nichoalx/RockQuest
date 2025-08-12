@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, ScrollView, StyleSheet, StatusBar } from 
 import { useFonts, PressStart2P_400Regular } from "@expo-google-fonts/press-start-2p"
 import * as SplashScreen from "expo-splash-screen"
 import { useEffect, useState } from "react"
-import { Ionicons, MaterialIcons } from "@expo/vector-icons"
+import { Ionicons } from "@expo/vector-icons"
 import { useRouter } from "expo-router";
 import BottomNav from "@/components/BottomNav"
 
@@ -11,22 +11,16 @@ SplashScreen.preventAutoHideAsync()
 
 export default function PostsScreen() {
   const router = useRouter();
-  const [fontsLoaded] = useFonts({
-    PressStart2P_400Regular,
-  })
+  const [fontsLoaded] = useFonts({ PressStart2P_400Regular })
 
   const [showMyPosts, setShowMyPosts] = useState(false)
-  const [postTypeFilter, setPostTypeFilter] = useState("all") // added state
+  const [postTypeFilter, setPostTypeFilter] = useState("all")
 
   useEffect(() => {
-    if (fontsLoaded) {
-      SplashScreen.hideAsync()
-    }
+    if (fontsLoaded) SplashScreen.hideAsync()
   }, [fontsLoaded])
 
-  if (!fontsLoaded) {
-    return null
-  }
+  if (!fontsLoaded) return null
 
   const posts = [
     { id: 1, name: "Granite Sample", user: "You", isOwn: true, type: "post" },
@@ -36,7 +30,6 @@ export default function PostsScreen() {
     { id: 5, name: "Obsidian", user: "Username", isOwn: false, type: "post" },
   ]
 
-  // Filter posts by ownership and type
   const filteredPosts = posts.filter((post) => {
     if (showMyPosts && !post.isOwn) return false
     if (postTypeFilter === "posts" && post.type !== "post") return false
@@ -51,9 +44,7 @@ export default function PostsScreen() {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerContent}>
-          <View>
-            <Text style={styles.title}>Posts</Text>
-          </View>
+          <Text style={styles.title}>Posts</Text>
           <TouchableOpacity style={styles.profileIcon} onPress={() => router.replace("/(tabs)/players/profile")}>
             <Ionicons name="person" size={20} color="white" />
           </TouchableOpacity>
@@ -68,11 +59,11 @@ export default function PostsScreen() {
             <Text style={[styles.filterText, showMyPosts && styles.filterTextActive]}>My Posts</Text>
           </TouchableOpacity>
           <TouchableOpacity
-  style={styles.addButton}
-  onPress={() =>
-    router.push({ pathname: "/(tabs)/players/NewPost", params: { role: "player" } })
-  }
->
+            style={styles.addButton}
+            onPress={() =>
+              router.push({ pathname: "/(tabs)/players/NewPost", params: { role: "player" } })
+            }
+          >
             <Ionicons name="add" size={20} color="white" />
           </TouchableOpacity>
         </View>
@@ -104,7 +95,7 @@ export default function PostsScreen() {
       </View>
 
       {/* Posts List */}
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
         <View style={styles.postsContainer}>
           {filteredPosts.map((post) => (
             <View key={post.id} style={styles.postItem}>
@@ -133,41 +124,23 @@ export default function PostsScreen() {
         </View>
       </ScrollView>
 
-      {/* Bottom Navigation */}
-      <BottomNav
-        items={[
-          {
-            label: "Home",
-            route: "/(tabs)/players/dashboard",
-            icon: { lib: "ion", name: "home" },
-          },
-          {
-            label: "Scan",
-            route: "/(tabs)/players/camera",
-            icon: { lib: "ion", name: "camera" },
-          },
-          {
-            label: "Collections",
-            route: "/(tabs)/players/collections",
-            icon: { lib: "mat", name: "collections" },
-          },
-          {
-            label: "Posts",
-            route: "/(tabs)/players/posts",
-            icon: { lib: "ion", name: "chatbubbles" },
-          },
-        ]}
-      />
+      {/* Fixed Bottom Navigation */}
+      <View style={styles.bottomNavWrap} pointerEvents="box-none">
+        <BottomNav
+          items={[
+            { label: "Home", route: "/(tabs)/players/dashboard", icon: { lib: "ion", name: "home" } },
+            { label: "Scan", route: "/(tabs)/players/camera", icon: { lib: "ion", name: "camera" } },
+            { label: "Collections", route: "/(tabs)/players/collections", icon: { lib: "mat", name: "collections" } },
+            { label: "Posts", route: "/(tabs)/players/posts", icon: { lib: "ion", name: "chatbubbles" } },
+          ]}
+        />
+      </View>
     </View>
   )
 }
 
-// CSS Stylesheet
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "white",
-  },
+  container: { flex: 1, backgroundColor: "white" },
   header: {
     paddingTop: 50,
     paddingHorizontal: 20,
@@ -175,12 +148,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#e5e7eb",
   },
-  headerContent: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: 20,
-  },
+  headerContent: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 },
   title: {
     fontFamily: "PressStart2P_400Regular",
     fontSize: 20,
@@ -189,149 +157,48 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   profileIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginTop: 10,
-    backgroundColor: "#A77B4E",
-    justifyContent: "center",
-    alignItems: "center",
+    width: 40, height: 40, borderRadius: 20, marginTop: 10,
+    backgroundColor: "#A77B4E", justifyContent: "center", alignItems: "center",
   },
-  actionContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
+  actionContainer: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   filterButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: "#d1d5db",
+    paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: "#d1d5db",
   },
-  filterButtonActive: {
-    backgroundColor: "#1f2937",
-    borderColor: "#1f2937",
-  },
-  filterText: {
-    fontSize: 14,
-    color: "#6b7280",
-    fontWeight: "500",
-  },
-  filterTextActive: {
-    color: "white",
-  },
-  filterRowAligned: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 12,
-  },
-  filterRightGroup: {
-    flexDirection: "row",
-    gap: 8,
-    marginLeft: 12,
-  },
+  filterButtonActive: { backgroundColor: "#1f2937", borderColor: "#1f2937" },
+  filterText: { fontSize: 14, color: "#6b7280", fontWeight: "500" },
+  filterTextActive: { color: "white" },
+  filterRowAligned: { flexDirection: "row", alignItems: "center", marginTop: 12 },
+  filterRightGroup: { flexDirection: "row", gap: 8, marginLeft: 12 },
   filterButtonEqual: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: "#d1d5db",
-    minWidth: 70,
-    alignItems: "center",
+    paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: "#d1d5db",
+    minWidth: 70, alignItems: "center",
   },
   addButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#A77B4E",
-    justifyContent: "center",
-    alignItems: "center",
+    width: 40, height: 40, borderRadius: 20, backgroundColor: "#A77B4E", justifyContent: "center", alignItems: "center",
   },
-  content: {
-    flex: 1,
-  },
-  postsContainer: {
-    padding: 20,
-  },
+  content: { flex: 1 },
+  postsContainer: { padding: 20 },
   postItem: {
-    flexDirection: "row",
-    marginBottom: 20,
-    backgroundColor: "white",
-    borderRadius: 8,
-    padding: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    flexDirection: "row", marginBottom: 20, backgroundColor: "white", borderRadius: 8, padding: 12,
+    shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2,
   },
   postImage: {
-    width: 60,
-    height: 60,
-    backgroundColor: "#C0BAA9",
-    borderRadius: 8,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 12,
+    width: 60, height: 60, backgroundColor: "#C0BAA9", borderRadius: 8, justifyContent: "center", alignItems: "center", marginRight: 12,
   },
-  postImageText: {
-    color: "#6b7280",
-    fontSize: 12,
-  },
-  postContent: {
-    flex: 1,
-  },
-  postHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 4,
-  },
-  postName: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#1f2937",
-  },
-  postUser: {
-    fontSize: 14,
-    color: "#6b7280",
-    marginBottom: 8,
-  },
-  postActions: {
-    flexDirection: "row",
-    gap: 8,
-  },
+  postImageText: { color: "#6b7280", fontSize: 12 },
+  postContent: { flex: 1 },
+  postHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 },
+  postName: { fontSize: 16, fontWeight: "600", color: "#1f2937" },
+  postUser: { fontSize: 14, color: "#6b7280", marginBottom: 8 },
+  postActions: { flexDirection: "row", gap: 8 },
   actionButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "#d1d5db",
+    paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, borderWidth: 1, borderColor: "#d1d5db",
   },
-  actionButtonText: {
-    fontSize: 12,
-    color: "#6b7280",
-  },
-  bottomNav: {
-    flexDirection: "row",
-    backgroundColor: "white",
-    borderTopWidth: 1,
-    borderTopColor: "#e5e7eb",
-    paddingTop: 8,
-    paddingBottom: 20,
-  },
-  navItem: {
-    flex: 1,
-    alignItems: "center",
-    paddingVertical: 8,
-  },
-  navText: {
-    fontSize: 12,
-    marginTop: 4,
-    color: "#6b7280",
-  },
-  navTextActive: {
-    color: "#A77B4E",
+  actionButtonText: { fontSize: 12, color: "#6b7280" },
+
+  /* Fixed BottomNav wrapper */
+  bottomNavWrap: {
+    position: "absolute", left: 0, right: 0, bottom: 0, zIndex: 50,
   },
 })
+

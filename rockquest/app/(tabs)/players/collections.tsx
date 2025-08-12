@@ -268,6 +268,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     color: "#ffffffff",
     textAlign: "center",
+    marginBottom: 0,
   },
 })
 
