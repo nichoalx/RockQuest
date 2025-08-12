@@ -7,11 +7,14 @@ import {
   ScrollView,
   StyleSheet,
   StatusBar,
+  ImageBackground,
 } from 'react-native'
-import { Ionicons, MaterialIcons } from '@expo/vector-icons'
+import { Ionicons } from '@expo/vector-icons'
 import { useFonts, PressStart2P_400Regular } from '@expo-google-fonts/press-start-2p'
 import { useRouter } from 'expo-router'
 import BottomNav from '@/components/BottomNav'
+
+import rockinfo from "../../../assets/images/rockinfo.png"
 
 export default function RockCollectionScreen() {
   const router = useRouter()
@@ -22,13 +25,19 @@ export default function RockCollectionScreen() {
   if (!fontsLoaded) return null
 
   return (
-    <View style={styles.container}>
+    <ImageBackground source={rockinfo} style={styles.background}>
       <StatusBar barStyle="dark-content" />
 
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerContent}>
-          <View>
+          <View style={styles.headerLeft}>
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => router.replace('/(tabs)/players/collections')}
+            >
+              <Ionicons name="arrow-back" size={20} color="#1f2937" />
+            </TouchableOpacity>
             <Text style={styles.title}>Rock Information</Text>
           </View>
           <TouchableOpacity
@@ -55,7 +64,7 @@ export default function RockCollectionScreen() {
 
         {/* Rock Information */}
         <View style={styles.infoContainer}>
-          <Text style={styles.infoTitle}>Rock Information</Text>
+          <Text style={styles.infoTitle}>Rock Information Loaded</Text>
 
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Name: </Text>
@@ -84,121 +93,84 @@ export default function RockCollectionScreen() {
       {/* Bottom Navigation */}
       <BottomNav
         items={[
-          {
-            label: "Home",
-            route: "/(tabs)/players/dashboard",
-            icon: { lib: "ion", name: "home" },
-          },
-          {
-            label: "Scan",
-            route: "/(tabs)/players/camera",
-            icon: { lib: "ion", name: "camera" },
-          },
-          {
-            label: "Collections",
-            route: "/(tabs)/players/collections",
-            icon: { lib: "mat", name: "collections" },
-          },
-          {
-            label: "Posts",
-            route: "/(tabs)/players/posts",
-            icon: { lib: "ion", name: "chatbubbles" },
-          },
+          { label: "Home", route: "/(tabs)/players/dashboard", icon: { lib: "ion", name: "home" } },
+          { label: "Scan", route: "/(tabs)/players/camera", icon: { lib: "ion", name: "camera" } },
+          { label: "Collections", route: "/(tabs)/players/collections", icon: { lib: "mat", name: "collections" } },
+          { label: "Posts", route: "/(tabs)/players/posts", icon: { lib: "ion", name: "chatbubbles" } },
         ]}
       />
-    </View>
+    </ImageBackground>
   )
 }
 
-// CSS Stylesheet
 const styles = StyleSheet.create({
-  container: {
+  background: {
     flex: 1,
-    backgroundColor: 'white',
+    resizeMode: 'cover',
   },
+
+  /* Header */
   header: {
     paddingTop: 50,
     paddingHorizontal: 20,
     paddingBottom: 20,
     borderBottomWidth: 1,
     borderBottomColor: "#e5e7eb",
+    backgroundColor: 'rgba(255, 255, 255, 0.85)', // local backdrop for readability
   },
   headerContent: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: 20,
+    alignItems: "center",
+  },
+  headerLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  backButton: {
+    marginRight: 12,
+    padding: 4,
+    marginTop: 20,
   },
   title: {
-    fontFamily: "PressStart2P_400Regular",
-    fontSize: 20,
+    fontSize: 18,
+    fontWeight: "600",
     color: "#1f2937",
-    marginBottom: 8,
+    fontFamily: "PressStart2P_400Regular",
     marginTop: 20,
   },
   profileIcon: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    marginTop: 10,
+    marginTop: 20,
     backgroundColor: "#A77B4E",
     justifyContent: "center",
     alignItems: "center",
   },
-  returnButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  returnText: {
-    color: '#666',
-    fontSize: 16,
-  },
-  filterContainer: {
-    flexDirection: 'row',
-    gap: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  filterButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: '#e5e5e5',
-  },
-  activeFilter: {
-    backgroundColor: 'black',
-  },
-  filterText: {
-    color: '#666',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  activeFilterText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: '500',
-  },
+
+  /* Content */
   content: {
     flex: 1,
   },
   imageContainer: {
     alignItems: 'center',
-    paddingVertical: 16,
+    paddingVertical: 40, // pushed lower as you requested
   },
   rockImage: {
-    width: 128,
-    height: 128,
+    width: 180,
+    height: 180,
     borderRadius: 8,
   },
+
+  /* Info panel with its own backdrop */
   infoContainer: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
+    flex: 1, 
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingHorizontal: 24,
     paddingVertical: 24,
-    marginTop: 16,
+    marginTop: 5,
   },
   infoTitle: {
     fontSize: 20,
@@ -222,41 +194,22 @@ const styles = StyleSheet.create({
     marginTop: 4,
     fontSize: 14,
     lineHeight: 20,
-    color: '#666',
+    color: '#d5d5d5ff',
   },
   deleteButton: {
     alignSelf: 'flex-start',
-    marginTop: 32,
+    marginTop: 20,
     paddingHorizontal: 24,
     paddingVertical: 8,
     borderWidth: 1,
-    borderColor: '#999',
+    borderColor: '#d5d5d5ff',
     borderRadius: 4,
     backgroundColor: 'transparent',
   },
   deleteButtonText: {
-    color: '#666',
+    color: '#d5d5d5ff',
     fontSize: 16,
   },
-  bottomNav: {
-    flexDirection: "row",
-    backgroundColor: "white",
-    borderTopWidth: 1,
-    borderTopColor: "#e5e7eb",
-    paddingTop: 8,
-    paddingBottom: 20,
-  },
-  navItem: {
-    flex: 1,
-    alignItems: "center",
-    paddingVertical: 8,
-  },
-  navText: {
-    fontSize: 12,
-    marginTop: 4,
-    color: "#6b7280",
-  },
-  navTextActive: {
-    color: "#A77B4E",
-  },
-});
+})
+
+
