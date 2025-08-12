@@ -196,7 +196,7 @@ const styles = StyleSheet.create({
   },
 
   tabButton: {
-    paddingHorizontal: 14,   // smaller buttons
+    paddingHorizontal: 13,   // smaller buttons
     paddingVertical: 6,
     borderRadius: 18,
     backgroundColor: "#f3f4f6",
@@ -217,11 +217,11 @@ const styles = StyleSheet.create({
 
   content: {
     flex: 1,
-    marginTop: 202,          // clip starts just below the 40px filter bar
+    marginTop: 200,          // clip starts just below the 40px filter bar
     overflow: "hidden",      // hide scrolled content above this edge
   },
   rocksContent: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 15,
   },
   categorySection: {
     marginBottom: 24,
@@ -238,13 +238,14 @@ const styles = StyleSheet.create({
     color: "#ffffffff",
   },
   rockGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-  },
+  flexDirection: "row",
+  flexWrap: "wrap",
+  justifyContent: "space-between",
+},
   rockItem: {
-    width: "31%",
+    width: "32%",
     aspectRatio: 1,
-    marginBottom: 8,
+    marginBottom: 12,
   },
   rockImage: {
     flex: 1,
