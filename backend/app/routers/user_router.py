@@ -107,10 +107,10 @@ def report_post(post_id: str, reason: str, user=Depends(verify_token)):
 # PROFILE
 @router.get("/profile")
 def get_profile(user=Depends(verify_token)):
-    doc = db.collection("user").document(user["uid"]).get()
-    if not doc.exists:
-        raise HTTPException(status_code=404, detail="User not found")
-    return doc.to_dict()
+    docs = db.collection("user").where("uid", "==", user["uid"]).stream()
+    for doc in docs:
+        return doc.to_dict()
+    raise HTTPException(status_code=404, detail="User not found")
 
 @router.put("/update-profile")
 def update_profile(data: dict, user=Depends(verify_token)):

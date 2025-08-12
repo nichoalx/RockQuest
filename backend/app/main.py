@@ -20,16 +20,20 @@ app.include_router(player_router.player_router)
 app.include_router(geologist_router.geologist_router)
 
 # CORS middleware (optional: adjust domain for production)
+
 app.add_middleware(
     CORSMiddleware,
-   allow_origins=[
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "http://LOCALHOST:3000",  # in case browser uppercases it
-],
+    allow_origins=[
+        "http://localhost:19006",   # Expo web preview
+        "http://127.0.0.1:19006",
+        "exp://*",                  # Expo Go
+        "http://localhost:5173",
+        "http://192.168.1.0/24",    # (Optional) or list specific LAN origins like "http://192.168.1.23:19000"
+        "*",                        # (Dev only) loosen if needed
+    ],
     allow_credentials=True,
-    allow_methods=["*"],  # allow POST, PUT, DELETE, etc
-    allow_headers=["*"],  # allow Authorization, Content-Type, etc
+    allow_methods=["*"],
+    allow_headers=["*"],            # must allow Authorization
 )
 
 

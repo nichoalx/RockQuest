@@ -18,6 +18,7 @@ import { Ionicons, MaterialIcons } from "@expo/vector-icons"
 import { useRouter } from "expo-router"
 import { FIREBASE_AUTH } from "../../../utils/firebase" // Adjust path if needed
 import BottomNav from "@/components/BottomNav"
+import { getProfile, updateProfile } from "@/utils/api"
 
 import pfp1 from "../../../assets/images/pfp1.png"
 import pfp2 from "../../../assets/images/pfp2.png"
@@ -34,24 +35,70 @@ export default function ProfileScreen() {
   const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false)
   const [isPfpModalVisible, setIsPfpModalVisible] = useState(false)
   const [selectedPfp, setSelectedPfp] = useState(pfp1)
+  const [loading, setLoading] = useState(true)
+  const [avatarId, setAvatarId] = useState<number | null>(null)
   const maxLength = 150
 
+  const avatarFromId = (id?: number | null) => {
+    if (id === 2) return pfp2
+    return pfp1
+  }
   const [fontsLoaded] = useFonts({
     PressStart2P_400Regular,
   })
 
   useEffect(() => {
-    if (fontsLoaded) {
-      SplashScreen.hideAsync()
+    let mounted = true
+    const unsub = FIREBASE_AUTH.onAuthStateChanged(async (u) => {
+      if (!u || !mounted) return
+      try {
+        const data = await getProfile()
+        if (!mounted) return
+        setUsername(data.username ?? "Username")
+        setDescription(data.description ?? "")
+        setBirthday(data.dob ? new Date(data.dob).toLocaleDateString() : "Birthday")
+        setAvatarId(typeof data.avatarId === "number" ? data.avatarId : 1)
+        setSelectedPfp(avatarFromId(data.avatarId))
+      } catch (e: any) {
+        // — add temporary logging so we see the real reason —
+        console.log("getProfile error:", e?.response?.status, e?.response?.data, e?.message)
+        if (e?.response?.status === 404) {
+          Alert.alert("Complete Profile", "Let’s finish your profile first.", [
+            { text: "OK", onPress: () => router.replace({ pathname: "/(tabs)/players/edit-profile", params: { role: "player" } }) },
+          ])
+        } else if (e?.response?.status === 401) {
+          Alert.alert("Auth Error", "Please sign in again.")
+          router.replace("/(tabs)/auth" as any)
+        } else {
+          Alert.alert("Error", "Failed to load profile.")
+        }
+      } finally {
+        setLoading(false)
+      }
+    })
+    return () => {
+      mounted = false
+      unsub()
     }
-  }, [fontsLoaded])
+  }, [])
 
-  const saveDescription = () => {
-    setDescription(tempDescription)
-    setIsModalVisible(false)
+  const saveDescription = async () => {
+    try {
+      await updateProfile({ description: tempDescription })
+      setDescription(tempDescription)
+      setIsModalVisible(false)
+    } catch {
+      Alert.alert("Error", "Could not update description.")
+    }
   }
 
-  if (!fontsLoaded) return null
+if (!fontsLoaded || loading) {
+  return (
+    <View style={[styles.container, { justifyContent: "center", alignItems: "center" }]}>
+      <Text>Loading…</Text>
+    </View>
+  )
+}
 
   return (
     <View style={styles.container}>
@@ -243,17 +290,29 @@ export default function ProfileScreen() {
               style={{ flexDirection: "row", justifyContent: "space-around", marginVertical: 10 }}
             >
               <TouchableOpacity
-                onPress={() => {
-                  setSelectedPfp(pfp1)
-                  setIsPfpModalVisible(false)
+                onPress={async () => {
+                  try {
+                    await updateProfile({ avatarId: 1 })
+                    setSelectedPfp(pfp1)
+                    setAvatarId(1)
+                    setIsPfpModalVisible(false)
+                  } catch {
+                    Alert.alert("Error", "Could not update profile picture.")
+                  }
                 }}
               >
                 <Image source={pfp1} style={styles.pfpOptionImage} />
               </TouchableOpacity>
               <TouchableOpacity
-                onPress={() => {
-                  setSelectedPfp(pfp2)
-                  setIsPfpModalVisible(false)
+                onPress={async () => {
+                  try {
+                    await updateProfile({ avatarId: 2 })
+                    setSelectedPfp(pfp2)
+                    setAvatarId(2)
+                    setIsPfpModalVisible(false)
+                  } catch {
+                    Alert.alert("Error", "Could not update profile picture.")
+                  }
                 }}
               >
                 <Image source={pfp2} style={styles.pfpOptionImage} />
