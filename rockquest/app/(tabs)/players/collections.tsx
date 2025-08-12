@@ -265,8 +265,8 @@ const styles = StyleSheet.create({
     padding: 40,
   },
   comingSoon: {
-    fontSize: 16,
-    color: "#6b7280",
+    fontSize: 24,
+    color: "#ffffffff",
     textAlign: "center",
   },
 })

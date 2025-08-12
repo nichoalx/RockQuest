@@ -7,28 +7,24 @@ import {
   StatusBar,
   StyleSheet,
   Dimensions,
-  Pressable,
-  GestureResponderEvent,
   TextInput,
 } from "react-native"
-import { LinearGradient } from "expo-linear-gradient"
 import { useFonts, PressStart2P_400Regular } from "@expo-google-fonts/press-start-2p"
 import * as SplashScreen from "expo-splash-screen"
 import { useEffect, useState } from "react"
-import { Ionicons, MaterialIcons } from "@expo/vector-icons"
+import { Ionicons } from "@expo/vector-icons"
 import { useRouter } from "expo-router"
 import MapComponent from "../../../components/MapComponent"
 import BottomNav from "@/components/BottomNav"
 
 SplashScreen.preventAutoHideAsync()
 
-const { width, height } = Dimensions.get("window")
+const { height } = Dimensions.get("window")
+const BOTTOM_NAV_HEIGHT = 78
 
 export default function Dashboard() {
   const router = useRouter()
-  const [fontsLoaded] = useFonts({
-    PressStart2P_400Regular,
-  })
+  const [fontsLoaded] = useFonts({ PressStart2P_400Regular })
 
   const [showGreeting, setShowGreeting] = useState(true)
   const [customMarkers, setCustomMarkers] = useState<
@@ -40,9 +36,7 @@ export default function Dashboard() {
   >(null)
 
   useEffect(() => {
-    if (fontsLoaded) {
-      SplashScreen.hideAsync()
-    }
+    if (fontsLoaded) SplashScreen.hideAsync()
   }, [fontsLoaded])
 
   if (!fontsLoaded) return null
@@ -61,7 +55,10 @@ export default function Dashboard() {
       <View style={{ flex: 1, position: "relative" }}>
         {/* Header with Profile Icon */}
         <View style={styles.profileIconContainer}>
-          <TouchableOpacity style={styles.profileIcon} onPress={() => router.replace("/(tabs)/players/profile")}>
+          <TouchableOpacity
+            style={styles.profileIcon}
+            onPress={() => router.replace("/(tabs)/players/profile")}
+          >
             <Ionicons name="person" size={20} color="white" />
           </TouchableOpacity>
         </View>
@@ -105,7 +102,8 @@ export default function Dashboard() {
         {/* Map Area */}
         <MapComponent />
 
-        <View style={styles.rocksSection}>
+        {/* Bottom Sheet-ish Rocks Section */}
+        <View style={[styles.rocksSection, { paddingBottom: BOTTOM_NAV_HEIGHT + 12 }]}>
           <View style={styles.rocksSectionContent}>
             <View style={styles.rocksSectionHeader}>
               <Text style={styles.rocksSectionTitle}>Rocks Located...</Text>
@@ -132,30 +130,17 @@ export default function Dashboard() {
           </View>
         </View>
 
-        <BottomNav
-          items={[
-            {
-              label: "Home",
-              route: "/(tabs)/players/dashboard",
-              icon: { lib: "ion", name: "home" },
-            },
-            {
-              label: "Scan",
-              route: "/(tabs)/players/camera",
-              icon: { lib: "ion", name: "camera" },
-            },
-            {
-              label: "Collections",
-              route: "/(tabs)/players/collections",
-              icon: { lib: "mat", name: "collections" },
-            },
-            {
-              label: "Posts",
-              route: "/(tabs)/players/posts",
-              icon: { lib: "ion", name: "chatbubbles" },
-            },
-          ]}
-        />
+        {/* Bottom Navigation (fixed like in collections.tsx) */}
+        <View style={styles.bottomNavWrap} pointerEvents="box-none">
+          <BottomNav
+            items={[
+              { label: "Home", route: "/(tabs)/players/dashboard", icon: { lib: "ion", name: "home" } },
+              { label: "Scan", route: "/(tabs)/players/camera", icon: { lib: "ion", name: "camera" } },
+              { label: "Collections", route: "/(tabs)/players/collections", icon: { lib: "mat", name: "collections" } },
+              { label: "Posts", route: "/(tabs)/players/posts", icon: { lib: "ion", name: "chatbubbles" } },
+            ]}
+          />
+        </View>
 
         {selectedMarker && (
           <View style={styles.modalOverlay}>
@@ -343,7 +328,7 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     borderTopWidth: 1,
     borderTopColor: "#e5e7eb",
-    height: height * 0.25,
+    height: height * 0.5,
   },
   rocksSectionContent: {
     padding: 16,
@@ -396,26 +381,14 @@ const styles = StyleSheet.create({
     color: "#374151",
     textAlign: "center",
   },
-  bottomNav: {
-    flexDirection: "row",
-    backgroundColor: "white",
-    borderTopWidth: 1,
-    borderTopColor: "#e5e7eb",
-    paddingTop: 8,
-    paddingBottom: 20,
-  },
-  navItem: {
-    flex: 1,
-    alignItems: "center",
-    paddingVertical: 8,
-  },
-  navText: {
-    fontSize: 12,
-    marginTop: 4,
-    color: "#6b7280",
-  },
-  navTextActive: {
-    color: "#A77B4E",
+
+  /* Fixed BottomNav (same behavior as collections.tsx) */
+  bottomNavWrap: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 50,
   },
 
   // Modal Styles
@@ -479,3 +452,4 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
 })
+

@@ -2,8 +2,8 @@
 import { View, Text, TouchableOpacity, StyleSheet, StatusBar, Dimensions, Alert } from "react-native"
 import { useFonts, PressStart2P_400Regular } from "@expo-google-fonts/press-start-2p"
 import * as SplashScreen from "expo-splash-screen"
-import { useEffect, useRef, useState } from "react"
-import { Ionicons, MaterialIcons } from "@expo/vector-icons"
+import { useEffect, useRef } from "react"
+import { Ionicons } from "@expo/vector-icons"
 import { useRouter } from "expo-router"
 import { CameraView, useCameraPermissions } from "expo-camera"
 import * as MediaLibrary from "expo-media-library"
@@ -11,7 +11,8 @@ import BottomNav from "@/components/BottomNav"
 
 SplashScreen.preventAutoHideAsync()
 
-const { width, height } = Dimensions.get("window")
+const { width } = Dimensions.get("window")
+const BOTTOM_NAV_HEIGHT = 78
 
 export default function CameraScreen() {
   const router = useRouter()
@@ -19,7 +20,6 @@ export default function CameraScreen() {
   const [permission, requestPermission] = useCameraPermissions()
   const [mediaPermission, requestMediaPermission] = MediaLibrary.usePermissions()
   const cameraRef = useRef<any>(null)
-  
 
   useEffect(() => {
     if (fontsLoaded) SplashScreen.hideAsync()
@@ -27,11 +27,8 @@ export default function CameraScreen() {
     if (!mediaPermission?.granted) requestMediaPermission()
   }, [fontsLoaded, permission])
 
-  // Debug: Log permission status
-  console.log("Permission status:", permission)
-
   if (!fontsLoaded) return null
-  
+
   if (!permission) {
     return (
       <View style={styles.container}>
@@ -54,18 +51,13 @@ export default function CameraScreen() {
   }
 
   const handleCapture = async () => {
-  if (cameraRef.current) {
+    if (cameraRef.current) {
       try {
         const photo = await cameraRef.current.takePictureAsync({ base64: false })
-
         const asset = await MediaLibrary.createAssetAsync(photo.uri)
         console.log("Saved to gallery:", asset)
-
         Alert.alert("Success", "Photo saved to your gallery!")
-
-        // Future transition: Send to ML endpoint here
-        // await uploadToPredictionAPI(photo.uri)
-
+        // TODO: upload to ML endpoint
       } catch (error) {
         console.error("Error taking/saving picture:", error)
         Alert.alert("Error", "Failed to take or save the picture.")
@@ -77,7 +69,7 @@ export default function CameraScreen() {
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
-      {/* Header */}
+      {/* Header (fixed) */}
       <View style={styles.header}>
         <View style={styles.headerContent}>
           <Text style={styles.title}>Scan Rock</Text>
@@ -87,56 +79,38 @@ export default function CameraScreen() {
         </View>
       </View>
 
-      {/* Camera View - Simplified */}
+      {/* Camera */}
       <View style={styles.cameraContainer}>
-        <CameraView
-          ref={cameraRef}
-          style={styles.camera}
-          facing="back"
-        >
-        </CameraView>
-          <View style={styles.overlay}>
-            <View style={styles.viewfinder}>
-              <View style={[styles.bracket, styles.topLeft]} />
-              <View style={[styles.bracket, styles.topRight]} />
-              <View style={[styles.bracket, styles.bottomLeft]} />
-              <View style={[styles.bracket, styles.bottomRight]} />
-            </View>
+        <CameraView ref={cameraRef} style={styles.camera} facing="back" />
+        {/* Overlay brackets */}
+        <View style={styles.overlay}>
+          <View style={styles.viewfinder}>
+            <View style={[styles.bracket, styles.topLeft]} />
+            <View style={[styles.bracket, styles.topRight]} />
+            <View style={[styles.bracket, styles.bottomLeft]} />
+            <View style={[styles.bracket, styles.bottomRight]} />
           </View>
+        </View>
       </View>
 
-      {/* Capture Button */}
-      <View style={styles.captureContainer}>
+      {/* Capture Button (raised above BottomNav) */}
+      <View style={[styles.captureContainer, { bottom: BOTTOM_NAV_HEIGHT + 12 }]}>
         <TouchableOpacity style={styles.captureButton} activeOpacity={0.8} onPress={handleCapture}>
           <View style={styles.captureButtonInner} />
         </TouchableOpacity>
       </View>
 
-        {/* Bottom Navigation */}
+      {/* Bottom Navigation (fixed like collections.tsx) */}
+      <View style={styles.bottomNavWrap} pointerEvents="box-none">
         <BottomNav
           items={[
-            {
-              label: "Home",
-              route: "/(tabs)/players/dashboard",
-              icon: { lib: "ion", name: "home" },
-            },
-            {
-              label: "Scan",
-              route: "/(tabs)/players/camera",
-              icon: { lib: "ion", name: "camera" },
-            },
-            {
-              label: "Collections",
-              route: "/(tabs)/players/collections",
-              icon: { lib: "mat", name: "collections" },
-            },
-            {
-              label: "Posts",
-              route: "/(tabs)/players/posts",
-              icon: { lib: "ion", name: "chatbubbles" },
-            },
+            { label: "Home", route: "/(tabs)/players/dashboard", icon: { lib: "ion", name: "home" } },
+            { label: "Scan", route: "/(tabs)/players/camera", icon: { lib: "ion", name: "camera" } },
+            { label: "Collections", route: "/(tabs)/players/collections", icon: { lib: "mat", name: "collections" } },
+            { label: "Posts", route: "/(tabs)/players/posts", icon: { lib: "ion", name: "chatbubbles" } },
           ]}
         />
+      </View>
     </View>
   )
 }
@@ -144,49 +118,45 @@ export default function CameraScreen() {
 const styles = StyleSheet.create({
   container: { 
     flex: 1, 
-    backgroundColor: "black" // Changed to black for better camera visibility
+    backgroundColor: "black",
   },
+
+  /* Header */
   header: { 
     paddingTop: 50, 
     paddingHorizontal: 20, 
     paddingBottom: 20,
-    backgroundColor: "rgba(0, 0, 0, 0.3)", // Semi-transparent overlay
+    backgroundColor: "rgba(0, 0, 0, 0.3)",
     position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 1,
+    top: 0, left: 0, right: 0,
+    zIndex: 2,
   },
   headerContent: { 
     flexDirection: "row", 
     justifyContent: "space-between", 
-    alignItems: "flex-start" 
+    alignItems: "flex-start",
   },
   title: {
     fontFamily: "PressStart2P_400Regular",
     fontSize: 20,
-    color: "white", // Changed to white for visibility
+    color: "white",
     marginBottom: 8,
     marginTop: 20,
   },
   profileIcon: {
-    width: 40,
-    height: 40,
+    width: 40, height: 40,
     borderRadius: 20,
     backgroundColor: "#A77B4E",
     justifyContent: "center",
     alignItems: "center",
     marginTop: 10,
   },
-  cameraContainer: {
-    flex: 1,
-  },
-  camera: {
-    flex: 1,
-  },
+
+  /* Camera */
+  cameraContainer: { flex: 1 },
+  camera: { flex: 1 },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    flex: 1,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -197,62 +167,47 @@ const styles = StyleSheet.create({
   },
   bracket: {
     position: "absolute",
-    width: 40,
-    height: 40,
-    borderColor: "white", // Changed to white for visibility
+    width: 40, height: 40,
+    borderColor: "white",
     borderWidth: 3,
   },
   topLeft: { top: 0, left: 0, borderRightWidth: 0, borderBottomWidth: 0 },
   topRight: { top: 0, right: 0, borderLeftWidth: 0, borderBottomWidth: 0 },
   bottomLeft: { bottom: 0, left: 0, borderRightWidth: 0, borderTopWidth: 0 },
   bottomRight: { bottom: 0, right: 0, borderLeftWidth: 0, borderTopWidth: 0 },
+
+  /* Capture */
   captureContainer: { 
     position: "absolute",
-    bottom: 85,
-    left: 0,
-    right: 0,
+    left: 0, right: 0,
     alignItems: "center",
     paddingVertical: 40,
     backgroundColor: "rgba(0, 0, 0, 0.3)",
-    zIndex: 2,
+    zIndex: 3,
   },
   captureButton: {
-    width: 80,
-    height: 80,
+    width: 80, height: 80,
     borderRadius: 40,
     borderWidth: 4,
-    borderColor: "white", // Changed to white
+    borderColor: "white",
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "rgba(255,255,255,0.2)",
   },
   captureButtonInner: {
-    width: 60,
-    height: 60,
+    width: 60, height: 60,
     borderRadius: 30,
     backgroundColor: "white",
   },
-  bottomNav: {
-    flexDirection: "row",
-    backgroundColor: "white",
-    borderTopWidth: 1,
-    borderTopColor: "#e5e7eb",
-    paddingTop: 8,
-    paddingBottom: 20,
+
+  /* Fixed BottomNav (collections behavior) */
+  bottomNavWrap: {
+    position: "absolute",
+    left: 0, right: 0, bottom: 0,
+    zIndex: 4,
   },
-  navItem: {
-    flex: 1,
-    alignItems: "center",
-    paddingVertical: 8,
-  },
-  navText: {
-    fontSize: 12,
-    marginTop: 4,
-    color: "#6b7280",
-  },
-  navTextActive: {
-    color: "#A77B4E",
-  },
+
+  /* Permissions */
   permissionContainer: {
     flex: 1,
     justifyContent: "center",
