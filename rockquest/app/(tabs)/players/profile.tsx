@@ -14,14 +14,12 @@ import {
 } from "react-native"
 import { useFonts, PressStart2P_400Regular } from "@expo-google-fonts/press-start-2p"
 import * as SplashScreen from "expo-splash-screen"
-import { Ionicons, MaterialIcons } from "@expo/vector-icons"
+import { Ionicons } from "@expo/vector-icons"
 import { useRouter } from "expo-router"
-import { FIREBASE_AUTH } from "../../../utils/firebase" // Adjust path if needed
+import { FIREBASE_AUTH } from "@/utils/firebase"
 import BottomNav from "@/components/BottomNav"
 import { getProfile, updateProfile } from "@/utils/api"
-
-import pfp1 from "../../../assets/images/pfp1.png"
-import pfp2 from "../../../assets/images/pfp2.png"
+import { avatarFromId, avatarImages } from "@/utils/avatar"
 
 SplashScreen.preventAutoHideAsync()
 
@@ -32,20 +30,13 @@ export default function ProfileScreen() {
   const [description, setDescription] = useState("")
   const [tempDescription, setTempDescription] = useState("")
   const [isModalVisible, setIsModalVisible] = useState(false)
-  const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false)
   const [isPfpModalVisible, setIsPfpModalVisible] = useState(false)
-  const [selectedPfp, setSelectedPfp] = useState(pfp1)
+  const [selectedPfp, setSelectedPfp] = useState(avatarFromId(1))
   const [loading, setLoading] = useState(true)
   const [avatarId, setAvatarId] = useState<number | null>(null)
   const maxLength = 150
 
-  const avatarFromId = (id?: number | null) => {
-    if (id === 2) return pfp2
-    return pfp1
-  }
-  const [fontsLoaded] = useFonts({
-    PressStart2P_400Regular,
-  })
+  const [fontsLoaded] = useFonts({ PressStart2P_400Regular })
 
   useEffect(() => {
     let mounted = true
@@ -60,11 +51,17 @@ export default function ProfileScreen() {
         setAvatarId(typeof data.avatarId === "number" ? data.avatarId : 1)
         setSelectedPfp(avatarFromId(data.avatarId))
       } catch (e: any) {
-        // — add temporary logging so we see the real reason —
         console.log("getProfile error:", e?.response?.status, e?.response?.data, e?.message)
         if (e?.response?.status === 404) {
           Alert.alert("Complete Profile", "Let’s finish your profile first.", [
-            { text: "OK", onPress: () => router.replace({ pathname: "/(tabs)/players/edit-profile", params: { role: "player" } }) },
+            {
+              text: "OK",
+              onPress: () =>
+                router.replace({
+                  pathname: "/(tabs)/players/edit-profile",
+                  params: { role: "player" },
+                }),
+            },
           ])
         } else if (e?.response?.status === 401) {
           Alert.alert("Auth Error", "Please sign in again.")
@@ -92,13 +89,13 @@ export default function ProfileScreen() {
     }
   }
 
-if (!fontsLoaded || loading) {
-  return (
-    <View style={[styles.container, { justifyContent: "center", alignItems: "center" }]}>
-      <Text>Loading…</Text>
-    </View>
-  )
-}
+  if (!fontsLoaded || loading) {
+    return (
+      <View style={[styles.container, { justifyContent: "center", alignItems: "center" }]}>
+        <Text>Loading…</Text>
+      </View>
+    )
+  }
 
   return (
     <View style={styles.container}>
@@ -108,7 +105,10 @@ if (!fontsLoaded || loading) {
       <View style={styles.header}>
         <View style={styles.headerContent}>
           <Text style={styles.title}>Profile</Text>
-          <TouchableOpacity style={styles.profileIcon} onPress={() => router.replace("/(tabs)/players/profile")}>
+          <TouchableOpacity
+            style={styles.profileIcon}
+            onPress={() => router.replace("/(tabs)/players/profile")}
+          >
             <Ionicons name="person" size={20} color="white" />
           </TouchableOpacity>
         </View>
@@ -172,7 +172,7 @@ if (!fontsLoaded || loading) {
               <View style={styles.trackerDivider} />
               <View style={styles.trackerItem}>
                 <Text style={styles.trackerLabel}>Total</Text>
-                <Text style={styles.trackerNumber}>100</Text>
+                <Text style={styles.trackerNumber}>0</Text>
               </View>
             </View>
           </View>
@@ -227,26 +227,10 @@ if (!fontsLoaded || loading) {
       {/* Bottom Navigation */}
       <BottomNav
         items={[
-          {
-            label: "Home",
-            route: "/(tabs)/players/dashboard",
-            icon: { lib: "ion", name: "home" },
-          },
-          {
-            label: "Scan",
-            route: "/(tabs)/players/camera",
-            icon: { lib: "ion", name: "camera" },
-          },
-          {
-            label: "Collections",
-            route: "/(tabs)/players/collections",
-            icon: { lib: "mat", name: "collections" },
-          },
-          {
-            label: "Posts",
-            route: "/(tabs)/players/posts",
-            icon: { lib: "ion", name: "chatbubbles" },
-          },
+          { label: "Home", route: "/(tabs)/players/dashboard", icon: { lib: "ion", name: "home" } },
+          { label: "Scan", route: "/(tabs)/players/camera", icon: { lib: "ion", name: "camera" } },
+          { label: "Collections", route: "/(tabs)/players/collections", icon: { lib: "mat", name: "collections" } },
+          { label: "Posts", route: "/(tabs)/players/posts", icon: { lib: "ion", name: "chatbubbles" } },
         ]}
       />
 
@@ -286,37 +270,24 @@ if (!fontsLoaded || loading) {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Choose Profile Picture</Text>
-            <View
-              style={{ flexDirection: "row", justifyContent: "space-around", marginVertical: 10 }}
-            >
-              <TouchableOpacity
-                onPress={async () => {
-                  try {
-                    await updateProfile({ avatarId: 1 })
-                    setSelectedPfp(pfp1)
-                    setAvatarId(1)
-                    setIsPfpModalVisible(false)
-                  } catch {
-                    Alert.alert("Error", "Could not update profile picture.")
-                  }
-                }}
-              >
-                <Image source={pfp1} style={styles.pfpOptionImage} />
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={async () => {
-                  try {
-                    await updateProfile({ avatarId: 2 })
-                    setSelectedPfp(pfp2)
-                    setAvatarId(2)
-                    setIsPfpModalVisible(false)
-                  } catch {
-                    Alert.alert("Error", "Could not update profile picture.")
-                  }
-                }}
-              >
-                <Image source={pfp2} style={styles.pfpOptionImage} />
-              </TouchableOpacity>
+            <View style={{ flexDirection: "row", justifyContent: "space-around", marginVertical: 10 }}>
+              {Object.entries(avatarImages).map(([id, img]) => (
+                <TouchableOpacity
+                  key={id}
+                  onPress={async () => {
+                    try {
+                      await updateProfile({ avatarId: Number(id) })
+                      setSelectedPfp(img)
+                      setAvatarId(Number(id))
+                      setIsPfpModalVisible(false)
+                    } catch {
+                      Alert.alert("Error", "Could not update profile picture.")
+                    }
+                  }}
+                >
+                  <Image source={img} style={styles.pfpOptionImage} />
+                </TouchableOpacity>
+              ))}
             </View>
             <TouchableOpacity style={styles.cancelButton} onPress={() => setIsPfpModalVisible(false)}>
               <Text style={styles.cancelButtonText}>Cancel</Text>
@@ -327,6 +298,9 @@ if (!fontsLoaded || loading) {
     </View>
   )
 }
+
+// keep your styles here...
+
 
 const styles = StyleSheet.create({
   container: {
