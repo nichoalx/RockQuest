@@ -10,6 +10,7 @@ import {
   ImageBackground,
   SafeAreaView,
   Platform,
+  Dimensions,
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { useFonts, PressStart2P_400Regular } from '@expo-google-fonts/press-start-2p'
@@ -110,6 +111,7 @@ export default function RockCollectionScreen() {
 
 const HEADER_HEIGHT = 88;   // visual header height (including padding)
 const BOTTOM_NAV_HEIGHT = 78;
+const { width, height } = Dimensions.get('window')
 
 const styles = StyleSheet.create({
   background: {
@@ -179,8 +181,8 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
   rockImage: {
-    width: 180,
-    height: 180,
+    width: width * 0.45,
+    height: width * 0.45,
     borderRadius: 8,
   },
 
