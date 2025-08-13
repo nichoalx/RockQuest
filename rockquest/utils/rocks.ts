@@ -10,7 +10,7 @@ export const rockImages: Record<RockClass, any> = {
   Dolerite: require("@/assets/images/rocks/Dolerite.png"),
   Gneiss: require("@/assets/images/rocks/Gneiss.png"),
   Granite: require("@/assets/images/rocks/Granite.png"),
-  Limestone: require("@/assets/images/rocks/Limestone.jpg"), // note: your file is .jpg
+  Limestone: require("@/assets/images/rocks/Limestone.png"), 
   Mudstone: require("@/assets/images/rocks/Mudstone.png"),
   Norite: require("@/assets/images/rocks/Norite.png"),
   Quartzite: require("@/assets/images/rocks/Quartzite.png"),

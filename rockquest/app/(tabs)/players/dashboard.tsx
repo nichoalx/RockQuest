@@ -21,6 +21,7 @@ import BottomNav from "@/components/BottomNav";
 import { FIREBASE_AUTH } from "@/utils/firebase";
 import { getProfile } from "@/utils/userApi";
 import { avatarFromId } from "@/utils/avatar";
+import { rockImages, RockClass } from "@/utils/rocks";
 
 SplashScreen.preventAutoHideAsync();
 const { width } = Dimensions.get("window");
@@ -77,10 +78,15 @@ export default function Dashboard() {
 
   if (!fontsLoaded || loading) return null;
 
-  const rockData = [
-    { id: 1, name: "Granite" },
-    { id: 2, name: "Quartz" },
-    { id: 3, name: "Basalt" },
+
+  const located: RockClass[] = ["Granite", "Basalt"];
+
+
+  const MIN_TILES = 8;
+  const placeholders = Math.max(0, MIN_TILES - located.length);
+  const locatedWithPads: (RockClass | null)[] = [
+    ...located,
+    ...Array(placeholders).fill(null),
   ];
 
   return (
@@ -158,14 +164,39 @@ export default function Dashboard() {
 
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flex: 1 }}>
               <View style={styles.rocksScrollContainer}>
-                {rockData.map((rock) => (
-                  <TouchableOpacity key={rock.id} style={styles.rockCard} activeOpacity={0.85}>
-                    <View style={styles.rockCardImage}>
-                      <Text style={styles.rockCardText}>Rock</Text>
-                    </View>
-                    <Text style={styles.rockCardName}>{rock.name}</Text>
-                  </TouchableOpacity>
-                ))}
+                {locatedWithPads.map((rock, idx) => {
+                  const isPlaceholder = rock === null;
+                  return (
+                    <TouchableOpacity
+                      key={idx}
+                      style={styles.rockCard}
+                      activeOpacity={isPlaceholder ? 1 : 0.85}
+                      onPress={() => {
+                        if (!isPlaceholder) router.push("/(tabs)/players/collections");
+                      }}
+                    >
+                      <View
+                        style={[
+                          styles.rockCardImage,
+                          isPlaceholder && styles.rockCardImagePlaceholder,
+                        ]}
+                      >
+                        {isPlaceholder ? (
+                          <Text style={styles.rockCardText}>?</Text>
+                        ) : (
+                          <Image
+                            source={rockImages[rock]}
+                            resizeMode="contain"
+                            style={{ width: 72, height: 56 }}
+                          />
+                        )}
+                      </View>
+                      <Text style={styles.rockCardName}>
+                        {isPlaceholder ? "Unknown" : rock}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
             </ScrollView>
           </View>
@@ -339,6 +370,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 8,
+  },
+  rockCardImagePlaceholder: {
+    opacity: 0.35,
   },
   rockCardText: { fontSize: 12, color: "#6b7280" },
   rockCardName: { fontSize: 12, color: "#374151", textAlign: "center" },
