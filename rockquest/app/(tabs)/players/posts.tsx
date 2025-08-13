@@ -1,23 +1,43 @@
 "use client"
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, StatusBar } from "react-native"
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, StatusBar, Image } from "react-native"
 import { useFonts, PressStart2P_400Regular } from "@expo-google-fonts/press-start-2p"
 import * as SplashScreen from "expo-splash-screen"
 import { useEffect, useState } from "react"
 import { Ionicons } from "@expo/vector-icons"
-import { useRouter } from "expo-router";
+import { useRouter } from "expo-router"
 import BottomNav from "@/components/BottomNav"
+import { FIREBASE_AUTH } from "@/utils/firebase"
+import { getProfile } from "@/utils/api"
+import { avatarFromId } from "@/utils/avatar"
 
 SplashScreen.preventAutoHideAsync()
 
 export default function PostsScreen() {
-  const router = useRouter();
+  const router = useRouter()
   const [fontsLoaded] = useFonts({ PressStart2P_400Regular })
 
   const [showMyPosts, setShowMyPosts] = useState(false)
   const [postTypeFilter, setPostTypeFilter] = useState("all")
+  const [avatarSrc, setAvatarSrc] = useState(avatarFromId(1))
 
   useEffect(() => {
-    if (fontsLoaded) SplashScreen.hideAsync()
+    let mounted = true
+    const unsub = FIREBASE_AUTH.onAuthStateChanged(async (u) => {
+      if (!u || !mounted) return
+      try {
+        const data = await getProfile()
+        if (!mounted) return
+        setAvatarSrc(avatarFromId(data?.avatarId))
+      } catch (e) {
+        console.log("getProfile error (posts):", e)
+      } finally {
+        if (fontsLoaded) SplashScreen.hideAsync()
+      }
+    })
+    return () => {
+      mounted = false
+      unsub()
+    }
   }, [fontsLoaded])
 
   if (!fontsLoaded) return null
@@ -45,12 +65,12 @@ export default function PostsScreen() {
       <View style={styles.header}>
         <View style={styles.headerContent}>
           <Text style={styles.title}>Posts</Text>
-          <TouchableOpacity style={styles.profileIcon} onPress={() => router.replace("/(tabs)/players/profile")}>
-            <Ionicons name="person" size={20} color="white" />
+          <TouchableOpacity onPress={() => router.replace("/(tabs)/players/profile")} activeOpacity={0.9}>
+            <Image source={avatarSrc} style={styles.headerAvatar} />
           </TouchableOpacity>
         </View>
 
-        {/* Filter and Add Button */}
+        {/* Filter + Add */}
         <View style={styles.actionContainer}>
           <TouchableOpacity
             style={[styles.filterButton, showMyPosts && styles.filterButtonActive]}
@@ -60,15 +80,13 @@ export default function PostsScreen() {
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.addButton}
-            onPress={() =>
-              router.push({ pathname: "/(tabs)/players/NewPost", params: { role: "player" } })
-            }
+            onPress={() => router.push({ pathname: "/(tabs)/players/NewPost", params: { role: "player" } })}
           >
             <Ionicons name="add" size={20} color="white" />
           </TouchableOpacity>
         </View>
 
-        {/* Post Type Filter Row */}
+        {/* Type filter row */}
         <View style={styles.filterRowAligned}>
           <TouchableOpacity
             style={[styles.filterButtonEqual, postTypeFilter === "all" && styles.filterButtonActive]}
@@ -76,7 +94,6 @@ export default function PostsScreen() {
           >
             <Text style={[styles.filterText, postTypeFilter === "all" && styles.filterTextActive]}>All</Text>
           </TouchableOpacity>
-
           <View style={styles.filterRightGroup}>
             <TouchableOpacity
               style={[styles.filterButtonEqual, postTypeFilter === "posts" && styles.filterButtonActive]}
@@ -99,9 +116,7 @@ export default function PostsScreen() {
         <View style={styles.postsContainer}>
           {filteredPosts.map((post) => (
             <View key={post.id} style={styles.postItem}>
-              <View style={styles.postImage}>
-                <Text style={styles.postImageText}>Rock</Text>
-              </View>
+              <View style={styles.postImage}><Text style={styles.postImageText}>Rock</Text></View>
               <View style={styles.postContent}>
                 <View style={styles.postHeader}>
                   <Text style={styles.postName}>{post.name}</Text>
@@ -110,12 +125,8 @@ export default function PostsScreen() {
                 <Text style={styles.postUser}>Submitted by {post.user}</Text>
                 {post.isOwn && (
                   <View style={styles.postActions}>
-                    <TouchableOpacity style={styles.actionButton}>
-                      <Text style={styles.actionButtonText}>Edit</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.actionButton}>
-                      <Text style={styles.actionButtonText}>Delete</Text>
-                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.actionButton}><Text style={styles.actionButtonText}>Edit</Text></TouchableOpacity>
+                    <TouchableOpacity style={styles.actionButton}><Text style={styles.actionButtonText}>Delete</Text></TouchableOpacity>
                   </View>
                 )}
               </View>
@@ -124,17 +135,14 @@ export default function PostsScreen() {
         </View>
       </ScrollView>
 
-      {/* Fixed Bottom Navigation */}
-      <View style={styles.bottomNavWrap} pointerEvents="box-none">
-        <BottomNav
-          items={[
-            { label: "Home", route: "/(tabs)/players/dashboard", icon: { lib: "ion", name: "home" } },
-            { label: "Scan", route: "/(tabs)/players/camera", icon: { lib: "ion", name: "camera" } },
-            { label: "Collections", route: "/(tabs)/players/collections", icon: { lib: "mat", name: "collections" } },
-            { label: "Posts", route: "/(tabs)/players/posts", icon: { lib: "ion", name: "chatbubbles" } },
-          ]}
-        />
-      </View>
+      <BottomNav
+        items={[
+          { label: "Home", route: "/(tabs)/players/dashboard", icon: { lib: "ion", name: "home" } },
+          { label: "Scan", route: "/(tabs)/players/camera", icon: { lib: "ion", name: "camera" } },
+          { label: "Collections", route: "/(tabs)/players/collections", icon: { lib: "mat", name: "collections" } },
+          { label: "Posts", route: "/(tabs)/players/posts", icon: { lib: "ion", name: "chatbubbles" } },
+        ]}
+      />
     </View>
   )
 }

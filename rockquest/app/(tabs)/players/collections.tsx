@@ -15,6 +15,9 @@ import { useEffect, useState } from "react"
 import { Ionicons } from "@expo/vector-icons"
 import { useRouter } from "expo-router"
 import BottomNav from "@/components/BottomNav"
+import { FIREBASE_AUTH } from "@/utils/firebase"
+import { getProfile } from "@/utils/api"
+import { avatarFromId } from "@/utils/avatar"
 
 import cbg_rocks from "../../../assets/images/cbg_rocks.png"
 import cbg_badge from "../../../assets/images/cbg_badges.png"
@@ -23,21 +26,32 @@ SplashScreen.preventAutoHideAsync()
 
 export default function CollectionsScreen() {
   const router = useRouter()
-  const [fontsLoaded] = useFonts({
-    PressStart2P_400Regular,
-  })
+  const [fontsLoaded] = useFonts({ PressStart2P_400Regular })
 
   const [activeTab, setActiveTab] = useState("Rocks")
+  const [avatarSrc, setAvatarSrc] = useState(avatarFromId(1))
 
   useEffect(() => {
-    if (fontsLoaded) {
-      SplashScreen.hideAsync()
+    let mounted = true
+    const unsub = FIREBASE_AUTH.onAuthStateChanged(async (u) => {
+      if (!u || !mounted) return
+      try {
+        const data = await getProfile()
+        if (!mounted) return
+        setAvatarSrc(avatarFromId(data?.avatarId))
+      } catch (e) {
+        console.log("getProfile error (collections):", e)
+      } finally {
+        if (fontsLoaded) SplashScreen.hideAsync()
+      }
+    })
+    return () => {
+      mounted = false
+      unsub()
     }
   }, [fontsLoaded])
 
-  if (!fontsLoaded) {
-    return null
-  }
+  if (!fontsLoaded) return null
 
   const rockCategories = [
     { title: "Igneous rocks", rocks: Array(6).fill({ collected: true }) },
@@ -47,15 +61,9 @@ export default function CollectionsScreen() {
 
   const RockGrid = ({ rocks }: { rocks: any[] }) => (
     <View style={styles.rockGrid}>
-      {rocks.map((rock, index) => (
-        <TouchableOpacity
-          key={index}
-          style={styles.rockItem}
-          onPress={() => router.push("/(tabs)/players/collection-rock")}
-        >
-          <View style={styles.rockImage}>
-            <Text style={styles.rockImageText}>Rock</Text>
-          </View>
+      {rocks.map((_, index) => (
+        <TouchableOpacity key={index} style={styles.rockItem} onPress={() => router.push("/(tabs)/players/collection-rock")}>
+          <View style={styles.rockImage}><Text style={styles.rockImageText}>Rock</Text></View>
         </TouchableOpacity>
       ))}
     </View>
@@ -65,17 +73,24 @@ export default function CollectionsScreen() {
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
 
-      {/* Invisible Fixed Overlay */}
-      <View style={styles.topOverlay} pointerEvents="box-none">
-        <Text style={styles.overlayTitle}>Collection</Text>
+      {/* Header */}
+      <View style={styles.header}>
+        <View style={styles.headerContent}>
+          <Text style={styles.title}>Collection</Text>
+          <TouchableOpacity onPress={() => router.replace("/(tabs)/players/profile")} activeOpacity={0.9}>
+            <Image source={avatarSrc} style={styles.headerAvatar} />
+          </TouchableOpacity>
+        </View>
 
-        {/* Profile icon fixed on right */}
-        <TouchableOpacity
-          style={styles.profileIcon}
-          onPress={() => router.replace("/(tabs)/players/profile")}
-        >
-          <Ionicons name="person" size={20} color="white" />
-        </TouchableOpacity>
+        {/* Tabs */}
+        <View style={styles.tabContainer}>
+          <TouchableOpacity style={[styles.tabButton, activeTab === "Rocks" && styles.tabButtonActive]} onPress={() => setActiveTab("Rocks")}>
+            <Text style={[styles.tabText, activeTab === "Rocks" && styles.tabTextActive]}>Rocks</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.tabButton, activeTab === "Badges" && styles.tabButtonActive]} onPress={() => setActiveTab("Badges")}>
+            <Text style={[styles.tabText, activeTab === "Badges" && styles.tabTextActive]}>Badges</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Scrollable Background & Content */}
@@ -135,7 +150,6 @@ export default function CollectionsScreen() {
         </ImageBackground>
       </View>
 
-      {/* Bottom Navigation */}
       <BottomNav
         items={[
           { label: "Home", route: "/(tabs)/players/dashboard", icon: { lib: "ion", name: "home" } },

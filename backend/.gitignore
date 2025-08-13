@@ -1,0 +1,3 @@
+# Firebase secrets
+backend/firebase-admin-key.json
+backend/.env

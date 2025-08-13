@@ -1,18 +1,20 @@
 "use client"
-import { View, Text, TouchableOpacity, StyleSheet, StatusBar, Dimensions, Alert } from "react-native"
+import { View, Text, TouchableOpacity, StyleSheet, StatusBar, Dimensions, Alert, Image } from "react-native"
 import { useFonts, PressStart2P_400Regular } from "@expo-google-fonts/press-start-2p"
 import * as SplashScreen from "expo-splash-screen"
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Ionicons } from "@expo/vector-icons"
 import { useRouter } from "expo-router"
 import { CameraView, useCameraPermissions } from "expo-camera"
 import * as MediaLibrary from "expo-media-library"
 import BottomNav from "@/components/BottomNav"
+import { FIREBASE_AUTH } from "@/utils/firebase"
+import { getProfile } from "@/utils/api"
+import { avatarFromId } from "@/utils/avatar"
 
 SplashScreen.preventAutoHideAsync()
 
 const { width } = Dimensions.get("window")
-const BOTTOM_NAV_HEIGHT = 78
 
 export default function CameraScreen() {
   const router = useRouter()
@@ -20,6 +22,28 @@ export default function CameraScreen() {
   const [permission, requestPermission] = useCameraPermissions()
   const [mediaPermission, requestMediaPermission] = MediaLibrary.usePermissions()
   const cameraRef = useRef<any>(null)
+  const [avatarSrc, setAvatarSrc] = useState(avatarFromId(1))
+  const [bootLoading, setBootLoading] = useState(true)
+
+  useEffect(() => {
+    let mounted = true
+    const unsub = FIREBASE_AUTH.onAuthStateChanged(async (u) => {
+      if (!u || !mounted) return
+      try {
+        const data = await getProfile()
+        if (!mounted) return
+        setAvatarSrc(avatarFromId(data?.avatarId))
+      } catch (e) {
+        console.log("getProfile error (camera):", e)
+      } finally {
+        setBootLoading(false)
+      }
+    })
+    return () => {
+      mounted = false
+      unsub()
+    }
+  }, [])
 
   useEffect(() => {
     if (fontsLoaded) SplashScreen.hideAsync()
@@ -28,7 +52,6 @@ export default function CameraScreen() {
   }, [fontsLoaded, permission])
 
   if (!fontsLoaded) return null
-
   if (!permission) {
     return (
       <View style={styles.container}>
@@ -57,7 +80,6 @@ export default function CameraScreen() {
         const asset = await MediaLibrary.createAssetAsync(photo.uri)
         console.log("Saved to gallery:", asset)
         Alert.alert("Success", "Photo saved to your gallery!")
-        // TODO: upload to ML endpoint
       } catch (error) {
         console.error("Error taking/saving picture:", error)
         Alert.alert("Error", "Failed to take or save the picture.")
@@ -73,16 +95,15 @@ export default function CameraScreen() {
       <View style={styles.header}>
         <View style={styles.headerContent}>
           <Text style={styles.title}>Scan Rock</Text>
-          <TouchableOpacity style={styles.profileIcon} onPress={() => router.replace("/(tabs)/players/profile")}>
-            <Ionicons name="person" size={20} color="white" />
+          <TouchableOpacity onPress={() => router.replace("/(tabs)/players/profile")} activeOpacity={0.9}>
+            <Image source={avatarSrc} style={styles.headerAvatar} />
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* Camera */}
+      {/* Camera View */}
       <View style={styles.cameraContainer}>
         <CameraView ref={cameraRef} style={styles.camera} facing="back" />
-        {/* Overlay brackets */}
         <View style={styles.overlay}>
           <View style={styles.viewfinder}>
             <View style={[styles.bracket, styles.topLeft]} />
@@ -100,17 +121,14 @@ export default function CameraScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Bottom Navigation (fixed like collections.tsx) */}
-      <View style={styles.bottomNavWrap} pointerEvents="box-none">
-        <BottomNav
-          items={[
-            { label: "Home", route: "/(tabs)/players/dashboard", icon: { lib: "ion", name: "home" } },
-            { label: "Scan", route: "/(tabs)/players/camera", icon: { lib: "ion", name: "camera" } },
-            { label: "Collections", route: "/(tabs)/players/collections", icon: { lib: "mat", name: "collections" } },
-            { label: "Posts", route: "/(tabs)/players/posts", icon: { lib: "ion", name: "chatbubbles" } },
-          ]}
-        />
-      </View>
+      <BottomNav
+        items={[
+          { label: "Home", route: "/(tabs)/players/dashboard", icon: { lib: "ion", name: "home" } },
+          { label: "Scan", route: "/(tabs)/players/camera", icon: { lib: "ion", name: "camera" } },
+          { label: "Collections", route: "/(tabs)/players/collections", icon: { lib: "mat", name: "collections" } },
+          { label: "Posts", route: "/(tabs)/players/posts", icon: { lib: "ion", name: "chatbubbles" } },
+        ]}
+      />
     </View>
   )
 }
@@ -170,12 +188,28 @@ const styles = StyleSheet.create({
     width: 40, height: 40,
     borderColor: "white",
     borderWidth: 3,
+  container: { flex: 1, backgroundColor: "black" },
+  header: {
+    paddingTop: 50,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    backgroundColor: "rgba(0,0,0,0.3)",
+    position: "absolute",
+    top: 0, left: 0, right: 0, zIndex: 1,
   },
+  headerContent: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
+  title: { fontFamily: "PressStart2P_400Regular", fontSize: 20, color: "white", marginBottom: 8, marginTop: 20 },
+  headerAvatar: { width: 40, height: 40, borderRadius: 20, marginTop: 10, borderWidth: 2, borderColor: "white" },
+
+  cameraContainer: { flex: 1 },
+  camera: { flex: 1 },
+  overlay: { ...StyleSheet.absoluteFillObject, justifyContent: "center", alignItems: "center" },
+  viewfinder: { width: width - 80, height: width - 80, position: "relative" },
+  bracket: { position: "absolute", width: 40, height: 40, borderColor: "white", borderWidth: 3 },
   topLeft: { top: 0, left: 0, borderRightWidth: 0, borderBottomWidth: 0 },
   topRight: { top: 0, right: 0, borderLeftWidth: 0, borderBottomWidth: 0 },
   bottomLeft: { bottom: 0, left: 0, borderRightWidth: 0, borderTopWidth: 0 },
   bottomRight: { bottom: 0, right: 0, borderLeftWidth: 0, borderTopWidth: 0 },
-
   /* Capture */
   captureContainer: { 
     position: "absolute",
@@ -231,4 +265,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
   },
+
 })

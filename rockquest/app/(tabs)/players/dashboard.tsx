@@ -1,4 +1,4 @@
-"use client"
+"use client";
 import {
   View,
   Text,
@@ -7,65 +7,104 @@ import {
   StatusBar,
   StyleSheet,
   Dimensions,
-  TextInput,
-} from "react-native"
-import { useFonts, PressStart2P_400Regular } from "@expo-google-fonts/press-start-2p"
-import * as SplashScreen from "expo-splash-screen"
-import { useEffect, useState } from "react"
-import { Ionicons } from "@expo/vector-icons"
-import { useRouter } from "expo-router"
-import MapComponent from "../../../components/MapComponent"
-import BottomNav from "@/components/BottomNav"
+  Image,
+  Animated,
+  Easing,
+} from "react-native";
+import { useFonts, PressStart2P_400Regular } from "@expo-google-fonts/press-start-2p";
+import * as SplashScreen from "expo-splash-screen";
+import { useEffect, useRef, useState } from "react";
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import MapComponent from "../../../components/MapComponent";
+import BottomNav from "@/components/BottomNav";
+import { FIREBASE_AUTH } from "@/utils/firebase";
+import { getProfile } from "@/utils/api";
+import { avatarFromId } from "@/utils/avatar";
 
-SplashScreen.preventAutoHideAsync()
-
-const { height } = Dimensions.get("window")
-const BOTTOM_NAV_HEIGHT = 78
+SplashScreen.preventAutoHideAsync();
+const { width } = Dimensions.get("window");
+const ROCKS_PANEL_HEIGHT = 170;
+const ROCKS_HANDLE_WIDTH = 62;
+const ROCKS_PANEL_WIDTH = width * 0.88; // 80% of screen width
 
 export default function Dashboard() {
-  const router = useRouter()
-  const [fontsLoaded] = useFonts({ PressStart2P_400Regular })
+  const router = useRouter();
+  const [fontsLoaded] = useFonts({ PressStart2P_400Regular });
+  const [loading, setLoading] = useState(true);
+  const [showGreeting, setShowGreeting] = useState(true);
+  const [avatarSrc, setAvatarSrc] = useState(avatarFromId(1));
 
-  const [showGreeting, setShowGreeting] = useState(true)
-  const [customMarkers, setCustomMarkers] = useState<
-    { id: number; x: number; y: number; detail: string; description: string }[]
-  >([])
 
-  const [selectedMarker, setSelectedMarker] = useState<
-    { id: number; x: number; y: number; detail: string; description: string } | null
-  >(null)
+  // sliding panel
+  const [isMinimized, setIsMinimized] = useState(false);
+  const slideX = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    if (fontsLoaded) SplashScreen.hideAsync()
-  }, [fontsLoaded])
+    let mounted = true;
+    const unsub = FIREBASE_AUTH.onAuthStateChanged(async (u) => {
+      if (!u || !mounted) return;
+      try {
+        const data = await getProfile();
+        if (!mounted) return;
+        setAvatarSrc(avatarFromId(data?.avatarId));
+      } catch (e) {
+        console.log("getProfile error:", e);
+      } finally {
+        setLoading(false);
+      }
+    });
+    return () => {
+      mounted = false;
+      unsub();
+    };
+  }, []);
 
-  if (!fontsLoaded) return null
+  useEffect(() => {
+    if (fontsLoaded && !loading) SplashScreen.hideAsync();
+  }, [fontsLoaded, loading]);
+
+  const togglePanel = () => {
+    const minimized = !isMinimized;
+    setIsMinimized(minimized);
+    Animated.timing(slideX, {
+      toValue: minimized ? -ROCKS_PANEL_WIDTH : 0, // Only slide the panel width minus handle
+      duration: 300,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+  };
+
+  if (!fontsLoaded || loading) return null;
 
   const rockData = [
     { id: 1, name: "Granite" },
     { id: 2, name: "Quartz" },
     { id: 3, name: "Basalt" },
-  ]
+  ];
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={styles.root}>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
 
-      {/* Main Content */}
-      <View style={{ flex: 1, position: "relative" }}>
-        {/* Header with Profile Icon */}
-        <View style={styles.profileIconContainer}>
-          <TouchableOpacity
-            style={styles.profileIcon}
-            onPress={() => router.replace("/(tabs)/players/profile")}
-          >
-            <Ionicons name="person" size={20} color="white" />
+      <View style={styles.mapWrapper}>
+        <MapComponent />
+      </View>
+
+
+      <View style={styles.overlayLayer} pointerEvents="box-none">
+        {/* top-right avatar */}
+        <View style={styles.profileIconContainer} pointerEvents="box-none">
+          <TouchableOpacity onPress={() => router.replace("/(tabs)/players/profile")} activeOpacity={0.85}>
+            <Image source={avatarSrc} style={styles.profileImage} />
+
           </TouchableOpacity>
         </View>
 
+        {/* Greeting */}
         {showGreeting && (
-          <View style={styles.greetingPanelContainer}>
-            <TouchableOpacity style={styles.greetingPanel} onPress={() => setShowGreeting(false)}>
+          <View style={styles.greetingPanelContainer} pointerEvents="box-none">
+            <TouchableOpacity style={styles.greetingPanel} onPress={() => setShowGreeting(false)} activeOpacity={0.9}>
               <View style={styles.greetingContent}>
                 <View style={styles.greetingLeft}>
                   <View style={styles.greetingIcon}>
@@ -82,8 +121,9 @@ export default function Dashboard() {
           </View>
         )}
 
-        <View style={[styles.questPanelContainer, { top: showGreeting ? 160 : 80 }]}>
-          <TouchableOpacity style={styles.questPanel} onPress={() => router.push("/players/quest")}>
+        {/* Quest card */}
+        <View style={[styles.questPanelContainer, { top: showGreeting ? 160 : 80 }]} pointerEvents="box-none">
+          <TouchableOpacity style={styles.questPanel} onPress={() => router.push("/players/quest")} activeOpacity={0.9}>
             <View style={styles.questContent}>
               <View style={styles.questLeft}>
                 <View style={styles.questIcon}>
@@ -99,26 +139,27 @@ export default function Dashboard() {
           </TouchableOpacity>
         </View>
 
-        {/* Map Area */}
-        <MapComponent />
 
-        {/* Bottom Sheet-ish Rocks Section */}
-        <View style={[styles.rocksSection, { paddingBottom: BOTTOM_NAV_HEIGHT + 12 }]}>
-          <View style={styles.rocksSectionContent}>
-            <View style={styles.rocksSectionHeader}>
+        {/* Sliding rocks container - separate from handle */}
+        <Animated.View
+          pointerEvents="box-none"
+          style={[
+            styles.rocksContainer,
+            {
+              transform: [{ translateX: slideX }],
+            },
+          ]}
+        >
+          {/* The main rocks panel - rounded rectangle */}
+          <View style={styles.rocksPanel}>
+            <View style={styles.rocksHeaderRow}>
               <Text style={styles.rocksSectionTitle}>Rocks Located...</Text>
-              <TouchableOpacity
-                style={styles.addButton}
-                onPress={() => alert("Tap anywhere on the map to add a marker!")}
-              >
-                <Ionicons name="add" size={16} color="white" />
-              </TouchableOpacity>
             </View>
 
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.rocksScroll}>
-              <View style={styles.rocksContainer}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flex: 1 }}>
+              <View style={styles.rocksScrollContainer}>
                 {rockData.map((rock) => (
-                  <TouchableOpacity key={rock.id} style={styles.rockCard}>
+                  <TouchableOpacity key={rock.id} style={styles.rockCard} activeOpacity={0.85}>
                     <View style={styles.rockCardImage}>
                       <Text style={styles.rockCardText}>Rock</Text>
                     </View>
@@ -128,10 +169,15 @@ export default function Dashboard() {
               </View>
             </ScrollView>
           </View>
-        </View>
 
-        {/* Bottom Navigation (fixed like in collections.tsx) */}
-        <View style={styles.bottomNavWrap} pointerEvents="box-none">
+          {/* Handle - separate element positioned next to panel */}
+          <TouchableOpacity style={styles.rocksHandle} onPress={togglePanel} activeOpacity={0.95}>
+            <Ionicons name={isMinimized ? "chevron-forward" : "chevron-back"} size={18} color="#fff" />
+          </TouchableOpacity>
+        </Animated.View>
+
+        {/* BottomNav ABSOLUTE – does not push layout up */}
+        <View style={styles.bottomNavWrapper} pointerEvents="box-none">
           <BottomNav
             items={[
               { label: "Home", route: "/(tabs)/players/dashboard", icon: { lib: "ion", name: "home" } },
@@ -141,100 +187,46 @@ export default function Dashboard() {
             ]}
           />
         </View>
-
-        {selectedMarker && (
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              {/* Editable Rock Detail Title */}
-              <TextInput
-                style={styles.modalTitleInput}
-                placeholder="Custom Marker"
-                placeholderTextColor="#aaa"
-                value={selectedMarker.detail}
-                onChangeText={(text) => {
-                  setSelectedMarker({ ...selectedMarker, detail: text })
-                  setCustomMarkers((prev) =>
-                    prev.map((m) => (m.id === selectedMarker.id ? { ...m, detail: text } : m))
-                  )
-                }}
-                autoFocus
-              />
-
-              {/* Editable Description Field */}
-              <TextInput
-                style={styles.modalTextField}
-                placeholder="Enter details"
-                placeholderTextColor="#aaa"
-                value={selectedMarker.description}
-                onChangeText={(text) => {
-                  setSelectedMarker({ ...selectedMarker, description: text })
-                  setCustomMarkers((prev) =>
-                    prev.map((m) => (m.id === selectedMarker.id ? { ...m, description: text } : m))
-                  )
-                }}
-                multiline
-              />
-
-              <Text style={styles.modalSubtitle}>
-                Coordinates: X: {Math.round(selectedMarker.x)}, Y: {Math.round(selectedMarker.y)}
-              </Text>
-
-              <TouchableOpacity
-                style={styles.modalDeleteButton}
-                onPress={() => {
-                  setCustomMarkers(customMarkers.filter((m) => m.id !== selectedMarker.id))
-                  setSelectedMarker(null)
-                }}
-              >
-                <Text style={styles.modalDeleteText}>🗑 Remove Marker</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity onPress={() => setSelectedMarker(null)}>
-                <Text style={styles.modalCloseText}>Close</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
       </View>
     </View>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f3f4f6",
+  root: { flex: 1, backgroundColor: "#f3f4f6" },
+
+  mapWrapper: {
+    flex: 1, // <-- map truly fills the screen behind overlays
   },
+
+  overlayLayer: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 15, // shared layer for avatar, greeting, quest, rocks panel
+  },
+
+  // Avatar
   profileIconContainer: {
     position: "absolute",
-    top: 80,
-    right: 16,
-    zIndex: 30,
+    top: 87,
+    right: 10,
   },
-  profileIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#A77B4E",
+  profileImage: {
+    width: 50,
+    height: 50,
+    borderRadius: 30,
     borderWidth: 2,
     borderColor: "white",
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
   },
+
+  // Greeting
   greetingPanelContainer: {
     position: "absolute",
     top: 80,
     left: 16,
     right: 72,
-    zIndex: 10,
   },
   greetingPanel: {
-    backgroundColor: "rgba(255, 255, 255, 0.95)",
+    backgroundColor: "rgba(255,255,255,0.95)",
     borderRadius: 8,
     padding: 16,
     shadowColor: "#000",
@@ -243,16 +235,8 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
     elevation: 5,
   },
-  greetingContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  greetingLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
-  },
+  greetingContent: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  greetingLeft: { flexDirection: "row", alignItems: "center", flex: 1 },
   greetingIcon: {
     width: 32,
     height: 32,
@@ -262,28 +246,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginRight: 12,
   },
-  greetingTextContainer: {
-    flex: 1,
-  },
-  greetingTitle: {
-    fontSize: 14,
-    color: "#1f2937",
-    fontFamily: "PressStart2P_400Regular",
-    marginBottom: 4,
-  },
-  greetingDescription: {
-    fontSize: 12,
-    color: "#6b7280",
-  },
+  greetingTextContainer: { flex: 1 },
+  greetingTitle: { fontSize: 14, color: "#1f2937", fontFamily: "PressStart2P_400Regular", marginBottom: 4 },
+  greetingDescription: { fontSize: 12, color: "#6b7280" },
+
+  // Quest
   questPanelContainer: {
     position: "absolute",
-    top: 80,
     left: 16,
     right: 72,
-    zIndex: 15,
   },
   questPanel: {
-    backgroundColor: "rgba(255, 255, 255, 0.95)",
+    backgroundColor: "rgba(255,255,255,0.95)",
     borderRadius: 8,
     padding: 16,
     shadowColor: "#000",
@@ -292,16 +266,8 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
     elevation: 5,
   },
-  questContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  questLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
-  },
+  questContent: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  questLeft: { flexDirection: "row", alignItems: "center", flex: 1 },
   questIcon: {
     width: 32,
     height: 32,
@@ -311,58 +277,60 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginRight: 12,
   },
-  questTextContainer: {
-    flex: 1,
+  questTextContainer: { flex: 1 },
+  questTitle: { fontSize: 14, color: "#1f2937", fontFamily: "PressStart2P_400Regular", marginBottom: 4 },
+  questDescription: { fontSize: 12, color: "#6b7280" },
+
+  // Rocks container - holds both panel and handle
+  rocksContainer: {
+    position: "absolute",
+    left: 0,
+    bottom: 103, // hover above BottomNav
+    height: ROCKS_PANEL_HEIGHT,
+    width: ROCKS_PANEL_WIDTH + ROCKS_HANDLE_WIDTH, // Total width
+    flexDirection: "row", // Panel and handle side by side
   },
-  questTitle: {
-    fontSize: 14,
-    color: "#1f2937",
-    fontFamily: "PressStart2P_400Regular",
-    marginBottom: 4,
+
+  // The main rocks panel - rounded rectangle
+  rocksPanel: {
+    width: ROCKS_PANEL_WIDTH,
+    height: ROCKS_PANEL_HEIGHT,
+    backgroundColor: "rgba(255,255,255,0.95)",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
-  questDescription: {
-    fontSize: 12,
-    color: "#6b7280",
-  },
-  rocksSection: {
-    backgroundColor: "white",
-    borderTopWidth: 1,
-    borderTopColor: "#e5e7eb",
-    height: height * 0.5,
-  },
-  rocksSectionContent: {
-    padding: 16,
-    flex: 1,
-  },
-  rocksSectionHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+
+  // Handle - separate from panel
+  rocksHandle: {
+    width: ROCKS_HANDLE_WIDTH,
+    height: ROCKS_PANEL_HEIGHT,
+    backgroundColor: "#A77B4E",
+    borderTopRightRadius: 12,
+    borderBottomRightRadius: 12,
+    justifyContent: "center",
     alignItems: "center",
-    marginBottom: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
+
+  rocksHeaderRow: { flexDirection: "row", alignItems: "center", marginBottom: 10 },
   rocksSectionTitle: {
     fontSize: 16,
     color: "#1f2937",
     fontFamily: "PressStart2P_400Regular",
+    marginBottom: 10,
+    marginTop: 6,
   },
-  addButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: "#A77B4E",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  rocksScroll: {
-    flex: 1,
-  },
-  rocksContainer: {
-    flexDirection: "row",
-    gap: 12,
-  },
-  rockCard: {
-    alignItems: "center",
-  },
+  rocksScrollContainer: { flexDirection: "row", gap: 12, paddingRight: 8 },
+  rockCard: { alignItems: "center" },
   rockCardImage: {
     width: 80,
     height: 80,
@@ -372,84 +340,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 8,
   },
-  rockCardText: {
-    fontSize: 12,
-    color: "#6b7280",
-  },
-  rockCardName: {
-    fontSize: 12,
-    color: "#374151",
-    textAlign: "center",
-  },
+  rockCardText: { fontSize: 12, color: "#6b7280" },
+  rockCardName: { fontSize: 12, color: "#374151", textAlign: "center" },
 
-  /* Fixed BottomNav (same behavior as collections.tsx) */
-  bottomNavWrap: {
+  // Bottom nav absolute so it doesn't push layout up
+  bottomNavWrapper: {
     position: "absolute",
     left: 0,
     right: 0,
     bottom: 0,
-    zIndex: 50,
   },
-
-  // Modal Styles
-  modalOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0,0,0,0.4)",
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 100,
-  },
-  modalContent: {
-    width: "80%",
-    backgroundColor: "white",
-    borderRadius: 12,
-    padding: 20,
-    alignItems: "center",
-  },
-  modalTitleInput: {
-    fontSize: 16,
-    fontWeight: "bold",
-    marginBottom: 8,
-    width: "100%",
-    borderBottomWidth: 1,
-    borderColor: "#ccc",
-    padding: 4,
-    textAlign: "center",
-  },
-  modalTextField: {
-    fontSize: 14,
-    marginBottom: 12,
-    width: "100%",
-    borderWidth: 1,
-    borderColor: "#ddd",
-    padding: 8,
-    borderRadius: 6,
-    backgroundColor: "#f9f9f9",
-  },
-  modalSubtitle: {
-    fontSize: 12,
-    color: "#666",
-    marginBottom: 16,
-  },
-  modalDeleteButton: {
-    backgroundColor: "#e53e3e",
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 6,
-    marginBottom: 12,
-  },
-  modalDeleteText: {
-    color: "white",
-    fontWeight: "bold",
-  },
-  modalCloseText: {
-    color: "#A77B4E",
-    fontWeight: "bold",
-    fontSize: 14,
-  },
-})
-
+});
