@@ -8,6 +8,7 @@ import {
   StyleSheet,
   StatusBar,
   ImageBackground,
+  Image,
 } from "react-native"
 import { useFonts, PressStart2P_400Regular } from "@expo-google-fonts/press-start-2p"
 import * as SplashScreen from "expo-splash-screen"
@@ -19,8 +20,8 @@ import { FIREBASE_AUTH } from "@/utils/firebase"
 import { getProfile } from "@/utils/api"
 import { avatarFromId } from "@/utils/avatar"
 
-import cbg_rocks from "../../../assets/images/cbg_rocks.png"
-import cbg_badge from "../../../assets/images/cbg_badges.png"
+import cbg_rocks from "@/assets/images/cbg_rocks.png"
+import cbg_badge from "@/assets/images/cbg_badges.png"
 
 SplashScreen.preventAutoHideAsync()
 
@@ -82,15 +83,6 @@ export default function CollectionsScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Tabs */}
-        <View style={styles.tabContainer}>
-          <TouchableOpacity style={[styles.tabButton, activeTab === "Rocks" && styles.tabButtonActive]} onPress={() => setActiveTab("Rocks")}>
-            <Text style={[styles.tabText, activeTab === "Rocks" && styles.tabTextActive]}>Rocks</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.tabButton, activeTab === "Badges" && styles.tabButtonActive]} onPress={() => setActiveTab("Badges")}>
-            <Text style={[styles.tabText, activeTab === "Badges" && styles.tabTextActive]}>Badges</Text>
-          </TouchableOpacity>
-        </View>
       </View>
 
       {/* Scrollable Background & Content */}
@@ -126,7 +118,7 @@ export default function CollectionsScreen() {
 
           <ScrollView
             style={styles.content}
-            contentContainerStyle={{ paddingTop: 18, paddingBottom: 100 }}  // keep same visual start
+            contentContainerStyle={{ paddingTop: 20, paddingBottom: 100 }}  // keep same visual start
             showsVerticalScrollIndicator={false}
           >
             {activeTab === "Rocks" ? (
@@ -284,6 +276,38 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 0,
   },
+  header: {
+  paddingTop: 50,
+  paddingHorizontal: 20,
+  paddingBottom: 20,
+  backgroundColor: "rgba(0,0,0,0.3)",
+  position: "absolute",
+  top: 0,
+  left: 0,
+  right: 0,
+  zIndex: 30,
+  },
+  headerContent: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+  },
+  title: {
+    fontFamily: "PressStart2P_400Regular",
+    fontSize: 20,
+    color: "white",
+    marginBottom: 8,
+    marginTop: 20,
+  },
+  headerAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginTop: 10,
+    borderWidth: 2,
+    borderColor: "white",
+  },
+
 })
 
 

@@ -208,5 +208,13 @@ const styles = StyleSheet.create({
   bottomNavWrap: {
     position: "absolute", left: 0, right: 0, bottom: 0, zIndex: 50,
   },
+  headerAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginTop: 10,
+    borderWidth: 2,
+    borderColor: "white",
+  },
 })
 
