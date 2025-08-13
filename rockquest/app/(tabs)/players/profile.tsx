@@ -18,7 +18,7 @@ import { Ionicons } from "@expo/vector-icons"
 import { useRouter } from "expo-router"
 import { FIREBASE_AUTH } from "@/utils/firebase"
 import BottomNav from "@/components/BottomNav"
-import { getProfile, updateProfile } from "@/utils/api"
+import { getProfile, updateProfile } from "@/utils/userApi"
 import { avatarFromId, avatarImages } from "@/utils/avatar"
 
 SplashScreen.preventAutoHideAsync()

@@ -18,7 +18,7 @@ import {
   Image,
   Modal,
 } from "react-native"
-import { getProfile, updateProfile, completeProfile } from "@/utils/api"
+import { getProfile, updateProfile, completeProfile } from "@/utils/userApi"
 import { avatarImages } from "@/utils/avatar"
 
 
