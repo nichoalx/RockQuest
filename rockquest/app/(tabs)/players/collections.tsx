@@ -1,58 +1,57 @@
 "use client"
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, StatusBar } from "react-native"
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, StatusBar, Image } from "react-native"
 import { useFonts, PressStart2P_400Regular } from "@expo-google-fonts/press-start-2p"
 import * as SplashScreen from "expo-splash-screen"
 import { useEffect, useState } from "react"
 import { Ionicons, MaterialIcons } from "@expo/vector-icons"
 import { useRouter } from "expo-router"
 import BottomNav from "@/components/BottomNav"
+import { FIREBASE_AUTH } from "@/utils/firebase"
+import { getProfile } from "@/utils/api"
+import { avatarFromId } from "@/utils/avatar"
 
 SplashScreen.preventAutoHideAsync()
 
 export default function CollectionsScreen() {
   const router = useRouter()
-  const [fontsLoaded] = useFonts({
-    PressStart2P_400Regular,
-  })
+  const [fontsLoaded] = useFonts({ PressStart2P_400Regular })
 
   const [activeTab, setActiveTab] = useState("Rocks")
+  const [avatarSrc, setAvatarSrc] = useState(avatarFromId(1))
 
   useEffect(() => {
-    if (fontsLoaded) {
-      SplashScreen.hideAsync()
+    let mounted = true
+    const unsub = FIREBASE_AUTH.onAuthStateChanged(async (u) => {
+      if (!u || !mounted) return
+      try {
+        const data = await getProfile()
+        if (!mounted) return
+        setAvatarSrc(avatarFromId(data?.avatarId))
+      } catch (e) {
+        console.log("getProfile error (collections):", e)
+      } finally {
+        if (fontsLoaded) SplashScreen.hideAsync()
+      }
+    })
+    return () => {
+      mounted = false
+      unsub()
     }
   }, [fontsLoaded])
 
-  if (!fontsLoaded) {
-    return null
-  }
+  if (!fontsLoaded) return null
 
   const rockCategories = [
-    {
-      title: "Igneous rocks",
-      rocks: Array(6).fill({ collected: true }),
-    },
-    {
-      title: "Sedimentary rocks",
-      rocks: Array(7).fill({ collected: true }),
-    },
-    {
-      title: "Metamorphic rocks",
-      rocks: Array(3).fill({ collected: true }),
-    },
+    { title: "Igneous rocks", rocks: Array(6).fill({ collected: true }) },
+    { title: "Sedimentary rocks", rocks: Array(7).fill({ collected: true }) },
+    { title: "Metamorphic rocks", rocks: Array(3).fill({ collected: true }) },
   ]
 
   const RockGrid = ({ rocks }: { rocks: any[] }) => (
     <View style={styles.rockGrid}>
-      {rocks.map((rock, index) => (
-        <TouchableOpacity
-          key={index}
-          style={styles.rockItem}
-          onPress={() => router.push("/(tabs)/players/collection-rock")}
-        >
-          <View style={styles.rockImage}>
-            <Text style={styles.rockImageText}>Rock</Text>
-          </View>
+      {rocks.map((_, index) => (
+        <TouchableOpacity key={index} style={styles.rockItem} onPress={() => router.push("/(tabs)/players/collection-rock")}>
+          <View style={styles.rockImage}><Text style={styles.rockImageText}>Rock</Text></View>
         </TouchableOpacity>
       ))}
     </View>
@@ -65,26 +64,18 @@ export default function CollectionsScreen() {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerContent}>
-          <View>
-            <Text style={styles.title}>Collection</Text>
-          </View>
-          <TouchableOpacity style={styles.profileIcon} onPress={() => router.replace("/(tabs)/players/profile")}>
-            <Ionicons name="person" size={20} color="white" />
+          <Text style={styles.title}>Collection</Text>
+          <TouchableOpacity onPress={() => router.replace("/(tabs)/players/profile")} activeOpacity={0.9}>
+            <Image source={avatarSrc} style={styles.headerAvatar} />
           </TouchableOpacity>
         </View>
 
-        {/* Tab Buttons */}
+        {/* Tabs */}
         <View style={styles.tabContainer}>
-          <TouchableOpacity
-            style={[styles.tabButton, activeTab === "Rocks" && styles.tabButtonActive]}
-            onPress={() => setActiveTab("Rocks")}
-          >
+          <TouchableOpacity style={[styles.tabButton, activeTab === "Rocks" && styles.tabButtonActive]} onPress={() => setActiveTab("Rocks")}>
             <Text style={[styles.tabText, activeTab === "Rocks" && styles.tabTextActive]}>Rocks</Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.tabButton, activeTab === "Badges" && styles.tabButtonActive]}
-            onPress={() => setActiveTab("Badges")}
-          >
+          <TouchableOpacity style={[styles.tabButton, activeTab === "Badges" && styles.tabButtonActive]} onPress={() => setActiveTab("Badges")}>
             <Text style={[styles.tabText, activeTab === "Badges" && styles.tabTextActive]}>Badges</Text>
           </TouchableOpacity>
         </View>
@@ -114,29 +105,12 @@ export default function CollectionsScreen() {
         )}
       </ScrollView>
 
-      {/* Bottom Navigation */}
       <BottomNav
         items={[
-          {
-            label: "Home",
-            route: "/(tabs)/players/dashboard",
-            icon: { lib: "ion", name: "home" },
-          },
-          {
-            label: "Scan",
-            route: "/(tabs)/players/camera",
-            icon: { lib: "ion", name: "camera" },
-          },
-          {
-            label: "Collections",
-            route: "/(tabs)/players/collections",
-            icon: { lib: "mat", name: "collections" },
-          },
-          {
-            label: "Posts",
-            route: "/(tabs)/players/posts",
-            icon: { lib: "ion", name: "chatbubbles" },
-          },
+          { label: "Home", route: "/(tabs)/players/dashboard", icon: { lib: "ion", name: "home" } },
+          { label: "Scan", route: "/(tabs)/players/camera", icon: { lib: "ion", name: "camera" } },
+          { label: "Collections", route: "/(tabs)/players/collections", icon: { lib: "mat", name: "collections" } },
+          { label: "Posts", route: "/(tabs)/players/posts", icon: { lib: "ion", name: "chatbubbles" } },
         ]}
       />
     </View>
@@ -144,141 +118,27 @@ export default function CollectionsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f3f4f6",
-  },
-  header: {
-    backgroundColor: "white",
-    paddingTop: 50,
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-  },
-  headerContent: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: 20,
-  },
-  title: {
-    fontFamily: "PressStart2P_400Regular",
-    fontSize: 20,
-    color: "#1f2937",
-    marginBottom: 8,
-    marginTop: 20,
-  },
-  subtitle: {
-    fontSize: 18,
-    color: "#1f2937",
-    fontWeight: "600",
-  },
-  profileIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginTop: 10,
-    backgroundColor: "#A77B4E",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  tabContainer: {
-    flexDirection: "row",
-    gap: 12,
-  },
-  tabButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: "#f3f4f6",
-  },
-  tabButtonActive: {
-    backgroundColor: "#1f2937",
-  },
-  tabText: {
-    fontSize: 14,
-    color: "#6b7280",
-    fontWeight: "500",
-  },
-  tabTextActive: {
-    color: "white",
-  },
-  content: {
-    flex: 1,
-  },
-  rocksContent: {
-    padding: 20,
-  },
-  categorySection: {
-    marginBottom: 24,
-  },
-  categoryHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  categoryTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#1f2937",
-  },
-  categoryActions: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  filterIcon: {
-    marginLeft: 8,
-  },
-  rockGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  rockItem: {
-    width: "31%",
-    aspectRatio: 1,
-  },
-  rockImage: {
-    flex: 1,
-    backgroundColor: "#C0BAA9",
-    borderRadius: 8,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  rockImageText: {
-    color: "#6b7280",
-    fontSize: 12,
-  },
-  badgesContent: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 40,
-  },
-  comingSoon: {
-    fontSize: 16,
-    color: "#6b7280",
-    textAlign: "center",
-  },
-  bottomNav: {
-    flexDirection: "row",
-    backgroundColor: "white",
-    borderTopWidth: 1,
-    borderTopColor: "#e5e7eb",
-    paddingTop: 8,
-    paddingBottom: 20,
-  },
-  navItem: {
-    flex: 1,
-    alignItems: "center",
-    paddingVertical: 8,
-  },
-  navText: {
-    fontSize: 12,
-    marginTop: 4,
-    color: "#6b7280",
-  },
-  navTextActive: {
-    color: "#A77B4E",
-  },
+  container: { flex: 1, backgroundColor: "#f3f4f6" },
+  header: { backgroundColor: "white", paddingTop: 50, paddingHorizontal: 20, paddingBottom: 20 },
+  headerContent: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 },
+  title: { fontFamily: "PressStart2P_400Regular", fontSize: 20, color: "#1f2937", marginBottom: 8, marginTop: 20 },
+  headerAvatar: { width: 40, height: 40, borderRadius: 20, marginTop: 10 },
+  tabContainer: { flexDirection: "row", gap: 12 },
+  tabButton: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, backgroundColor: "#f3f4f6" },
+  tabButtonActive: { backgroundColor: "#1f2937" },
+  tabText: { fontSize: 14, color: "#6b7280", fontWeight: "500" },
+  tabTextActive: { color: "white" },
+  content: { flex: 1 },
+  rocksContent: { padding: 20 },
+  categorySection: { marginBottom: 24 },
+  categoryHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
+  categoryTitle: { fontSize: 16, fontWeight: "600", color: "#1f2937" },
+  categoryActions: { flexDirection: "row", alignItems: "center" },
+  filterIcon: { marginLeft: 8 },
+  rockGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  rockItem: { width: "31%", aspectRatio: 1 },
+  rockImage: { flex: 1, backgroundColor: "#C0BAA9", borderRadius: 8, justifyContent: "center", alignItems: "center" },
+  rockImageText: { color: "#6b7280", fontSize: 12 },
+  badgesContent: { flex: 1, justifyContent: "center", alignItems: "center", padding: 40 },
+  comingSoon: { fontSize: 16, color: "#6b7280", textAlign: "center" },
 })
