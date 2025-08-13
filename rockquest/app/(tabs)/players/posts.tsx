@@ -111,8 +111,8 @@ export default function PostsScreen() {
         </View>
       </View>
 
-      {/* Posts list */}
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      {/* Posts List */}
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
         <View style={styles.postsContainer}>
           {filteredPosts.map((post) => (
             <View key={post.id} style={styles.postItem}>
@@ -149,32 +149,64 @@ export default function PostsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "white" },
-  header: { paddingTop: 50, paddingHorizontal: 20, paddingBottom: 20, borderBottomWidth: 1, borderBottomColor: "#e5e7eb" },
+  header: {
+    paddingTop: 50,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e5e7eb",
+  },
   headerContent: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 },
-  title: { fontFamily: "PressStart2P_400Regular", fontSize: 20, color: "#1f2937", marginBottom: 8, marginTop: 20 },
-  headerAvatar: { width: 40, height: 40, borderRadius: 20, marginTop: 10 },
+  title: {
+    fontFamily: "PressStart2P_400Regular",
+    fontSize: 20,
+    color: "#1f2937",
+    marginBottom: 8,
+    marginTop: 20,
+  },
+  profileIcon: {
+    width: 40, height: 40, borderRadius: 20, marginTop: 10,
+    backgroundColor: "#A77B4E", justifyContent: "center", alignItems: "center",
+  },
   actionContainer: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  filterButton: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: "#d1d5db" },
+  filterButton: {
+    paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: "#d1d5db",
+  },
   filterButtonActive: { backgroundColor: "#1f2937", borderColor: "#1f2937" },
   filterText: { fontSize: 14, color: "#6b7280", fontWeight: "500" },
   filterTextActive: { color: "white" },
   filterRowAligned: { flexDirection: "row", alignItems: "center", marginTop: 12 },
   filterRightGroup: { flexDirection: "row", gap: 8, marginLeft: 12 },
-  filterButtonEqual: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: "#d1d5db", minWidth: 70, alignItems: "center" },
-  addButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#A77B4E", justifyContent: "center", alignItems: "center" },
+  filterButtonEqual: {
+    paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: "#d1d5db",
+    minWidth: 70, alignItems: "center",
+  },
+  addButton: {
+    width: 40, height: 40, borderRadius: 20, backgroundColor: "#A77B4E", justifyContent: "center", alignItems: "center",
+  },
   content: { flex: 1 },
   postsContainer: { padding: 20 },
   postItem: {
     flexDirection: "row", marginBottom: 20, backgroundColor: "white", borderRadius: 8, padding: 12,
     shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2,
   },
-  postImage: { width: 60, height: 60, backgroundColor: "#C0BAA9", borderRadius: 8, justifyContent: "center", alignItems: "center", marginRight: 12 },
+  postImage: {
+    width: 60, height: 60, backgroundColor: "#C0BAA9", borderRadius: 8, justifyContent: "center", alignItems: "center", marginRight: 12,
+  },
   postImageText: { color: "#6b7280", fontSize: 12 },
   postContent: { flex: 1 },
   postHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 },
   postName: { fontSize: 16, fontWeight: "600", color: "#1f2937" },
   postUser: { fontSize: 14, color: "#6b7280", marginBottom: 8 },
   postActions: { flexDirection: "row", gap: 8 },
-  actionButton: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, borderWidth: 1, borderColor: "#d1d5db" },
+  actionButton: {
+    paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, borderWidth: 1, borderColor: "#d1d5db",
+  },
   actionButtonText: { fontSize: 12, color: "#6b7280" },
+
+  /* Fixed BottomNav wrapper */
+  bottomNavWrap: {
+    position: "absolute", left: 0, right: 0, bottom: 0, zIndex: 50,
+  },
 })
+

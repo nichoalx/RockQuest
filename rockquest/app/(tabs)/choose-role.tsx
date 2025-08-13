@@ -1,9 +1,22 @@
-import React from "react"
-import { View, Text, TouchableOpacity, Image, StyleSheet, Dimensions } from "react-native"
+import React, { useEffect } from "react"
+import { View, Text, TouchableOpacity, Image, StyleSheet } from "react-native"
 import { useRouter } from "expo-router"
+import { useFonts, PressStart2P_400Regular } from "@expo-google-fonts/press-start-2p"
+import * as SplashScreen from "expo-splash-screen"
+
+SplashScreen.preventAutoHideAsync()
 
 export default function ChooseRoleScreen() {
   const router = useRouter()
+  const [fontsLoaded] = useFonts({ PressStart2P_400Regular })
+
+  useEffect(() => {
+    if (fontsLoaded) {
+      SplashScreen.hideAsync()
+    }
+  }, [fontsLoaded])
+
+  if (!fontsLoaded) return null
 
   const handleRoleSelect = (type: "player" | "geologist") => {
     router.push({ pathname: "/signup-details", params: { type } })
@@ -11,8 +24,35 @@ export default function ChooseRoleScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Sign up as:</Text>
+      <View style={styles.contentWrapper}>
+        <Text style={styles.title}>Sign up as:</Text>
+        <Text style={styles.subtitle}>Choose your role to start your adventure!</Text>
+        
+        <TouchableOpacity
+          onPress={() => handleRoleSelect("user")}
+          accessibilityRole="button"
+          accessibilityLabel="Sign up as Player"
+        >
+          <Image
+            source={require("../../assets/images/player_button.png")}
+            style={styles.imageButton}
+            resizeMode="contain"
+          />
+        </TouchableOpacity>
 
+        <TouchableOpacity
+          onPress={() => handleRoleSelect("geologist")}
+          accessibilityRole="button"
+          accessibilityLabel="Sign up as Geologist"
+        >
+          <Image
+            source={require("../../assets/images/geologist_button.png")}
+            style={styles.imageButton}
+            resizeMode="contain"
+          />
+        </TouchableOpacity>
+      </View>
+=======
       <TouchableOpacity
         onPress={() => handleRoleSelect("player")}
         accessibilityRole="button"
@@ -36,6 +76,7 @@ export default function ChooseRoleScreen() {
   resizeMode="contain"
 />
       </TouchableOpacity>
+>>>>>>> de88dec9a745e7084822bef2761bec79312bd69f
     </View>
   )
 }
@@ -46,18 +87,31 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
-    backgroundColor: "#fff",
+    backgroundColor: "#bfa882",
+  },
+  contentWrapper: {
+    width: 350, // increased width to match larger images
   },
   title: {
-    fontSize: 24,
-    fontWeight: "bold",
+    fontFamily: "PressStart2P_400Regular",
+    fontSize: 16, // keep text size unchanged
+    color: "#000",
     marginBottom: 40,
-    textAlign: "center",
   },
+  subtitle: {
+  fontFamily: "PressStart2P_400Regular",
+  fontSize: 12,
+  color: "#333",
+  marginBottom: 24,
+  opacity: 0.7,
+  textAlign: "left",
+},
   imageButton: {
-    width: 300,      // 900 ÷ 3
-    height: 133,     // 400 ÷ 3
+    width: 350,  // increased image width
+    height: 155, // increased image height proportionally
     marginVertical: 10,
   },
+
 })
+
 

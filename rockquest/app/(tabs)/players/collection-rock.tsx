@@ -1,47 +1,60 @@
+// collection-rock.tsx
 import React from 'react'
 import {
   View,
   Text,
   Image,
   TouchableOpacity,
-  ScrollView,
   StyleSheet,
   StatusBar,
+  ImageBackground,
+  SafeAreaView,
+  Platform,
+  Dimensions,
 } from 'react-native'
-import { Ionicons, MaterialIcons } from '@expo/vector-icons'
+import { Ionicons } from '@expo/vector-icons'
 import { useFonts, PressStart2P_400Regular } from '@expo-google-fonts/press-start-2p'
 import { useRouter } from 'expo-router'
 import BottomNav from '@/components/BottomNav'
 
+import rockinfo from '../../../assets/images/rockinfo.png'
+
 export default function RockCollectionScreen() {
   const router = useRouter()
-  const [fontsLoaded] = useFonts({
-    PressStart2P_400Regular,
-  })
+  const [fontsLoaded] = useFonts({ PressStart2P_400Regular })
 
   if (!fontsLoaded) return null
 
   return (
-    <View style={styles.container}>
+    <ImageBackground source={rockinfo} style={styles.background} imageStyle={styles.bgImage}>
       <StatusBar barStyle="dark-content" />
 
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerContent}>
-          <View>
-            <Text style={styles.title}>Rock Information</Text>
-          </View>
-          <TouchableOpacity
-            style={styles.profileIcon}
-            onPress={() => router.replace('/(tabs)/players/profile')}
-          >
-            <Ionicons name="person" size={20} color="white" />
-          </TouchableOpacity>
-        </View>
-      </View>
+      {/* Header (fixed) */}
+      <SafeAreaView style={styles.headerSafe}>
+        <View style={styles.header}>
+          <View style={styles.headerContent}>
+            <View style={styles.headerLeft}>
+              <TouchableOpacity
+                style={styles.backButton}
+                onPress={() => router.replace('/(tabs)/players/collections')}
+              >
+                <Ionicons name="arrow-back" size={20} color="#1f2937" />
+              </TouchableOpacity>
+              <Text style={styles.title}>Rock Information</Text>
+            </View>
 
-      {/* Content */}
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+            <TouchableOpacity
+              style={styles.profileIcon}
+              onPress={() => router.replace('/(tabs)/players/profile')}
+            >
+              <Ionicons name="person" size={20} color="white" />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </SafeAreaView>
+
+      {/* Middle content area (non-scrollable, fixed height) */}
+      <View style={styles.contentArea}>
         {/* Rock Image */}
         <View style={styles.imageContainer}>
           <Image
@@ -55,7 +68,7 @@ export default function RockCollectionScreen() {
 
         {/* Rock Information */}
         <View style={styles.infoContainer}>
-          <Text style={styles.infoTitle}>Rock Information</Text>
+          <Text style={styles.infoTitle}>Rock Information Loaded</Text>
 
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Name: </Text>
@@ -69,194 +82,170 @@ export default function RockCollectionScreen() {
 
           <View style={styles.aboutSection}>
             <Text style={styles.infoLabel}>About:</Text>
-            <Text style={styles.aboutText}>
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
-              eiusmod tempor incididunt ut labore et dolore magna aliqua...
+            <Text style={styles.aboutText} numberOfLines={4}>
+              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
+              incididunt ut labore et dolore magna aliqua...
             </Text>
           </View>
 
-          <TouchableOpacity style={styles.deleteButton}>
+          <TouchableOpacity style={styles.deleteButton} activeOpacity={0.7}>
             <Text style={styles.deleteButtonText}>Delete</Text>
           </TouchableOpacity>
         </View>
-      </ScrollView>
+      </View>
 
-      {/* Bottom Navigation */}
-      <BottomNav
-        items={[
-          {
-            label: "Home",
-            route: "/(tabs)/players/dashboard",
-            icon: { lib: "ion", name: "home" },
-          },
-          {
-            label: "Scan",
-            route: "/(tabs)/players/camera",
-            icon: { lib: "ion", name: "camera" },
-          },
-          {
-            label: "Collections",
-            route: "/(tabs)/players/collections",
-            icon: { lib: "mat", name: "collections" },
-          },
-          {
-            label: "Posts",
-            route: "/(tabs)/players/posts",
-            icon: { lib: "ion", name: "chatbubbles" },
-          },
-        ]}
-      />
-    </View>
+      {/* Bottom Navigation (fixed) */}
+      <View pointerEvents="box-none" style={styles.bottomNavWrap}>
+        <BottomNav
+          items={[
+            { label: 'Home', route: '/(tabs)/players/dashboard', icon: { lib: 'ion', name: 'home' } },
+            { label: 'Scan', route: '/(tabs)/players/camera', icon: { lib: 'ion', name: 'camera' } },
+            { label: 'Collections', route: '/(tabs)/players/collections', icon: { lib: 'mat', name: 'collections' } },
+            { label: 'Posts', route: '/(tabs)/players/posts', icon: { lib: 'ion', name: 'chatbubbles' } },
+          ]}
+        />
+      </View>
+    </ImageBackground>
   )
 }
 
-// CSS Stylesheet
+const HEADER_HEIGHT = 88;   // visual header height (including padding)
+const BOTTOM_NAV_HEIGHT = 78;
+const { width, height } = Dimensions.get('window')
+
 const styles = StyleSheet.create({
-  container: {
+  background: {
     flex: 1,
-    backgroundColor: 'white',
+    backgroundColor: '#000', // fallback if image fails
+  },
+  bgImage: {
+    resizeMode: 'cover', // keep background from stretching oddly
+  },
+
+  /* Header (fixed) */
+  headerSafe: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 10,
   },
   header: {
-    paddingTop: 50,
+    paddingTop: Platform.select({ ios: 8, android: 16 }),
     paddingHorizontal: 20,
-    paddingBottom: 20,
+    paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#e5e7eb",
+    borderBottomColor: '#e5e7eb',
+    backgroundColor: 'rgba(255, 255, 255, 0.85)',
   },
   headerContent: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: 20,
+    height: HEADER_HEIGHT - 24,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  backButton: {
+    marginRight: 12,
+    padding: 4,
   },
   title: {
-    fontFamily: "PressStart2P_400Regular",
-    fontSize: 20,
-    color: "#1f2937",
-    marginBottom: 8,
-    marginTop: 20,
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1f2937',
+    fontFamily: 'PressStart2P_400Regular',
   },
   profileIcon: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    marginTop: 10,
-    backgroundColor: "#A77B4E",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  returnButton: {
-    flexDirection: 'row',
+    backgroundColor: '#A77B4E',
+    justifyContent: 'center',
     alignItems: 'center',
-    gap: 8,
   },
-  returnText: {
-    color: '#666',
-    fontSize: 16,
-  },
-  filterContainer: {
-    flexDirection: 'row',
-    gap: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  filterButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: '#e5e5e5',
-  },
-  activeFilter: {
-    backgroundColor: 'black',
-  },
-  filterText: {
-    color: '#666',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  activeFilterText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  content: {
+
+  /* Middle content (no scrolling) */
+  contentArea: {
     flex: 1,
+    paddingTop: HEADER_HEIGHT + 8,              // leave room for fixed header
+    paddingBottom: BOTTOM_NAV_HEIGHT + 12,      // leave room for fixed bottom nav
+    paddingHorizontal: 24,
+    justifyContent: 'flex-start',
   },
   imageContainer: {
     alignItems: 'center',
-    paddingVertical: 16,
+    paddingTop: 80,
+    paddingBottom: 24,
   },
   rockImage: {
-    width: 128,
-    height: 128,
+    width: width * 0.45,
+    height: width * 0.45,
     borderRadius: 8,
   },
+
   infoContainer: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    paddingHorizontal: 24,
-    paddingVertical: 24,
-    marginTop: 16,
+    paddingHorizontal: 0,
+    paddingVertical: 16,
+    marginTop: 20,
   },
   infoTitle: {
-    fontSize: 20,
+    fontSize: 26,
     fontWeight: 'bold',
-    marginBottom: 16,
+    marginBottom: 14,
+    color: '#111827',
   },
   infoRow: {
     flexDirection: 'row',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   infoLabel: {
-    fontWeight: '600',
+    fontWeight: '700',
+    color: '#111827',
   },
   infoValue: {
-    color: '#333',
+    color: '#ffffffff',
   },
   aboutSection: {
-    marginTop: 4,
+    marginTop: 6,
   },
   aboutText: {
     marginTop: 4,
     fontSize: 14,
     lineHeight: 20,
-    color: '#666',
+    color: '#ffffffff',
   },
   deleteButton: {
     alignSelf: 'flex-start',
-    marginTop: 32,
-    paddingHorizontal: 24,
-    paddingVertical: 8,
+    marginTop: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
     borderWidth: 1,
-    borderColor: '#999',
-    borderRadius: 4,
+    borderColor: '#d6d6d6ff',
+    borderRadius: 8,
     backgroundColor: 'transparent',
   },
   deleteButtonText: {
-    color: '#666',
-    fontSize: 16,
+    color: '#d6d6d6ff',
+    fontSize: 14,
+    fontWeight: '600',
   },
-  bottomNav: {
-    flexDirection: "row",
-    backgroundColor: "white",
-    borderTopWidth: 1,
-    borderTopColor: "#e5e7eb",
-    paddingTop: 8,
-    paddingBottom: 20,
+
+  /* Bottom nav (fixed) */
+  bottomNavWrap: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: BOTTOM_NAV_HEIGHT,
+    justifyContent: 'flex-end',
   },
-  navItem: {
-    flex: 1,
-    alignItems: "center",
-    paddingVertical: 8,
-  },
-  navText: {
-    fontSize: 12,
-    marginTop: 4,
-    color: "#6b7280",
-  },
-  navTextActive: {
-    color: "#A77B4E",
-  },
-});
+})
+
+
+
+

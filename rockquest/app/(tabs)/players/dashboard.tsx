@@ -23,7 +23,6 @@ import { getProfile } from "@/utils/api";
 import { avatarFromId } from "@/utils/avatar";
 
 SplashScreen.preventAutoHideAsync();
-
 const { width } = Dimensions.get("window");
 const ROCKS_PANEL_HEIGHT = 170;
 const ROCKS_HANDLE_WIDTH = 62;
@@ -35,6 +34,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [showGreeting, setShowGreeting] = useState(true);
   const [avatarSrc, setAvatarSrc] = useState(avatarFromId(1));
+
 
   // sliding panel
   const [isMinimized, setIsMinimized] = useState(false);
@@ -87,7 +87,6 @@ export default function Dashboard() {
     <View style={styles.root}>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
 
-      {/* MAP fills everything */}
       <View style={styles.mapWrapper}>
         <MapComponent />
       </View>
@@ -98,6 +97,7 @@ export default function Dashboard() {
         <View style={styles.profileIconContainer} pointerEvents="box-none">
           <TouchableOpacity onPress={() => router.replace("/(tabs)/players/profile")} activeOpacity={0.85}>
             <Image source={avatarSrc} style={styles.profileImage} />
+
           </TouchableOpacity>
         </View>
 
@@ -138,6 +138,7 @@ export default function Dashboard() {
             </View>
           </TouchableOpacity>
         </View>
+
 
         {/* Sliding rocks container - separate from handle */}
         <Animated.View
