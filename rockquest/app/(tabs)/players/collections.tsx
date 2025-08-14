@@ -17,8 +17,9 @@ import { Ionicons } from "@expo/vector-icons"
 import { useRouter } from "expo-router"
 import BottomNav from "@/components/BottomNav"
 import { FIREBASE_AUTH } from "@/utils/firebase"
-import { getProfile } from "@/utils/api"
+import { getProfile } from "@/utils/userApi"
 import { avatarFromId } from "@/utils/avatar"
+import { rockMeta, rockImages, RockClass } from "@/utils/rocks"
 
 import cbg_rocks from "@/assets/images/cbg_rocks.png"
 import cbg_badge from "@/assets/images/cbg_badges.png"
@@ -54,22 +55,61 @@ export default function CollectionsScreen() {
 
   if (!fontsLoaded) return null
 
-  const rockCategories = [
-    { title: "Igneous rocks", rocks: Array(6).fill({ collected: true }) },
-    { title: "Sedimentary rocks", rocks: Array(7).fill({ collected: true }) },
-    { title: "Metamorphic rocks", rocks: Array(3).fill({ collected: true }) },
-  ]
+  const byType = (t: "igneous" | "sedimentary" | "metamorphic") =>
+    (Object.keys(rockMeta) as RockClass[])
+      .filter((k) => rockMeta[k].type === t)
+      .sort();
 
-  const RockGrid = ({ rocks }: { rocks: any[] }) => (
+  const rockCategories: { title: string; rocks: (RockClass | null)[] }[] = [
+    { title: "Igneous rocks",     rocks: byType("igneous")     },
+    { title: "Sedimentary rocks", rocks: byType("sedimentary") },
+    { title: "Metamorphic rocks", rocks: byType("metamorphic") },
+  ].map(({ title, rocks }) => {
+    // pad to full rows of 3 with null placeholders
+    const COLUMNS = 3;
+    const pad = (COLUMNS - (rocks.length % COLUMNS)) % COLUMNS;
+    return { title, rocks: [...rocks, ...Array(pad).fill(null)] };
+  })
+
+  const RockGrid = ({ rocks }: { rocks: (RockClass | null)[] }) => (
     <View style={styles.rockGrid}>
-      {rocks.map((_, index) => (
-        <TouchableOpacity key={index} style={styles.rockItem} onPress={() => router.push("/(tabs)/players/collection-rock")}>
-          <View style={styles.rockImage}><Text style={styles.rockImageText}>Rock</Text></View>
-        </TouchableOpacity>
-      ))}
+      {rocks.map((rock, index) => {
+        const isPlaceholder = rock === null;
+        return (
+          <TouchableOpacity
+            key={index}
+            style={styles.rockItem}
+            activeOpacity={isPlaceholder ? 1 : 0.8}
+            onPress={() => {
+              if (!isPlaceholder) router.push("/(tabs)/players/collection-rock")
+            }}
+          >
+            <View
+              style={[
+                styles.rockImage,
+                isPlaceholder && styles.rockImagePlaceholder,
+              ]}
+            >
+              {isPlaceholder ? (
+                <Text style={styles.rockImageText}>?</Text>
+              ) : (
+                <>
+                  <Image
+                    source={rockImages[rock]}
+                    resizeMode="contain"
+                    style={{ width: "90%", height: "70%" }}
+                  />
+                  <Text numberOfLines={1} style={styles.rockName}>
+                    {rock}
+                  </Text>
+                </>
+              )}
+            </View>
+          </TouchableOpacity>
+        )
+      })}
     </View>
   )
-
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
@@ -220,7 +260,15 @@ const styles = StyleSheet.create({
   tabTextActive: {
     color: "white",
   },
-
+  rockImagePlaceholder: {
+    opacity: 0.25,
+  },
+  rockName: {
+    color: "#1f2937",
+    fontSize: 12,
+    fontWeight: "600",
+    marginTop: 6,
+  },
   content: {
     flex: 1,
     marginTop: 200,          // clip starts just below the 40px filter bar
@@ -257,6 +305,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#C0BAA9",
     borderRadius: 8,
+    opacity: 0.6,
     justifyContent: "center",
     alignItems: "center",
   },

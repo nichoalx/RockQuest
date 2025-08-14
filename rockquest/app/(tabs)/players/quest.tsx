@@ -1,6 +1,6 @@
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, ImageBackground, Image, StatusBar } from "react-native"
 import { FIREBASE_AUTH } from "@/utils/firebase"
-import { getProfile } from "@/utils/api"
+import { getProfile } from "@/utils/userApi"
 import { avatarFromId } from "@/utils/avatar"
 import { Ionicons, MaterialIcons } from "@expo/vector-icons"
 import { useFonts, PressStart2P_400Regular } from "@expo-google-fonts/press-start-2p"
