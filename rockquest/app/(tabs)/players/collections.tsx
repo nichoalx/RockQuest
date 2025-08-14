@@ -9,6 +9,7 @@ import {
   StatusBar,
   ImageBackground,
   Image,
+  Dimensions,
 } from "react-native"
 import { useFonts, PressStart2P_400Regular } from "@expo-google-fonts/press-start-2p"
 import * as SplashScreen from "expo-splash-screen"
@@ -205,6 +206,7 @@ const RockGrid = ({ rocks }: { rocks: (RockClass | null)[] }) => (
     </View>
   )
 }
+const { width, height } = Dimensions.get("window");
 
 const styles = StyleSheet.create({
   container: {
@@ -245,12 +247,14 @@ const styles = StyleSheet.create({
 
   fixedTabContainer: {
     position: "absolute",
-    top: 157,
+    top: height*0.18,
     left: 0,                 // flush with left edge
-    height: 40,              // define button bar height
+    height: height *0.06,              // define button bar height
+    width: width,
     flexDirection: "row",
     alignItems: "center",
     zIndex: 30,
+    justifyContent: "flex-start",
   },
 
   tabButton: {
