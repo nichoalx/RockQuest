@@ -3,50 +3,24 @@ from firebase_admin import firestore
 from app.auth.dependencies import verify_token
 from app.firebase import db
 from app.models.models import User
-from datetime import datetime
-from typing import Optional
+from datetime import datetime, timezone
+from typing import Dict, Any
 
 router = APIRouter(prefix="", tags=["User"])
 
 # ---------- helpers ----------
 
-def _get_user_ref(uid: str):
-    """
-    Always return the user doc ref at 'user/{uid}'.
-    If a legacy doc exists with a random ID but uid field == uid,
-    migrate it into 'user/{uid}' (copy then delete old).
-    """
-    target_ref = db.collection("user").document(uid)
-    snap = target_ref.get()
-    if snap.exists:
-        return target_ref
+def _today_key_utc() -> str:
+    return datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
-    # legacy: search by field
-    matches = list(db.collection("user").where("uid", "==", uid).stream())
-    if matches:
-        legacy = matches[0]
-        data = legacy.to_dict() or {}
-        # write into canonical doc id
-        target_ref.set(data, merge=True)
-        # remove legacy doc to avoid duplicates
-        try:
-            db.collection("user").document(legacy.id).delete()
-        except Exception:
-            # best effort; ignore if already gone
-            pass
-        return target_ref
-
-    # nothing found
-    return target_ref  # non-existing ref; caller should check .get().exists
-
+def _user_ref(uid: str):
+    return db.collection("user").document(uid)
 
 def _assert_unique_username(username: str, my_uid: str):
-    # Ensure no other doc has this username (case-sensitive; adjust if you want case-insensitive)
     qs = db.collection("user").where("username", "==", username).stream()
     for doc in qs:
-        if doc.id != my_uid:  # allow keeping your own username
+        if doc.id != my_uid:
             raise HTTPException(status_code=400, detail="Username is already taken")
-
 
 # ---------- endpoints ----------
 
@@ -54,16 +28,16 @@ def _assert_unique_username(username: str, my_uid: str):
 @router.post("/complete-profile")
 def complete_profile(data: User, current_user: dict = Depends(verify_token)):
     uid = current_user["uid"]
-
     _assert_unique_username(data.username, uid)
 
-    user_ref = _get_user_ref(uid)
+    user_ref = _user_ref(uid)
+    existing = user_ref.get()
+    existing_created_at = None
+    if existing.exists:
+        existing_created_at = (existing.to_dict() or {}).get("createdAt")
 
-    update_data = {
-        # canonical identifiers
+    update_data: Dict[str, Any] = {
         "uid": uid,
-        "userId": uid,  # keep for backward compatibility with existing reads
-        # profile fields
         "username": data.username,
         "type": data.type,
         "description": data.description,
@@ -71,15 +45,12 @@ def complete_profile(data: User, current_user: dict = Depends(verify_token)):
         "avatarId": data.avatarId,
         "isActive": True,
         "email": data.emailAddress,
-        # timestamps
-        "createdAt": firestore.SERVER_TIMESTAMP if not user_ref.get().exists else user_ref.get().to_dict().get("createdAt", firestore.SERVER_TIMESTAMP),
+        "createdAt": existing_created_at if existing_created_at else firestore.SERVER_TIMESTAMP,
         "updatedAt": firestore.SERVER_TIMESTAMP,
     }
 
     user_ref.set(update_data, merge=True)
-    doc = user_ref.get()
-    return {"message": "Profile completed successfully", "user": doc.to_dict()}
-
+    return {"message": "Profile completed successfully", "user": user_ref.get().to_dict()}
 
 # POSTS
 @router.get("/my-posts")
@@ -107,9 +78,8 @@ def edit_post(post_id: str, data: dict, user=Depends(verify_token)):
     snap = ref.get()
     if not snap.exists:
         raise HTTPException(status_code=404, detail="Post not found")
-    # (Optional) enforce ownership:
-    # if snap.to_dict().get("uploadedBy") != user["uid"]:
-    #     raise HTTPException(status_code=403, detail="Forbidden")
+    if snap.to_dict().get("uploadedBy") != user["uid"]:
+        raise HTTPException(status_code=403, detail="Forbidden")
     ref.update({**data, "updatedAt": firestore.SERVER_TIMESTAMP})
     return {"message": "Post updated"}
 
@@ -119,31 +89,27 @@ def delete_post(post_id: str, user=Depends(verify_token)):
     snap = ref.get()
     if not snap.exists:
         raise HTTPException(status_code=404, detail="Post not found")
-    # (Optional) enforce ownership (see above)
+    if snap.to_dict().get("uploadedBy") != user["uid"]:
+        raise HTTPException(status_code=403, detail="Forbidden")
     ref.delete()
     return {"message": "Post deleted"}
-
 
 # FACTS
 @router.get("/facts")
 def get_facts(user=Depends(verify_token)):
-    # Log that user accessed facts today (no duplicates per day)
-    today = datetime.now().strftime("%Y-%m-%d")
+    today = _today_key_utc()
     view_doc_ref = db.collection("fact_viewed").document(user["uid"]).collection("views").document(today)
-
     if not view_doc_ref.get().exists:
         view_doc_ref.set({"viewedAt": firestore.SERVER_TIMESTAMP})
 
     docs = db.collection("fact").order_by("createdAt", direction=firestore.Query.DESCENDING).stream()
     return [{"id": doc.id, **doc.to_dict()} for doc in docs]
 
-
 # ANNOUNCEMENTS
 @router.get("/announcements")
 def get_announcements(user=Depends(verify_token)):
     docs = db.collection("announcement").order_by("createdAt", direction=firestore.Query.DESCENDING).stream()
     return [{"id": doc.id, **doc.to_dict()} for doc in docs]
-
 
 # REPORTING
 @router.post("/report-post")
@@ -156,12 +122,10 @@ def report_post(post_id: str, reason: str, user=Depends(verify_token)):
     })
     return {"message": "Post reported"}
 
-
 # PROFILE
 @router.get("/profile")
 def get_profile(user=Depends(verify_token)):
-    uid = user["uid"]
-    ref = _get_user_ref(uid)
+    ref = _user_ref(user["uid"])
     snap = ref.get()
     if not snap.exists:
         raise HTTPException(status_code=404, detail="User not found")
@@ -170,10 +134,9 @@ def get_profile(user=Depends(verify_token)):
 @router.put("/update-profile")
 def update_profile(data: dict, user=Depends(verify_token)):
     uid = user["uid"]
-    ref = _get_user_ref(uid)
+    ref = _user_ref(uid)
     if not ref.get().exists:
         raise HTTPException(status_code=404, detail="User not found")
-    # protect username uniqueness if it's being changed
     if "username" in data:
         _assert_unique_username(data["username"], uid)
     data["updatedAt"] = firestore.SERVER_TIMESTAMP
@@ -182,9 +145,35 @@ def update_profile(data: dict, user=Depends(verify_token)):
 
 @router.delete("/delete-account")
 def delete_account(user=Depends(verify_token)):
-    uid = user["uid"]
-    ref = _get_user_ref(uid)
+    ref = _user_ref(user["uid"])
     if not ref.get().exists:
         raise HTTPException(status_code=404, detail="User not found")
     ref.delete()
     return {"message": "Account deleted"}
+
+# --------- STATS (total + today) ---------
+@router.get("/my-stats")
+def get_my_stats(user=Depends(verify_token)):
+    uid = user["uid"]
+    today_key = _today_key_utc()
+
+    total_doc = _user_ref(uid).get()
+    total_scans = int((total_doc.to_dict() or {}).get("scanCount", 0)) if total_doc.exists else 0
+
+    day_ref = db.collection("player_scan_stats").document(uid).collection("days").document(today_key)
+    day_doc = day_ref.get()
+    day_data = day_doc.to_dict() if day_doc.exists else {}
+
+    by_type = day_data.get("byType", {}) if isinstance(day_data, dict) else {}
+    return {
+        "totalScans": total_scans,
+        "today": {
+            "date": today_key,
+            "count": int(day_data.get("count", 0)) if day_data else 0,
+            "byType": {
+                "igneous": int(by_type.get("igneous", 0) or 0),
+                "sedimentary": int(by_type.get("sedimentary", 0) or 0),
+                "metamorphic": int(by_type.get("metamorphic", 0) or 0),
+            }
+        }
+    }
