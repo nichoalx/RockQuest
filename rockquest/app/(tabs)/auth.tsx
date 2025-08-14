@@ -90,7 +90,6 @@ export default function AuthScreen() {
       const userData = userDoc.data()
       const userType = userData?.type
 
-      console.log("User type from Firestore:", userType) // Debug log
 
       setLoading(false)
 

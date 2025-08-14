@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Query
 from firebase_admin import firestore
 from app.auth.dependencies import verify_token
 from app.firebase import db
@@ -9,6 +9,17 @@ from typing import Dict, Any
 router = APIRouter(prefix="", tags=["User"])
 
 # ---------- helpers ----------
+
+# ---- Badges config ----
+BADGES = [
+    {"id": "scan_1",  "name": "Scan 1 Rock",  "kind": "scan", "threshold": 1,  "imageKey": "Scan1"},
+    {"id": "scan_5",  "name": "Scan 5 Rocks", "kind": "scan", "threshold": 5,  "imageKey": "Scan2"},
+    {"id": "scan_10", "name": "Scan 10 Rocks","kind": "scan", "threshold": 10, "imageKey": "Scan3"},
+    {"id": "post_1",  "name": "Make 1 Post",  "kind": "post", "threshold": 1,  "imageKey": "Post1"},
+    {"id": "post_5",  "name": "Make 5 Posts", "kind": "post", "threshold": 5,  "imageKey": "Post2"},
+    {"id": "post_10", "name": "Make 10 Posts","kind": "post", "threshold": 10, "imageKey": "Post3"},  # <— use Post3.png
+]
+
 
 def _today_key_utc() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%d")
@@ -23,6 +34,60 @@ def _assert_unique_username(username: str, my_uid: str):
             raise HTTPException(status_code=400, detail="Username is already taken")
 
 # ---------- endpoints ----------
+
+def _count_my_posts(uid: str) -> int:
+    return sum(1 for _ in db.collection("post").where("uploadedBy", "==", uid).stream())
+
+@router.get("/badges")
+def get_badges(user=Depends(verify_token)):
+    """Compute badge progress and persist newly-earned ones."""
+    uid = user["uid"]
+
+    # totals
+    user_doc = _user_ref(uid).get()
+    scan_count = int((user_doc.to_dict() or {}).get("scanCount", 0)) if user_doc.exists else 0
+    post_count = _count_my_posts(uid)
+
+    # what we've already recorded as earned (optional persistence)
+    earned_coll = db.collection("players").document(uid).collection("badges")
+    already = {d.id for d in earned_coll.stream()}
+
+    badges = []
+    batch = db.batch()
+
+    for b in BADGES:
+        progress = scan_count if b["kind"] == "scan" else post_count
+        earned = progress >= b["threshold"]
+
+        badges.append({
+            "id": b["id"],
+            "name": b["name"],
+            "imageKey": b["imageKey"],  # client maps to require(...)
+            "kind": b["kind"],
+            "threshold": b["threshold"],
+            "progress": progress,
+            "earned": earned,
+        })
+
+        # write once when newly earned
+        if earned and b["id"] not in already:
+            ref = earned_coll.document(b["id"])
+            batch.set(ref, {
+                "badgeId": b["id"],
+                "name": b["name"],
+                "unlockedAt": firestore.SERVER_TIMESTAMP,
+                "threshold": b["threshold"],
+                "kind": b["kind"],
+            })
+
+    if len(batch._write_pbs):  # commit only if there are writes
+        batch.commit()
+
+    return {
+        "scanCount": scan_count,
+        "postCount": post_count,
+        "badges": badges,
+    }
 
 # COMPLETE PROFILE
 @router.post("/complete-profile")
@@ -65,11 +130,20 @@ def get_all_posts(user=Depends(verify_token)):
 
 @router.post("/add-post")
 def add_post(data: dict, user=Depends(verify_token)):
-    data.update({
+    # copy so we don't mutate the Pydantic/body dict
+    payload = {**data}
+
+    # set safe defaults if not provided by client
+    payload.setdefault("flagged", False)
+    payload.setdefault("verified", False)
+
+    payload.update({
         "createdAt": firestore.SERVER_TIMESTAMP,
-        "uploadedBy": user["uid"]
+        "updatedAt": firestore.SERVER_TIMESTAMP,
+        "uploadedBy": user["uid"],
     })
-    db.collection("post").add(data)
+
+    db.collection("post").add(payload)
     return {"message": "Post added"}
 
 @router.put("/edit-post/{post_id}")
@@ -113,14 +187,44 @@ def get_announcements(user=Depends(verify_token)):
 
 # REPORTING
 @router.post("/report-post")
-def report_post(post_id: str, reason: str, user=Depends(verify_token)):
-    db.collection("report").add({
+def report_post(
+    post_id: str = Query(..., alias="post_id"),
+    reason: str = Query(...),
+    user=Depends(verify_token),
+):
+    # ensure post exists
+    post_ref = db.collection("post").document(post_id)
+    post_doc = post_ref.get()
+    if not post_doc.exists:
+        raise HTTPException(status_code=404, detail="Post not found")
+
+    # disallow reporting your own post (optional)
+    post = post_doc.to_dict()
+    if post.get("uploadedBy") == user["uid"]:
+        raise HTTPException(status_code=400, detail="Cannot report your own post")
+
+    # check existing pending report by same user for same post (idempotent)
+    dup = list(
+        db.collection("report")
+        .where("postId", "==", post_id)
+        .where("reportedBy", "==", user["uid"])
+        .where("status", "==", "pending")
+        .limit(1)
+        .stream()
+    )
+    if dup:
+        return {"message": "Report already submitted", "status": "pending"}
+
+    payload = {
         "postId": post_id,
         "reason": reason,
+        "reportedBy": user["uid"],
         "reportedAt": firestore.SERVER_TIMESTAMP,
-        "reportedBy": user["uid"]
-    })
-    return {"message": "Post reported"}
+        "status": "pending",  # pending | approve | reject
+    }
+    doc_ref = db.collection("report").document()  # auto id
+    doc_ref.set(payload)
+    return {"message": "Report submitted", "reportId": doc_ref.id}
 
 # PROFILE
 @router.get("/profile")
@@ -177,3 +281,4 @@ def get_my_stats(user=Depends(verify_token)):
             }
         }
     }
+

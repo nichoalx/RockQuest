@@ -1,7 +1,9 @@
 "use client"
+import { addFact } from "@/utils/geoApi"
+import { FIREBASE_AUTH } from "@/utils/firebase"
 import { Ionicons } from "@expo/vector-icons"
 import { useRouter } from "expo-router"
-import { useState } from "react"
+import React, { useState } from "react"
 import {
   StatusBar,
   StyleSheet,
@@ -10,6 +12,8 @@ import {
   TouchableOpacity,
   View,
   Modal,
+  Alert,
+  ActivityIndicator,
 } from "react-native"
 
 export default function NewFactScreen() {
@@ -18,9 +22,46 @@ export default function NewFactScreen() {
   const [shortFactDescription, setShortFactDescription] = useState("")
   const [factInformation, setFactInformation] = useState("")
   const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false)
+  const [loading, setLoading] = useState(false)
 
-  const handleSubmit = () => {
-    router.replace("/(tabs)/geologists/GeoPosts")
+  const handleSubmit = async () => {
+    // validations
+    if (!factName.trim()) {
+      Alert.alert("Error", "Please enter a Fact Name")
+      return
+    }
+    if (!shortFactDescription.trim() && !factInformation.trim()) {
+      Alert.alert("Error", "Please enter at least a short description or information")
+      return
+    }
+
+    try {
+      setLoading(true)
+
+      // Build description by combining short + info
+      const combinedDescription = [shortFactDescription.trim(), factInformation.trim()]
+        .filter(Boolean)
+        .join("\n\n")
+
+      // Generate a stable factId (backend requires it)
+      // Use uid + timestamp to avoid collisions.
+      const uid = FIREBASE_AUTH.currentUser?.uid ?? "anon"
+      const factId = `${uid}-${Date.now()}`
+
+      await addFact({
+        factId,
+        title: factName.trim(),
+        description: combinedDescription,
+      })
+
+      Alert.alert("Success", "Fact added")
+      router.replace("/(tabs)/geologists/GeoPosts")
+    } catch (e) {
+      console.log("addFact error:", e)
+      Alert.alert("Error", "Failed to add fact")
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleReset = () => {
@@ -38,12 +79,6 @@ export default function NewFactScreen() {
           <View style={styles.titleWrapper}>
             <Text style={styles.title}>RockQuest</Text>
           </View>
-          <TouchableOpacity
-            style={styles.profileIcon}
-            onPress={() => router.replace("/(tabs)/geologists/GeoProfile")}
-          >
-            <Ionicons name="person" size={20} color="white" />
-          </TouchableOpacity>
         </View>
       </View>
 
@@ -80,16 +115,25 @@ export default function NewFactScreen() {
           <TouchableOpacity
             style={styles.returnButton}
             onPress={() => router.replace("/(tabs)/geologists/GeoPosts")}
+            disabled={loading}
           >
             <Text style={styles.returnButtonText}>Return</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.resetButton} onPress={handleReset}>
+          <TouchableOpacity style={styles.resetButton} onPress={handleReset} disabled={loading}>
             <Text style={styles.resetButtonText}>Reset</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-            <Text style={styles.submitButtonText}>Submit Fact</Text>
+          <TouchableOpacity
+            style={[styles.submitButton, loading && { opacity: 0.6 }]}
+            onPress={handleSubmit}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator size="small" color="white" />
+            ) : (
+              <Text style={styles.submitButtonText}>Submit Fact</Text>
+            )}
           </TouchableOpacity>
         </View>
       </View>
@@ -99,6 +143,7 @@ export default function NewFactScreen() {
         <TouchableOpacity
           style={styles.navItem}
           onPress={() => router.replace("/(tabs)/geologists/GeoHomepage")}
+          disabled={loading}
         >
           <Ionicons name="home" size={24} color="#BA9B77" />
           <Text style={styles.navText}>Home</Text>
@@ -107,6 +152,7 @@ export default function NewFactScreen() {
         <TouchableOpacity
           style={styles.navItem}
           onPress={() => router.replace("/(tabs)/geologists/GeoPosts")}
+          disabled={loading}
         >
           <Ionicons name="chatbubbles" size={24} color="#BA9B77" />
           <Text style={styles.navText}>Posts</Text>
@@ -115,6 +161,7 @@ export default function NewFactScreen() {
         <TouchableOpacity
           style={styles.navItem}
           onPress={() => setIsLogoutModalVisible(true)}
+          disabled={loading}
         >
           <Ionicons name="log-out" size={24} color="#BA9B77" />
           <Text style={styles.navText}>Log Out</Text>
@@ -155,7 +202,7 @@ export default function NewFactScreen() {
   )
 }
 
-// STYLES
+// STYLES (unchanged)
 const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
@@ -180,6 +227,7 @@ const styles = StyleSheet.create({
     fontFamily: "PressStart2P_400Regular",
     fontSize: 16,
     color: "#1f2937",
+    marginTop: 20,
   },
   profileIcon: {
     width: 40,
@@ -290,8 +338,6 @@ const styles = StyleSheet.create({
     marginTop: 4,
     color: "#6b7280",
   },
-
-  // Logout Modal Styles
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.5)",
@@ -341,5 +387,3 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 })
-
-

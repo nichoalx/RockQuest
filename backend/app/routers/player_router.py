@@ -1,14 +1,15 @@
-from fastapi import Depends, APIRouter, HTTPException, UploadFile, File
-from typing import Optional, List, Dict, Any
-from datetime import datetime, timezone
 import os
 import tempfile
-
+import pytz
+from fastapi import Depends, APIRouter, HTTPException, UploadFile, File
+from typing import Optional, List, Dict, Any
+from datetime import date, datetime, time, timedelta, timezone
 from app.auth.dependencies import verify_token
 from app.models.models import Rock, Collection, Quest, DailyQuestStatus
 from app.firebase import db
 from firebase_admin import firestore  # SERVER_TIMESTAMP + Increment
 from inference_sdk import InferenceHTTPClient
+from zoneinfo import ZoneInfo
 
 player_router = APIRouter(prefix="/player", tags=["Player"])
 
@@ -26,6 +27,19 @@ COLL_USER    = "user"
 rf_client = InferenceHTTPClient(api_url=ROBOFLOW_API_URL, api_key=ROBOFLOW_API_KEY)
 
 # -------------------- helpers --------------------
+LOCAL_TZ = pytz.timezone("Asia/Singapore")
+
+def _local_day_bounds(d: date):
+    start_local = LOCAL_TZ.localize(datetime.combine(d, time.min))
+    end_local   = start_local + timedelta(days=1)
+    return start_local.astimezone(timezone.utc), end_local.astimezone(timezone.utc)
+
+
+def _utc_day_bounds(d: date):
+    start = datetime.combine(d, time.min).replace(tzinfo=timezone.utc)
+    end   = start + timedelta(days=1)
+    return start, end
+
 def _today_key_utc() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
@@ -61,37 +75,60 @@ def get_my_rocks(user=Depends(verify_token)):
 
     rocks = []
     for doc in saved_doc:
-        rock_id = doc.id
-        collection_data = doc.to_dict() or {}
-        rock_doc = db.collection(COLL_ROCK).document(rock_id).get()
-        if rock_doc.exists:
-            rock_data = rock_doc.to_dict() or {}
-            rock_data.update({
-                "savedAt": collection_data.get("savedAt"),
-                "name": rock_data.get("rockName"),
-                "imageUrl": collection_data.get("imageUrl") or rock_data.get("imageUrl"),
-            })
-            rocks.append(rock_data)
+        saved = doc.to_dict() or {}
+        rid = saved.get("rockId") or doc.id
+
+        # join with rock meta (optional)
+        rock_doc = db.collection(COLL_ROCK).document(rid).get()
+        meta = rock_doc.to_dict() if rock_doc.exists else {}
+
+        rocks.append({
+            "rockId": rid,
+            "name": saved.get("rockName") or meta.get("rockName") or rid,
+            "type": meta.get("rockType") or meta.get("type"),
+            "imageUrl": saved.get("imageUrl") or meta.get("imageUrl"),
+            "count": int(saved.get("count", 0)),
+            "savedAt": saved.get("savedAt"),
+            "lastSavedAt": saved.get("lastSavedAt"),
+        })
     return {"rocks": rocks}
 
 @player_router.post("/add-rock")
 def add_rock(data: Collection, user=Depends(verify_token)):
+    """Save a rock to a user's collection, incrementing a per-rock 'count' up to 99."""
     rock_ref = db.collection(COLL_ROCK).document(data.rockId)
-    if not rock_ref.get().exists:
+    rock_snap = rock_ref.get()
+    if not rock_snap.exists:
         raise HTTPException(status_code=404, detail="Rock not found")
+    rock = rock_snap.to_dict() or {}
+    rock_name = rock.get("rockName") or data.rockId
 
-    collection_ref = db.collection("collection").document(user["uid"]).collection("saved").document(data.rockId)
-    collection_ref.set({
-        "savedAt": firestore.SERVER_TIMESTAMP,
-        "imageUrl": data.imageUrl,
-    })
+    doc_ref = db.collection("collection").document(user["uid"]).collection("saved").document(data.rockId)
 
-    # (kept as-is) compute saves via stream; you can counterize later
-    saved_ref = db.collection("collection").document(user["uid"]).collection("saved")
-    save_count = sum(1 for _ in saved_ref.stream())
-    check_and_award_achievements(user["uid"], "save_rock", save_count)
+    @firestore.transactional
+    def _tx_inc(tx: firestore.Transaction):
+        snap = doc_ref.get(transaction=tx)
+        prev = int((snap.to_dict() or {}).get("count", 0))
+        new_count = min(99, prev + 1)
+        tx.set(
+            doc_ref,
+            {
+                "rockId": data.rockId,
+                "rockName": rock_name,
+                "imageUrl": data.imageUrl or rock.get("imageUrl"),
+                "count": new_count,
+                "savedAt": firestore.SERVER_TIMESTAMP if prev == 0 else snap.to_dict().get("savedAt"),
+                "lastSavedAt": firestore.SERVER_TIMESTAMP,
+            },
+            merge=True,
+        )
+        return new_count
 
-    return {"message": f"Rock '{data.rockId}' saved to your collection."}
+    tx = db.transaction()
+    new_count = _tx_inc(tx)
+
+    # optional: achievements on first save of this rock or total saves
+    return {"message": "saved", "rockId": data.rockId, "count": new_count}
 
 @player_router.delete("/delete-rock/{rock_id}")
 def delete_rock(rock_id: str, user=Depends(verify_token)):
@@ -445,3 +482,90 @@ async def scan_rock(file: UploadFile = File(...), user=Depends(verify_token)):
         "scanCount": total_scans,        # <-- include current total
         "workflowResult": result,        # keep during bring-up
     }
+
+@player_router.get("/scan-stats")
+def get_scan_stats(date: Optional[str] = None, user=Depends(verify_token)):
+    uid = user["uid"]
+    # default to today's key in UTC
+    key = date or _today_key_utc()
+
+    # day doc
+    day_ref = db.collection("player_scan_stats").document(uid).collection("days").document(key)
+    day_snap = day_ref.get()
+    day_data = day_snap.to_dict() or {}
+    day = {"date": key, "count": int(day_data.get("count", 0)), "byType": day_data.get("byType", {})}
+
+    # lifetime total on user doc
+    user_ref = db.collection(COLL_USER).document(uid)
+    user_snap = user_ref.get()
+    total = int((user_snap.to_dict() or {}).get("scanCount", 0)) if user_snap.exists else 0
+
+    return {"day": day, "total": total}
+
+@player_router.get("/quests-summary")
+def get_quests_summary(user=Depends(verify_token)):
+    today_local_date = datetime.now(LOCAL_TZ).date()
+    start_utc, end_utc = _local_day_bounds(today_local_date)
+    today_key_local = today_local_date.strftime("%Y-%m-%d")
+
+    quests_col = db.collection("quest")
+
+    # ---- TODAY (Timestamp) ----
+    todays = list(
+        quests_col
+        .where("date", ">=", start_utc)
+        .where("date", "<",  end_utc)
+        .limit(1)
+        .stream()
+    )
+
+    # ---- Fallback if you stored ISO strings ----
+    if not todays:
+        todays = list(
+            quests_col
+            .where("date", "==", today_key_local)
+            .limit(1)
+            .stream()
+        )
+
+    today_obj = None
+    if todays:
+        tdoc = todays[0].to_dict() or {}
+        # Normalized for client: always return local date string
+        today_obj = {
+            "date": today_key_local,
+            "title": tdoc.get("title") or "Today's Quest",
+            "description": tdoc.get("description"),
+        }
+
+    # ---- UPCOMING (next 10; Timestamp path first) ----
+    upcoming = []
+    ups = list(
+        quests_col
+        .where("date", ">=", end_utc)      # strictly after today (local) window
+        .order_by("date")
+        .limit(10)
+        .stream()
+    )
+
+    # Fallback for ISO strings
+    if not ups:
+        ups = list(
+            quests_col
+            .where("date", ">", today_key_local)
+            .order_by("date")
+            .limit(10)
+            .stream()
+        )
+
+    for doc in ups:
+        q = doc.to_dict() or {}
+        qd = q.get("date")
+        if isinstance(qd, datetime):
+            # show local date to users
+            q_date_str = qd.astimezone(LOCAL_TZ).date().strftime("%Y-%m-%d")
+        else:
+            q_date_str = str(qd)
+        upcoming.append({"date": q_date_str, "title": q.get("title") or "Quest"})
+
+    return {"today": today_obj, "upcoming": upcoming}

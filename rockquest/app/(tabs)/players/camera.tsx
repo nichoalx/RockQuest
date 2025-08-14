@@ -21,7 +21,7 @@ import * as MediaLibrary from "expo-media-library"
 import BottomNav from "@/components/BottomNav"
 import { FIREBASE_AUTH } from "@/utils/firebase"
 import { getProfile } from "@/utils/userApi"
-import { scanRockFromUri, ScanResult, addRockToCollection } from "@/utils/playerApi"
+import { scanRockFromUri, type ScanResult, addRockToCollection } from "@/utils/playerApi"
 import { avatarFromId } from "@/utils/avatar"
 import { rockImages, rockMeta, isKnownClass } from "@/utils/rocks"
 
@@ -68,6 +68,9 @@ export default function CameraScreen() {
   const [modalType, setModalType] = useState<string>("")
   const [modalDesc, setModalDesc] = useState<string>("")
 
+  const [errorModalVisible, setErrorModalVisible] = useState(false)
+  const [errorMessage, setErrorMessage] = useState("")
+
   useEffect(() => {
     let mounted = true
     const unsub = FIREBASE_AUTH.onAuthStateChanged(async (u) => {
@@ -98,8 +101,8 @@ export default function CameraScreen() {
   if (!fontsLoaded) return null
 
   const openResultModal = (result: ScanResult) => {
-    const { rawLabel, predictedType } = result
-    
+    const { rawLabel, predictedType, confidenceScore } = result
+
     // Use the EXACT class name from Roboflow output to resolve local assets
     if (isKnownClass(rawLabel)) {
       setModalImage(rockImages[rawLabel])
@@ -132,7 +135,10 @@ export default function CameraScreen() {
         if (!mediaPermission?.granted) {
           const req = await requestMediaPermission()
           if (!req.granted) {
-            Alert.alert("Permission needed", "Allow Photos access to save your picture.")
+            setErrorMessage(
+              "We need permission to save photos to your gallery. Please allow access in your device settings.",
+            )
+            setErrorModalVisible(true)
           } else {
             try {
               await MediaLibrary.createAssetAsync(photo.uri)
@@ -152,31 +158,32 @@ export default function CameraScreen() {
       // 3) upload to backend
       const result = await scanRockFromUri(photo.uri, "scan.jpg")
       openResultModal(result)
-      
     } catch (error: any) {
       console.error("scan error:", error)
-      let errorMessage = "Failed to scan this image."
-      
+      let errorMsg =
+        "We're sorry, but we couldn't identify this rock. Please try again with better lighting or a clearer image."
+
       if (error.response?.status === 422) {
         const detail = error.response.data?.detail
-        if (typeof detail === 'object' && detail?.message) {
-          errorMessage = detail.message
-        } else if (typeof detail === 'string') {
-          errorMessage = detail
+        if (typeof detail === "object" && detail?.message) {
+          errorMsg = `Sorry! ${detail.message}`
+        } else if (typeof detail === "string") {
+          errorMsg = `Sorry! ${detail}`
         } else {
-          errorMessage = "Rock detection confidence too low. Try getting closer or improving lighting."
+          errorMsg = "Sorry! Rock detection confidence too low. Try getting closer or improving lighting."
         }
       } else if (error.response?.status === 401) {
-        errorMessage = "Authentication failed. Please log in again."
+        errorMsg = "Sorry! Authentication failed. Please log in again."
       } else if (error.response?.status === 500) {
-        errorMessage = "Server error. Please try again later."
-      } else if (error.code === 'NETWORK_ERROR' || error.message?.includes('Network')) {
-        errorMessage = "Network error. Please check your connection."
-      } else if (error.code === 'TIMEOUT' || error.message?.includes('timeout')) {
-        errorMessage = "Request timed out. Please try again."
+        errorMsg = "Sorry! Server error. Please try again later."
+      } else if (error.code === "NETWORK_ERROR" || error.message?.includes("Network")) {
+        errorMsg = "Sorry! Network error. Please check your connection and try again."
+      } else if (error.code === "TIMEOUT" || error.message?.includes("timeout")) {
+        errorMsg = "Sorry! Request timed out. Please try again."
       }
-      
-      Alert.alert("Scan Error", errorMessage)
+
+      setErrorMessage(errorMsg)
+      setErrorModalVisible(true)
     } finally {
       setModalLoading(false)
     }
@@ -184,14 +191,15 @@ export default function CameraScreen() {
 
   const handleAddToCollection = async () => {
     if (!scan) return
-    
+
     try {
       // derive a rockId for the backend (R001…R013 by class name)
       const raw = scan.rawLabel
       const rockId = ROCK_ID_BY_CLASS[raw] || raw // fallback if your doc IDs are class names
 
       if (!rockId) {
-        Alert.alert("Error", "Unknown rock ID for this class.")
+        setErrorMessage("Sorry! We couldn't find the rock ID for this specimen.")
+        setErrorModalVisible(true)
         return
       }
 
@@ -202,7 +210,8 @@ export default function CameraScreen() {
       setModalVisible(false)
     } catch (error) {
       console.error("Failed to add rock to collection:", error)
-      Alert.alert("Error", "Failed to add rock to collection.")
+      setErrorMessage("Sorry! We couldn't add this rock to your collection. Please try again.")
+      setErrorModalVisible(true)
     }
   }
 
@@ -259,10 +268,10 @@ export default function CameraScreen() {
 
       {/* Capture Button */}
       <View style={styles.captureContainer}>
-        <TouchableOpacity 
-          style={[styles.captureButton, modalLoading && styles.captureButtonDisabled]} 
-          activeOpacity={0.8} 
-          onPress={handleCapture} 
+        <TouchableOpacity
+          style={[styles.captureButton, modalLoading && styles.captureButtonDisabled]}
+          activeOpacity={0.8}
+          onPress={handleCapture}
           disabled={modalLoading}
         >
           <View style={styles.captureButtonInner} />
@@ -275,14 +284,49 @@ export default function CameraScreen() {
           <TouchableOpacity style={styles.modalBackdrop} activeOpacity={1} onPress={() => setModalVisible(false)} />
           <View style={styles.modalContent}>
             <View style={styles.modalHandle} />
-            {modalImage ? <Image source={modalImage} style={styles.modalImage} /> : null}
-            <Text style={styles.modalTitle}>{modalTitle}</Text>
-            {scan?.confidenceScore != null && (
-              <Text style={styles.modalConf}>Confidence: {(scan.confidenceScore * 100).toFixed(1)}%</Text>
+
+            {/* Success Header */}
+            <View style={styles.successHeader}>
+              <View style={styles.successIcon}>
+                <Text style={styles.successIconText}>✓</Text>
+              </View>
+              <Text style={styles.successTitle}>Rock Identified!</Text>
+            </View>
+
+            {/* Rock Image */}
+            {modalImage ? (
+              <View style={styles.imageContainer}>
+                <Image source={modalImage} style={styles.modalImage} />
+              </View>
+            ) : (
+              <View style={styles.placeholderImage}>
+                <Text style={styles.placeholderText}>🪨</Text>
+              </View>
             )}
-            <Text style={styles.modalType}>Type: {modalType}</Text>
-            <Text style={styles.modalDesc}>{modalDesc}</Text>
-            
+
+            {/* Confidence Message */}
+            {scan?.confidenceScore != null && (
+              <View style={styles.confidenceContainer}>
+                <Text style={styles.confidenceMessage}>
+                  We are {(scan.confidenceScore * 100).toFixed(0)}% certain this is a {modalTitle}!
+                </Text>
+              </View>
+            )}
+
+            {/* Rock Details */}
+            <View style={styles.detailsContainer}>
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Type:</Text>
+                <Text style={styles.detailValue}>{modalType}</Text>
+              </View>
+
+              <View style={styles.descriptionContainer}>
+                <Text style={styles.descriptionTitle}>About this rock:</Text>
+                <Text style={styles.modalDesc}>{modalDesc}</Text>
+              </View>
+            </View>
+
+            {/* Action Buttons */}
             <View style={styles.modalButtons}>
               <TouchableOpacity onPress={handleAddToCollection} style={styles.addButton}>
                 <Text style={styles.addButtonText}>Add to Collection</Text>
@@ -291,6 +335,44 @@ export default function CameraScreen() {
                 <Text style={styles.modalClose}>Close</Text>
               </TouchableOpacity>
             </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={errorModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setErrorModalVisible(false)}
+      >
+        <View style={styles.errorModalOverlay}>
+          <View style={styles.errorModalContent}>
+            {/* Cute sad face */}
+            <View style={styles.errorIcon}>
+              <Text style={styles.errorIconText}>😔</Text>
+            </View>
+
+            {/* Sorry title */}
+            <Text style={styles.errorTitle}>Oops!</Text>
+
+            {/* Error message */}
+            <Text style={styles.errorText}>{errorMessage}</Text>
+
+            {/* Cute decorative elements */}
+            <View style={styles.errorDecorations}>
+              <View style={styles.errorDot} />
+              <View style={styles.errorDot} />
+              <View style={styles.errorDot} />
+            </View>
+
+            {/* Try again button */}
+            <TouchableOpacity
+              style={styles.errorButton}
+              onPress={() => setErrorModalVisible(false)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.errorButtonText}>Try Again</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -310,8 +392,15 @@ export default function CameraScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "black" },
   header: {
-    paddingTop: 50, paddingHorizontal: 20, paddingBottom: 20,
-    backgroundColor: "rgba(0,0,0,0.3)", position: "absolute", top: 0, left: 0, right: 0, zIndex: 1,
+    paddingTop: 50,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    backgroundColor: "rgba(0,0,0,0.3)",
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1,
   },
   headerContent: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
   title: { fontFamily: "PressStart2P_400Regular", fontSize: 20, color: "white", marginBottom: 8, marginTop: 20 },
@@ -332,13 +421,25 @@ const styles = StyleSheet.create({
   bottomRight: { bottom: 0, right: 0, borderLeftWidth: 0, borderTopWidth: 0 },
 
   captureContainer: {
-    position: "absolute", bottom: 100, left: 0, right: 0,
-    alignItems: "center", paddingVertical: 30, marginBottom: 3,
-    backgroundColor: "rgba(0,0,0,0.3)", zIndex: 2,
+    position: "absolute",
+    bottom: 100,
+    left: 0,
+    right: 0,
+    alignItems: "center",
+    paddingVertical: 30,
+    marginBottom: 3,
+    backgroundColor: "rgba(0,0,0,0.3)",
+    zIndex: 2,
   },
   captureButton: {
-    width: 80, height: 80, borderRadius: 40, borderWidth: 4, borderColor: "white",
-    justifyContent: "center", alignItems: "center", backgroundColor: "rgba(255,255,255,0.2)",
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 4,
+    borderColor: "white",
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.2)",
   },
   captureButtonDisabled: {
     opacity: 0.6,
@@ -398,53 +499,282 @@ const styles = StyleSheet.create({
   dot3: { animationDelay: "300ms" as any },
 
   // Modal
-  modalOverlay: { flex: 1, justifyContent: "flex-end" },
-  modalBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)" },
-  modalContent: {
-    backgroundColor: "white", paddingHorizontal: 24, paddingTop: 20, paddingBottom: 40,
-    borderTopLeftRadius: 24, borderTopRightRadius: 24, alignItems: "center",
-    minHeight: height * 0.5,
+  modalOverlay: {
+    flex: 1,
+    justifyContent: "flex-end",
+    backgroundColor: "rgba(0,0,0,0.6)",
   },
-  modalHandle: { width: 40, height: 4, backgroundColor: "#E5E7EB", borderRadius: 2, marginBottom: 20 },
-  modalImage: { width: 150, height: 120, resizeMode: "contain", marginBottom: 16 },
-  modalTitle: { fontSize: 22, fontWeight: "700", marginBottom: 6, color: "#111827" },
-  modalConf: { fontSize: 12, color: "#6B7280", marginBottom: 8 },
-  modalType: { fontSize: 14, color: "#374151", marginBottom: 12 },
-  modalDesc: { fontSize: 15, textAlign: "center", color: "#6B7280", marginBottom: 24, lineHeight: 22, paddingHorizontal: 4 },
-  
-  modalButtons: { 
-    flexDirection: "row", 
-    gap: 12, 
-    marginTop: "auto",
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "transparent",
+  },
+  modalContent: {
+    backgroundColor: "white",
+    paddingHorizontal: 24,
+    paddingTop: 16,
+    paddingBottom: 40,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    alignItems: "center",
+    minHeight: height * 0.6,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 12,
+  },
+  modalHandle: {
+    width: 40,
+    height: 4,
+    backgroundColor: "#D1D5DB",
+    borderRadius: 2,
+    marginBottom: 24,
+  },
+
+  // Success Header
+  successHeader: {
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  successIcon: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: "#10B981",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 12,
+    shadowColor: "#10B981",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  successIconText: {
+    color: "white",
+    fontSize: 28,
+    fontWeight: "bold",
+  },
+  successTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#111827",
+    textAlign: "center",
+  },
+
+  // Image Container
+  imageContainer: {
+    backgroundColor: "#F9FAFB",
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  modalImage: {
+    width: 160,
+    height: 130,
+    resizeMode: "contain",
+  },
+  placeholderImage: {
+    width: 160,
+    height: 130,
+    backgroundColor: "#F3F4F6",
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  placeholderText: {
+    fontSize: 48,
+  },
+
+  // Confidence Message
+  confidenceContainer: {
+    backgroundColor: "#EFF6FF",
+    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: "#DBEAFE",
+  },
+  confidenceMessage: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#1E40AF",
+    textAlign: "center",
+    lineHeight: 22,
+  },
+
+  // Details Section
+  detailsContainer: {
+    width: "100%",
+    marginBottom: 32,
+  },
+  detailRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F9FAFB",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  detailLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#6B7280",
+    marginRight: 8,
+  },
+  detailValue: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#111827",
+    textTransform: "capitalize",
+  },
+  descriptionContainer: {
+    backgroundColor: "#FEFEFE",
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  descriptionTitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#374151",
+    marginBottom: 8,
+  },
+  modalDesc: {
+    fontSize: 14,
+    textAlign: "left",
+    color: "#6B7280",
+    lineHeight: 20,
+  },
+
+  // Enhanced Buttons
+  modalButtons: {
+    flexDirection: "row",
+    gap: 12,
     width: "100%",
     justifyContent: "center",
   },
-  addButton: { 
-    backgroundColor: "#10B981", 
-    paddingHorizontal: 24, 
-    paddingVertical: 12, 
-    borderRadius: 24,
+  addButton: {
+    backgroundColor: "#10B981",
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+    borderRadius: 12,
     flex: 1,
-    maxWidth: 140,
+    maxWidth: 160,
+    shadowColor: "#10B981",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  addButtonText: { 
-    color: "white", 
-    fontWeight: "bold", 
+  addButtonText: {
+    color: "white",
+    fontWeight: "700",
     fontSize: 14,
     textAlign: "center",
   },
-  closeButton: { 
-    backgroundColor: "#A77B4E", 
-    paddingHorizontal: 24, 
-    paddingVertical: 12, 
-    borderRadius: 24,
+  closeButton: {
+    backgroundColor: "#6B7280",
+    paddingHorizontal: 24,
+    paddingVertical: 23,
+    borderRadius: 12,
     flex: 1,
     maxWidth: 100,
   },
-  modalClose: { 
-    color: "white", 
-    fontWeight: "bold", 
+  modalClose: {
+    color: "white",
+    fontWeight: "600",
+    fontSize: 14,
+    textAlign: "center",
+  },
+
+  errorModalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 32,
+  },
+  errorModalContent: {
+    backgroundColor: "#FEF7F7",
+    borderRadius: 24,
+    paddingVertical: 32,
+    paddingHorizontal: 28,
+    alignItems: "center",
+    maxWidth: 320,
+    width: "100%",
+    borderWidth: 2,
+    borderColor: "#FED7D7",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  errorIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "#FED7D7",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 16,
+    borderWidth: 3,
+    borderColor: "#FBB6CE",
+  },
+  errorIconText: {
+    fontSize: 36,
+  },
+  errorTitle: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: "#C53030",
+    marginBottom: 12,
+    textAlign: "center",
+  },
+  errorText: {
     fontSize: 16,
+    color: "#744210",
+    textAlign: "center",
+    lineHeight: 22,
+    marginBottom: 24,
+    paddingHorizontal: 8,
+  },
+  errorDecorations: {
+    flexDirection: "row",
+    marginBottom: 24,
+    gap: 8,
+  },
+  errorDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#FBB6CE",
+  },
+  errorButton: {
+    backgroundColor: "#E53E3E",
+    paddingHorizontal: 32,
+    paddingVertical: 14,
+    borderRadius: 20,
+    shadowColor: "#E53E3E",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  errorButtonText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "700",
     textAlign: "center",
   },
 })

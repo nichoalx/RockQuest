@@ -1,5 +1,3 @@
-"use client"
-
 import { Ionicons } from "@expo/vector-icons"
 import { useRouter, useLocalSearchParams } from "expo-router"
 import { useEffect, useState } from "react"
@@ -20,20 +18,21 @@ import {
 } from "react-native"
 import { getProfile, updateProfile, completeProfile } from "@/utils/userApi"
 import { avatarImages } from "@/utils/avatar"
-
+import { deleteAccount } from "@/utils/userApi"
+import { getAuth, deleteUser, reauthenticateWithCredential, EmailAuthProvider, signOut } from "firebase/auth"
 
 type FormState = {
   username: string
   email: string
-  password: string // UI only; not sent to server
-  birthday: string // DD/MM/YYYY
+  password: string 
+  birthday: string 
   description: string
 }
 
 export default function EditProfilePage() {
   const router = useRouter()
   const { role = "geologist" } = useLocalSearchParams()
-
+  const [deleting, setDeleting] = useState(false)
   const [formData, setFormData] = useState<FormState>({
     username: role === "player" ? "Player01" : "Geologist01",
     email: role === "player" ? "Player@gmail.com" : "Geologist@gmail.com",
@@ -106,6 +105,69 @@ export default function EditProfilePage() {
     setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
+  const handleDeleteAccount = () => {
+  Alert.alert(
+    "Delete Account",
+    "Are you sure you want to delete your account? This action cannot be undone.",
+    [
+      { text: "Cancel", style: "cancel" },
+      { text: "Delete", style: "destructive", onPress: doDeleteAccount },
+    ]
+  )
+}
+
+  const doDeleteAccount = async () => {
+    const auth = getAuth()
+    const user = auth.currentUser
+    if (!user) {
+      Alert.alert("Not signed in", "Please sign in and try again.")
+      return
+    }
+
+    setDeleting(true)
+    try {
+      // 1) Delete Firestore/DB side while we still have a valid JWT
+      await deleteAccount()
+
+      // 2) Try delete the Auth user
+      try {
+        await deleteUser(user)
+      } catch (err: any) {
+        // If recent login required, try email/password reauth (if we have it)
+        if (err?.code === "auth/requires-recent-login") {
+          const email = formData.email?.trim()
+          const pass  = formData.password?.trim()
+
+          if (email && pass && pass.length >= 6) {
+            const cred = EmailAuthProvider.credential(email, pass)
+            await reauthenticateWithCredential(user, cred)
+            await deleteUser(user) // retry after reauth
+          } else {
+            setDeleting(false)
+            Alert.alert(
+              "Re-authentication required",
+              "For security, please sign in again and re-try deleting your account."
+            )
+            return
+          }
+        } else {
+          throw err
+        }
+      }
+
+      // 3) Best-effort sign out + local cleanup
+      try { await signOut(auth) } catch {}
+      await AsyncStorage.multiRemove(["userName", "userBirthday"])
+
+      Alert.alert("Account deleted", "Your account has been removed.")
+      router.replace("/welcomeScreen" as any)
+    } catch (e: any) {
+      console.log("delete account error:", e?.code || e?.message, e)
+      Alert.alert("Error", "Failed to delete account. Please try again.")
+    } finally {
+      setDeleting(false)
+    }
+  }
   // ------------ load profile on mount ------------
   useEffect(() => {
     let mounted = true
@@ -217,16 +279,6 @@ export default function EditProfilePage() {
     }
   }
 
-  const handleDeleteAccount = () => {
-    Alert.alert(
-      "Delete Account",
-      "Are you sure you want to delete your account? This action cannot be undone.",
-      [
-        { text: "Cancel", style: "cancel" },
-        { text: "Delete", style: "destructive", onPress: () => console.log("Delete account confirmed") },
-      ]
-    )
-  }
 
   if (loading) {
     return (
@@ -382,9 +434,13 @@ export default function EditProfilePage() {
             <Text style={styles.saveButtonText}>{saving ? "Saving Changes..." : "Save Changes"}</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.deleteButton} onPress={handleDeleteAccount}>
-            <Ionicons name="trash-outline" size={20} color="#DC2626" />
-            <Text style={styles.deleteButtonText}>Delete Account</Text>
+          <TouchableOpacity style={[styles.deleteButton, deleting && { opacity: 0.6 }]} onPress={handleDeleteAccount} disabled={deleting}>
+            {deleting ? (
+              <ActivityIndicator color="#DC2626" size="small" />
+            ) : (
+              <Ionicons name="trash-outline" size={20} color="#DC2626" />
+            )}
+            <Text style={styles.deleteButtonText}>{deleting ? "Deleting..." : "Delete Account"}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

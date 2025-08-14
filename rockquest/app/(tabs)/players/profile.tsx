@@ -1,5 +1,6 @@
 "use client"
-import React, { useState, useEffect } from "react"
+
+import { useState, useEffect } from "react"
 import {
   View,
   Text,
@@ -20,6 +21,19 @@ import { FIREBASE_AUTH } from "@/utils/firebase"
 import BottomNav from "@/components/BottomNav"
 import { getProfile, updateProfile } from "@/utils/userApi"
 import { avatarFromId, avatarImages } from "@/utils/avatar"
+import { getScanStats } from "@/utils/playerApi"
+import { getBadges, badgeImages } from "@/utils/badgesApi"
+import { LinearGradient } from "expo-linear-gradient"
+
+type Badge = {
+  id: string
+  name: string
+  imageKey: keyof typeof badgeImages
+  kind: "scan" | "post"
+  threshold: number
+  progress: number
+  earned: boolean
+}
 
 SplashScreen.preventAutoHideAsync()
 
@@ -35,32 +49,67 @@ export default function ProfileScreen() {
   const [loading, setLoading] = useState(true)
   const [avatarId, setAvatarId] = useState<number | null>(null)
   const maxLength = 150
-
+  const [todayCount, setTodayCount] = useState(0)
+  const [totalCount, setTotalCount] = useState(0)
   const [fontsLoaded] = useFonts({ PressStart2P_400Regular })
+  const [badges, setBadges] = useState<Badge[]>([])
+  const [badgesLoading, setBadgesLoading] = useState(false)
+
+  const loadBadges = async () => {
+    try {
+      setBadgesLoading(true)
+      const res = await getBadges()
+      setBadges(res?.badges ?? [])
+    } catch (e) {
+      console.log("badges load error:", e)
+      Alert.alert("Error", "Failed to load badges.")
+    } finally {
+      setBadgesLoading(false)
+    }
+  }
+
+  const saveDescription = async () => {
+    try {
+      await updateProfile({ description: tempDescription })
+      setDescription(tempDescription)
+      setIsModalVisible(false)
+    } catch {
+      Alert.alert("Error", "Could not update description.")
+    }
+  }
 
   useEffect(() => {
     let mounted = true
     const unsub = FIREBASE_AUTH.onAuthStateChanged(async (u) => {
       if (!u || !mounted) return
       try {
-        const data = await getProfile()
+        const profile = await getProfile()
+        await loadBadges()
         if (!mounted) return
-        setUsername(data.username ?? "Username")
-        setDescription(data.description ?? "")
-        setBirthday(data.dob ? new Date(data.dob).toLocaleDateString() : "Birthday")
-        setAvatarId(typeof data.avatarId === "number" ? data.avatarId : 1)
-        setSelectedPfp(avatarFromId(data.avatarId))
+
+        setUsername(profile.username ?? "Username")
+        setDescription(profile.description ?? "")
+        setBirthday(profile.dob ? new Date(profile.dob).toLocaleDateString() : "Birthday")
+        setAvatarId(typeof profile.avatarId === "number" ? profile.avatarId : 1)
+        setSelectedPfp(avatarFromId(profile.avatarId))
+
+        setTotalCount(Number(profile.scanCount ?? 0))
+
+        try {
+          const stats = await getScanStats()
+          if (mounted && stats) {
+            setTodayCount(Number(stats.day?.count ?? 0))
+          }
+        } catch (err) {
+          console.log("getScanStats error:", err)
+        }
       } catch (e: any) {
         console.log("getProfile error:", e?.response?.status, e?.response?.data, e?.message)
         if (e?.response?.status === 404) {
-          Alert.alert("Complete Profile", "Let’s finish your profile first.", [
+          Alert.alert("Complete Profile", "Let's finish your profile first.", [
             {
               text: "OK",
-              onPress: () =>
-                router.replace({
-                  pathname: "/(tabs)/edit-profile",
-                  params: { role: "player" },
-                }),
+              onPress: () => router.replace({ pathname: "/(tabs)/edit-profile", params: { role: "player" } }),
             },
           ])
         } else if (e?.response?.status === 401) {
@@ -79,15 +128,9 @@ export default function ProfileScreen() {
     }
   }, [])
 
-  const saveDescription = async () => {
-    try {
-      await updateProfile({ description: tempDescription })
-      setDescription(tempDescription)
-      setIsModalVisible(false)
-    } catch {
-      Alert.alert("Error", "Could not update description.")
-    }
-  }
+  useEffect(() => {
+    if (fontsLoaded && !loading) SplashScreen.hideAsync()
+  }, [fontsLoaded, loading])
 
   if (!fontsLoaded || loading) {
     return (
@@ -98,19 +141,18 @@ export default function ProfileScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
+    <LinearGradient colors={["#A77B4E", "#BA9B77", "#C0BAA9"]} style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+
+      {/* Decorative background elements */}
+      <View style={styles.decorativeCircle1} />
+      <View style={styles.decorativeCircle2} />
+      <View style={styles.decorativeCircle3} />
 
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerContent}>
           <Text style={styles.title}>Profile</Text>
-          <TouchableOpacity
-            style={styles.profileIcon}
-            onPress={() => router.replace("/(tabs)/players/profile")}
-          >
-            <Ionicons name="person" size={20} color="white" />
-          </TouchableOpacity>
         </View>
       </View>
 
@@ -140,40 +182,43 @@ export default function ProfileScreen() {
                 setIsModalVisible(true)
               }}
             >
-              <Text style={styles.descriptionText}>
-                {description || "Add a short description about yourself."}
-              </Text>
+              <Text style={styles.descriptionText}>{description || "Add a short description about yourself."}</Text>
             </TouchableOpacity>
           </View>
+        </View>
 
-          {/* Achievements */}
-          <View style={styles.achievementsSection}>
-            <Text style={styles.sectionTitle}>Badges:</Text>
-            <View style={styles.achievementsGrid}>
-              {[1, 2, 3].map((item) => (
-                <View key={item} style={styles.achievementBox}>
-                  <View style={styles.achievementX}>
-                    <View style={styles.xLine1} />
-                    <View style={styles.xLine2} />
-                  </View>
-                </View>
+        {/* Badges */}
+        <View style={styles.badgesContainer}>
+          <Text style={styles.sectionTitle}>Badges</Text>
+          {badgesLoading ? (
+            <Text style={{ color: "#6b7280" }}>Loading…</Text>
+          ) : (
+            <View style={styles.badgesRow}>
+              {badges
+                .filter((b) => b.earned)
+                .slice(0, 3)
+                .map((b) => (
+                  <Image key={b.id} source={badgeImages[b.imageKey]} resizeMode="contain" style={styles.badgeThumb} />
+                ))}
+              {Array.from({ length: Math.max(0, 3 - badges.filter((b) => b.earned).length) }).map((_, i) => (
+                <View key={`ph-${i}`} style={[styles.badgeThumb, styles.badgePlaceholder]} />
               ))}
             </View>
-          </View>
+          )}
+        </View>
 
-          {/* Tracker */}
-          <View style={styles.trackerSection}>
-            <Text style={styles.sectionTitle}>Tracker:</Text>
-            <View style={styles.trackerStats}>
-              <View style={styles.trackerItem}>
-                <Text style={styles.trackerLabel}>Found</Text>
-                <Text style={styles.trackerNumber}>0</Text>
-              </View>
-              <View style={styles.trackerDivider} />
-              <View style={styles.trackerItem}>
-                <Text style={styles.trackerLabel}>Total</Text>
-                <Text style={styles.trackerNumber}>0</Text>
-              </View>
+        {/* Tracker */}
+        <View style={styles.trackerContainer}>
+          <Text style={styles.sectionTitle}>Tracker</Text>
+          <View style={styles.trackerStats}>
+            <View style={styles.trackerItem}>
+              <Text style={styles.trackerLabel}>Found</Text>
+              <Text style={styles.trackerNumber}>{todayCount}</Text>
+            </View>
+            <View style={styles.trackerDivider} />
+            <View style={styles.trackerItem}>
+              <Text style={styles.trackerLabel}>Total</Text>
+              <Text style={styles.trackerNumber}>{totalCount}</Text>
             </View>
           </View>
         </View>
@@ -183,9 +228,7 @@ export default function ProfileScreen() {
           <TouchableOpacity
             style={styles.actionButton}
             activeOpacity={0.8}
-            onPress={() =>
-              router.replace({ pathname: "/(tabs)/players/edit-profile", params: { role: "player" } })
-            }
+            onPress={() => router.replace({ pathname: "/(tabs)/edit-profile", params: { role: "player" } })}
           >
             <Ionicons name="create" size={20} color="#1f2937" />
             <Text style={styles.actionButtonText}>Edit Profile</Text>
@@ -194,9 +237,7 @@ export default function ProfileScreen() {
           <TouchableOpacity
             style={styles.actionButton}
             activeOpacity={0.8}
-            onPress={() =>
-              router.replace({ pathname: "/(tabs)/players/collections", params: { tab: "Badges" } })
-            }
+            onPress={() => router.replace({ pathname: "/(tabs)/players/collections", params: { tab: "Badges" } })}
           >
             <Ionicons name="trophy" size={20} color="#1f2937" />
             <Text style={styles.actionButtonText}>Badges</Text>
@@ -210,10 +251,7 @@ export default function ProfileScreen() {
                 await FIREBASE_AUTH.signOut()
                 router.replace("/(tabs)/auth" as any)
               } catch (error) {
-                const errorMessage =
-                  error instanceof Error && error.message
-                    ? error.message
-                    : "Failed to log out."
+                const errorMessage = error instanceof Error && error.message ? error.message : "Failed to log out."
                 Alert.alert("Logout Error", errorMessage)
               }
             }}
@@ -254,10 +292,7 @@ export default function ProfileScreen() {
               <TouchableOpacity style={styles.saveButton} onPress={saveDescription}>
                 <Text style={styles.saveButtonText}>Save</Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.cancelButton}
-                onPress={() => setIsModalVisible(false)}
-              >
+              <TouchableOpacity style={styles.cancelButton} onPress={() => setIsModalVisible(false)}>
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
             </View>
@@ -295,17 +330,40 @@ export default function ProfileScreen() {
           </View>
         </View>
       </Modal>
-    </View>
+    </LinearGradient>
   )
 }
-
-// keep your styles here...
-
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "white",
+  },
+  decorativeCircle1: {
+    position: "absolute",
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    top: 100,
+    right: -30,
+  },
+  decorativeCircle2: {
+    position: "absolute",
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "rgba(255, 255, 255, 0.08)",
+    top: 300,
+    left: -20,
+  },
+  decorativeCircle3: {
+    position: "absolute",
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: "rgba(255, 255, 255, 0.12)",
+    bottom: 200,
+    right: 20,
   },
   header: {
     paddingTop: 50,
@@ -320,28 +378,49 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: "PressStart2P_400Regular",
     fontSize: 20,
-    color: "#1f2937",
+    color: "white",
     marginBottom: 8,
     marginTop: 20,
-  },
-  profileIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginTop: 10,
-    backgroundColor: "#A77B4E",
-    justifyContent: "center",
-    alignItems: "center",
+    textShadowColor: "rgba(0, 0, 0, 0.3)",
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
   },
   content: {
     flex: 1,
     paddingHorizontal: 20,
   },
   profileCard: {
-    backgroundColor: "#C0BAA9",
+    backgroundColor: "white",
     borderRadius: 16,
     padding: 20,
     marginBottom: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  badgesContainer: {
+    backgroundColor: "white",
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  trackerContainer: {
+    backgroundColor: "white",
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 8,
   },
   profileSection: {
     flexDirection: "row",
@@ -355,6 +434,8 @@ const styles = StyleSheet.create({
     height: 80,
     borderRadius: 40,
     backgroundColor: "white",
+    borderWidth: 3,
+    borderColor: "#A77B4E",
   },
   profileInfo: {
     flex: 1,
@@ -381,58 +462,18 @@ const styles = StyleSheet.create({
     marginLeft: 6,
   },
   descriptionSection: {
-    marginBottom: 20,
+    marginBottom: 0,
   },
   descriptionText: {
     fontSize: 14,
     color: "#6b7280",
     lineHeight: 20,
   },
-  achievementsSection: {
-    marginBottom: 20,
-  },
   sectionTitle: {
     fontSize: 16,
     fontWeight: "bold",
     color: "#1f2937",
     marginBottom: 12,
-  },
-  achievementsGrid: {
-    flexDirection: "row",
-    gap: 12,
-  },
-  achievementBox: {
-    width: 60,
-    height: 60,
-    backgroundColor: "white",
-    borderRadius: 8,
-    justifyContent: "center",
-    alignItems: "center",
-    position: "relative",
-  },
-  achievementX: {
-    width: 24,
-    height: 24,
-    position: "relative",
-  },
-  xLine1: {
-    position: "absolute",
-    width: 24,
-    height: 2,
-    backgroundColor: "#6b7280",
-    transform: [{ rotate: "45deg" }],
-    top: 11,
-  },
-  xLine2: {
-    position: "absolute",
-    width: 24,
-    height: 2,
-    backgroundColor: "#6b7280",
-    transform: [{ rotate: "-45deg" }],
-    top: 11,
-  },
-  trackerSection: {
-    marginBottom: 0,
   },
   trackerStats: {
     flexDirection: "row",
@@ -466,12 +507,15 @@ const styles = StyleSheet.create({
   actionButton: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#f3f4f6",
+    backgroundColor: "white",
     borderRadius: 25,
     paddingVertical: 16,
     paddingHorizontal: 20,
-    borderWidth: 1,
-    borderColor: "#d1d5db",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 4,
   },
   actionButtonText: {
     fontSize: 16,
@@ -479,26 +523,21 @@ const styles = StyleSheet.create({
     marginLeft: 12,
     fontWeight: "500",
   },
-  bottomNav: {
+  badgesRow: {
     flexDirection: "row",
-    backgroundColor: "white",
-    borderTopWidth: 1,
-    borderTopColor: "#e5e7eb",
-    paddingTop: 8,
-    paddingBottom: 20,
-  },
-  navItem: {
-    flex: 1,
+    justifyContent: "flex-start",
     alignItems: "center",
-    paddingVertical: 8,
+    gap: 12,
   },
-  navText: {
-    fontSize: 12,
-    marginTop: 4,
-    color: "#6b7280",
+  badgeThumb: {
+    width: 90,
+    height: 70,
+    borderRadius: 8,
   },
-
-  // Modal styles
+  badgePlaceholder: {
+    backgroundColor: "#e5e7eb",
+    opacity: 0.5,
+  },
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.5)",

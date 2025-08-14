@@ -208,10 +208,6 @@ const GeoPosts = () => {
       
       {/* Header */}
       <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <Text style={styles.appTitle}>RockQuest</Text>
-          <Text style={styles.greeting}>Hello Geologist</Text>
-        </View>
         <TouchableOpacity
                   style={styles.profileIcon}
                   activeOpacity={0.8}

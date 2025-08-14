@@ -1,9 +1,8 @@
-// src/utils/rocks.ts
 export type RockClass =
   | "Basalt" | "Conglomerate" | "Dolerite" | "Gneiss" | "Granite" | "Limestone"
   | "Mudstone" | "Norite" | "Quartzite" | "Sandstone" | "Schist" | "Shale" | "Tuff";
 
-// 1) Local images packed with the app:
+
 export const rockImages: Record<RockClass, any> = {
   Basalt: require("@/assets/images/rocks/Basalt.png"),
   Conglomerate: require("@/assets/images/rocks/Conglomerate.png"),
@@ -20,8 +19,7 @@ export const rockImages: Record<RockClass, any> = {
   Tuff: require("@/assets/images/rocks/Tuff.png"),
 };
 
-// 2) Quick metadata store.
-// For now, fill these from your CSV. (Later you can generate this file from the CSV in a script.)
+
 export const rockMeta: Record<RockClass, { type: "igneous"|"sedimentary"|"metamorphic"; description: string }> = {
   Basalt:       { type: "igneous",     description: "Basalt is an igneous rock characterized by fine-grained extrusive rock rich in iron and magnesium (mafic), formed from rapid cooling lava; dark in color. Commonly formed through the cooling and solidification of magma or lava, it exhibits distinct mineral textures that aid in identification."},
   Conglomerate: { type: "sedimentary", description: "Conglomerate is a sedimentary rock composed of clastic sedimentary rock composed of rounded gravel- to boulder-size clasts cemented in a finer matrix. It typically forms through the accumulation, compaction, and cementation of sediments, often preserving visible layers or fossils."},
