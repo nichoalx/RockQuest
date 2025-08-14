@@ -35,7 +35,7 @@ export default function Dashboard() {
               <Text style={styles.greetingTitle}>Hello, Geologist!</Text>
               <Text style={styles.greetingSubtitle}>
                 Are you updated with the{" "}
-                <Text style={styles.greetingLink} onPress={() => router.replace("/(tabs)/GeoPosts")}>
+                <Text style={styles.greetingLink} onPress={() => router.replace("/(tabs)/geologists/GeoPosts")}>
                   news?
                 </Text>
               </Text>
@@ -46,7 +46,7 @@ export default function Dashboard() {
         <TouchableOpacity
           style={styles.profileIcon}
           activeOpacity={0.8}
-          onPress={() => router.replace("/(tabs)/GeoProfile")}
+          onPress={() => router.replace("/(tabs)/geologists/GeoHomepage")}
         >
           <Ionicons name="person" size={20} color="white" />
         </TouchableOpacity>
@@ -55,14 +55,14 @@ export default function Dashboard() {
       <View style={styles.shortcutContainer}>
         <TouchableOpacity
           style={styles.shortcutButton}
-          onPress={() => router.replace("/(tabs)/GeoPosts")}
+          onPress={() => router.replace("/(tabs)/geologists/GeoPosts")}
         >
           <Text style={styles.shortcutText}>View Posts</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.shortcutButton}
-          onPress={() => router.replace("/(tabs)/GeoReviewPosts")}
+          onPress={() => router.replace("/(tabs)/geologists/GeoReviewPosts")}
         >
           <Text style={styles.shortcutText}>Review Posts</Text>
         </TouchableOpacity>
@@ -71,12 +71,12 @@ export default function Dashboard() {
 
       {/* Bottom Navigation */}
       <View style={styles.bottomNav}>
-        <TouchableOpacity style={styles.navItem} activeOpacity={0.7} onPress={() => router.replace("/(tabs)/GeoHomepage")}>
+        <TouchableOpacity style={styles.navItem} activeOpacity={0.7} onPress={() => router.replace("/(tabs)/geologists/GeoHomepage")}>
           <Ionicons name="home" size={24} color="#BA9B77" />
             <Text style={styles.navText}>Home</Text>
         </TouchableOpacity>
       
-        <TouchableOpacity style={styles.navItem} activeOpacity={0.7} onPress={() => router.replace("/(tabs)/GeoPosts")}>
+        <TouchableOpacity style={styles.navItem} activeOpacity={0.7} onPress={() => router.replace("/(tabs)/geologists/GeoPosts")}>
           <Ionicons name="chatbubbles" size={24} color="#BA9B77"  />
             <Text style={styles.navText}>Posts</Text>
         </TouchableOpacity>

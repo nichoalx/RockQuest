@@ -1,5 +1,17 @@
 "use client"
-import { View, Text, TouchableOpacity, StyleSheet, StatusBar, Dimensions, Alert, Image, Modal, ActivityIndicator } from "react-native"
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  StatusBar,
+  Dimensions,
+  Alert,
+  Image,
+  Modal,
+  ActivityIndicator,
+  Switch,
+} from "react-native"
 import { useFonts, PressStart2P_400Regular } from "@expo-google-fonts/press-start-2p"
 import * as SplashScreen from "expo-splash-screen"
 import { useEffect, useRef, useState } from "react"
@@ -9,13 +21,30 @@ import * as MediaLibrary from "expo-media-library"
 import BottomNav from "@/components/BottomNav"
 import { FIREBASE_AUTH } from "@/utils/firebase"
 import { getProfile } from "@/utils/userApi"
-import { scanRockFromUri, ScanResult } from "@/utils/playerApi" // Import the new API client
+import { scanRockFromUri, ScanResult, addRockToCollection } from "@/utils/playerApi"
 import { avatarFromId } from "@/utils/avatar"
 import { rockImages, rockMeta, isKnownClass } from "@/utils/rocks"
 
 SplashScreen.preventAutoHideAsync()
 
 const { width, height } = Dimensions.get("window")
+
+// ==== Class -> rockId map (fill in if your IDs differ) ====
+const ROCK_ID_BY_CLASS: Record<string, string> = {
+  Basalt: "R001",
+  Conglomerate: "R002",
+  Dolerite: "R003",
+  Gneiss: "R004",
+  Granite: "R005",
+  Limestone: "R006",
+  Mudstone: "R007",
+  Norite: "R008",
+  Quartzite: "R009",
+  Sandstone: "R010",
+  Schist: "R011",
+  Shale: "R012",
+  Tuff: "R013",
+}
 
 export default function CameraScreen() {
   const router = useRouter()
@@ -26,6 +55,9 @@ export default function CameraScreen() {
 
   const [avatarSrc, setAvatarSrc] = useState(avatarFromId(1))
   const [bootLoading, setBootLoading] = useState(true)
+
+  // gallery toggle
+  const [saveToGallery, setSaveToGallery] = useState(false)
 
   // modal state
   const [modalVisible, setModalVisible] = useState(false)
@@ -59,26 +91,27 @@ export default function CameraScreen() {
   useEffect(() => {
     if (fontsLoaded) SplashScreen.hideAsync()
     if (!permission?.granted) requestPermission()
-    if (!mediaPermission?.granted) requestMediaPermission()
+    // only ask media permission when the user enables the toggle
+    // (we'll still request lazily in handleCapture if needed)
   }, [fontsLoaded, permission])
 
   if (!fontsLoaded) return null
 
   const openResultModal = (result: ScanResult) => {
-    const { rawLabel, predictedType, confidenceScore } = result
+    const { rawLabel, predictedType } = result
     
     // Use the EXACT class name from Roboflow output to resolve local assets
     if (isKnownClass(rawLabel)) {
       setModalImage(rockImages[rawLabel])
       setModalTitle(rawLabel)
       const meta = rockMeta[rawLabel]
-      setModalType(predictedType || meta.type)
+      setModalType((predictedType as string) || meta.type)
       setModalDesc(meta.description)
     } else {
       // fallback
       setModalImage(null)
       setModalTitle(rawLabel || "Unknown")
-      setModalType(predictedType || "unknown")
+      setModalType((predictedType as string) || "unknown")
       setModalDesc("No description available.")
     }
     setScan(result)
@@ -93,29 +126,40 @@ export default function CameraScreen() {
       // 1) take photo
       const photo = await cameraRef.current.takePictureAsync({ base64: false })
 
-      // Optional: save to gallery
-      try { 
-        await MediaLibrary.createAssetAsync(photo.uri) 
-      } catch (e) {
-        console.log("Failed to save to gallery:", e)
+      // 2) Optional: save to gallery IF toggled
+      if (saveToGallery) {
+        // request permission lazily if not yet granted
+        if (!mediaPermission?.granted) {
+          const req = await requestMediaPermission()
+          if (!req.granted) {
+            Alert.alert("Permission needed", "Allow Photos access to save your picture.")
+          } else {
+            try {
+              await MediaLibrary.createAssetAsync(photo.uri)
+            } catch (e) {
+              console.log("Failed to save to gallery:", e)
+            }
+          }
+        } else {
+          try {
+            await MediaLibrary.createAssetAsync(photo.uri)
+          } catch (e) {
+            console.log("Failed to save to gallery:", e)
+          }
+        }
       }
 
-      // 2) upload to backend using the playerApi client
+      // 3) upload to backend
       const result = await scanRockFromUri(photo.uri, "scan.jpg")
-      
-      // Open the result modal with the scan data
       openResultModal(result)
       
     } catch (error: any) {
       console.error("scan error:", error)
-      
-      // Handle specific error cases
       let errorMessage = "Failed to scan this image."
       
       if (error.response?.status === 422) {
-        // Low confidence error from backend
         const detail = error.response.data?.detail
-        if (typeof detail === 'object' && detail.message) {
+        if (typeof detail === 'object' && detail?.message) {
           errorMessage = detail.message
         } else if (typeof detail === 'string') {
           errorMessage = detail
@@ -142,10 +186,18 @@ export default function CameraScreen() {
     if (!scan) return
     
     try {
-      // You could implement this to add the scanned rock to collection
-      // const { addRockToCollection } = require("@/utils/playerApi")
-      // await addRockToCollection({ rockId: scan.rawLabel, imageUrl: modalImage })
-      
+      // derive a rockId for the backend (R001…R013 by class name)
+      const raw = scan.rawLabel
+      const rockId = ROCK_ID_BY_CLASS[raw] || raw // fallback if your doc IDs are class names
+
+      if (!rockId) {
+        Alert.alert("Error", "Unknown rock ID for this class.")
+        return
+      }
+
+      // we can pass imageUrl: null to let backend/canonical image be used
+      await addRockToCollection({ rockId, imageUrl: null as any })
+
       Alert.alert("Success", "Rock added to your collection!")
       setModalVisible(false)
     } catch (error) {
@@ -161,7 +213,13 @@ export default function CameraScreen() {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerContent}>
-          <Text style={styles.title}>Scan Rock</Text>
+          <View>
+            <Text style={styles.title}>Scan Rock</Text>
+            <View style={styles.saveRow}>
+              <Text style={styles.saveRowText}>Save to Photos</Text>
+              <Switch value={saveToGallery} onValueChange={setSaveToGallery} />
+            </View>
+          </View>
           <TouchableOpacity onPress={() => router.replace("/(tabs)/players/profile")} activeOpacity={0.9}>
             <Image source={avatarSrc} style={styles.headerAvatar} />
           </TouchableOpacity>
@@ -257,6 +315,10 @@ const styles = StyleSheet.create({
   },
   headerContent: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
   title: { fontFamily: "PressStart2P_400Regular", fontSize: 20, color: "white", marginBottom: 8, marginTop: 20 },
+  // NEW: tiny row under title
+  saveRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 6 },
+  saveRowText: { color: "white", fontSize: 12, opacity: 0.8 },
+
   headerAvatar: { width: 40, height: 40, borderRadius: 20, marginTop: 10, borderWidth: 2, borderColor: "white" },
 
   cameraContainer: { flex: 1 },
@@ -331,15 +393,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#A77B4E",
     marginHorizontal: 3,
   },
-  dot1: {
-    animationDelay: "0ms",
-  },
-  dot2: {
-    animationDelay: "150ms", 
-  },
-  dot3: {
-    animationDelay: "300ms",
-  },
+  dot1: { animationDelay: "0ms" as any },
+  dot2: { animationDelay: "150ms" as any },
+  dot3: { animationDelay: "300ms" as any },
 
   // Modal
   modalOverlay: { flex: 1, justifyContent: "flex-end" },

@@ -21,6 +21,8 @@ import { FIREBASE_AUTH } from "@/utils/firebase"
 import { getProfile } from "@/utils/userApi"
 import { avatarFromId } from "@/utils/avatar"
 import { rockMeta, rockImages, RockClass } from "@/utils/rocks"
+import { getMyRocks } from "@/utils/playerApi"
+
 
 import cbg_rocks from "@/assets/images/cbg_rocks.png"
 import cbg_badge from "@/assets/images/cbg_badges.png"
@@ -30,7 +32,7 @@ SplashScreen.preventAutoHideAsync()
 export default function CollectionsScreen() {
   const router = useRouter()
   const [fontsLoaded] = useFonts({ PressStart2P_400Regular })
-
+  const [collected, setCollected] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState("Rocks")
   const [avatarSrc, setAvatarSrc] = useState(avatarFromId(1))
 
@@ -42,8 +44,15 @@ export default function CollectionsScreen() {
         const data = await getProfile()
         if (!mounted) return
         setAvatarSrc(avatarFromId(data?.avatarId))
+
+        // load user's collection
+        const rocks = await getMyRocks()
+        if (!mounted) return
+        // backend returns each rock with `name` (e.g. "Basalt")
+        const names = new Set<string>(rocks.map((r: { name: any }) => r.name).filter(Boolean) as string[])
+        setCollected(names)
       } catch (e) {
-        console.log("getProfile error (collections):", e)
+        console.log("getProfile/getMyRocks error (collections):", e)
       } finally {
         if (fontsLoaded) SplashScreen.hideAsync()
       }
@@ -53,6 +62,7 @@ export default function CollectionsScreen() {
       unsub()
     }
   }, [fontsLoaded])
+
 
   if (!fontsLoaded) return null
 
@@ -72,46 +82,47 @@ export default function CollectionsScreen() {
     return { title, rocks: [...rocks, ...Array(pad).fill(null)] };
   })
 
-  const RockGrid = ({ rocks }: { rocks: (RockClass | null)[] }) => (
-    <View style={styles.rockGrid}>
-      {rocks.map((rock, index) => {
-        const isPlaceholder = rock === null;
-        return (
-          <TouchableOpacity
-            key={index}
-            style={styles.rockItem}
-            activeOpacity={isPlaceholder ? 1 : 0.8}
-            onPress={() => {
-              if (!isPlaceholder) router.push({pathname: "/(tabs)/players/collection-rock", params: { rockClass: rock }
-              });
-            }}
+const RockGrid = ({ rocks }: { rocks: (RockClass | null)[] }) => (
+  <View style={styles.rockGrid}>
+    {rocks.map((rock, index) => {
+      const isPlaceholder = rock === null
+      const isCollected = !isPlaceholder && collected.has(rock as string)
+      return (
+        <TouchableOpacity
+          key={index}
+          style={styles.rockItem}
+          activeOpacity={isPlaceholder ? 1 : 0.8}
+          onPress={() => {
+            if (!isPlaceholder) router.push("/(tabs)/players/collection-rock")
+          }}
+        >
+          <View
+            style={[
+              styles.rockImage,
+              isPlaceholder && styles.rockImagePlaceholder,
+              !isPlaceholder && (isCollected ? styles.rockImageCollected : styles.rockImageLocked),
+            ]}
           >
-            <View
-              style={[
-                styles.rockImage,
-                isPlaceholder && styles.rockImagePlaceholder,
-              ]}
-            >
-              {isPlaceholder ? (
-                <Text style={styles.rockImageText}>?</Text>
-              ) : (
-                <>
-                  <Image
-                    source={rockImages[rock]}
-                    resizeMode="contain"
-                    style={{ width: "90%", height: "70%" }}
-                  />
-                  <Text numberOfLines={1} style={styles.rockName}>
-                    {rock}
-                  </Text>
-                </>
-              )}
-            </View>
-          </TouchableOpacity>
-        )
-      })}
-    </View>
-  )
+            {isPlaceholder ? (
+              <Text style={styles.rockImageText}>?</Text>
+            ) : (
+              <>
+                <Image
+                  source={rockImages[rock as RockClass]}
+                  resizeMode="contain"
+                  style={{ width: "90%", height: "70%" }}
+                />
+                <Text numberOfLines={1} style={styles.rockName}>
+                  {rock}
+                </Text>
+              </>
+            )}
+          </View>
+        </TouchableOpacity>
+      )
+    })}
+  </View>
+)
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
@@ -313,6 +324,12 @@ const styles = StyleSheet.create({
     opacity: 0.6,
     justifyContent: "center",
     alignItems: "center",
+  },
+  rockImageLocked: {
+  opacity: 0.35,
+  },
+  rockImageCollected: {
+  opacity: 1,
   },
   rockImageText: {
     color: "#6b7280",

@@ -42,6 +42,7 @@ playerApi.interceptors.request.use(async (config) => {
   return config
 })
 
+
 // ---- Rock Collection Endpoints ----
 export const getMyRocks = () => 
   playerApi.get("/player/rocks").then(r => r.data)

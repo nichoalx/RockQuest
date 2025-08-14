@@ -29,7 +29,7 @@ export default function ChooseRoleScreen() {
         <Text style={styles.subtitle}>Choose your role to start your adventure!</Text>
         
         <TouchableOpacity
-          onPress={() => handleRoleSelect("user")}
+          onPress={() => handleRoleSelect("player")}
           accessibilityRole="button"
           accessibilityLabel="Sign up as Player"
         >
@@ -52,31 +52,6 @@ export default function ChooseRoleScreen() {
           />
         </TouchableOpacity>
       </View>
-=======
-      <TouchableOpacity
-        onPress={() => handleRoleSelect("player")}
-        accessibilityRole="button"
-        accessibilityLabel="Sign up as Player"
-      >
-        <Image
-  source={require("../../assets/images/player_button.png")}
-  style={styles.imageButton}
-  resizeMode="contain"
-/>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        onPress={() => handleRoleSelect("geologist")}
-        accessibilityRole="button"
-        accessibilityLabel="Sign up as Geologist"
-      >
-        <Image
-  source={require("../../assets/images/geologist_button.png")}
-  style={styles.imageButton}
-  resizeMode="contain"
-/>
-      </TouchableOpacity>
->>>>>>> de88dec9a745e7084822bef2761bec79312bd69f
     </View>
   )
 }

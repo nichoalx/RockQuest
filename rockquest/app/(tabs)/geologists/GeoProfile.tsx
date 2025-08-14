@@ -130,7 +130,7 @@ export default function GeoProfile() {
         <TouchableOpacity
           style={styles.navItem}
           activeOpacity={0.7}
-          onPress={() => router.replace("/(tabs)/GeoHomepage")}
+          onPress={() => router.replace("/(tabs)/geologists/GeoHomepage")}
         >
           <Ionicons name="home" size={24} color="#BA9B77" />
           <Text style={styles.navText}>Home</Text>
@@ -139,7 +139,7 @@ export default function GeoProfile() {
         <TouchableOpacity
           style={styles.navItem}
           activeOpacity={0.7}
-          onPress={() => router.replace("/(tabs)/GeoPosts")}
+          onPress={() => router.replace("/(tabs)/geologists/GeoPosts")}
         >
           <Ionicons name="chatbubbles" size={24} color="#BA9B77" />
           <Text style={styles.navText}>Posts</Text>
