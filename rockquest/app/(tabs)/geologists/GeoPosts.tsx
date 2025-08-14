@@ -53,7 +53,7 @@ export default function PostsScreen() {
       <View style={styles.header}>
         <View style={styles.headerContent}>
           <Text style={styles.title}>Posts</Text>
-          <TouchableOpacity style={styles.profileIcon} onPress={() => router.replace("/(tabs)/GeoProfile")}>
+          <TouchableOpacity style={styles.profileIcon} onPress={() => router.replace("/(tabs)/geologists/GeoProfile")}>
             <Ionicons name="person" size={20} color="white" />
           </TouchableOpacity>
         </View>
@@ -144,7 +144,7 @@ export default function PostsScreen() {
               style={styles.modalButton}
               onPress={() => {
                 setShowCreateOptions(false)
-                router.push("/(tabs)/GeoNewFact")
+                router.push("/(tabs)/geologists/GeoNewFact")
               }}
             >
               <Text style={styles.modalButtonText}>New Fact</Text>
@@ -189,11 +189,11 @@ export default function PostsScreen() {
 
       {/* Bottom Navigation */}
       <View style={styles.bottomNav}>
-        <TouchableOpacity style={styles.navItem} onPress={() => router.replace("/(tabs)/GeoHomepage")}>
+        <TouchableOpacity style={styles.navItem} onPress={() => router.replace("/(tabs)/geologists/GeoHomepage")}>
           <Ionicons name="home" size={24} color="#BA9B77" />
           <Text style={styles.navText}>Home</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} onPress={() => router.replace("/(tabs)/GeoPosts")}>
+        <TouchableOpacity style={styles.navItem} onPress={() => router.replace("/(tabs)/geologists/GeoPosts")}>
           <Ionicons name="chatbubbles" size={24} color="#A77B4E" />
           <Text style={[styles.navText, styles.navTextActive]}>Posts</Text>
         </TouchableOpacity>

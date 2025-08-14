@@ -58,7 +58,7 @@ export default function ProfileScreen() {
               text: "OK",
               onPress: () =>
                 router.replace({
-                  pathname: "/(tabs)/players/edit-profile",
+                  pathname: "/(tabs)/edit-profile",
                   params: { role: "player" },
                 }),
             },

@@ -20,7 +20,7 @@ export default function NewFactScreen() {
   const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false)
 
   const handleSubmit = () => {
-    router.replace("/(tabs)/GeoPosts")
+    router.replace("/(tabs)/geologists/GeoPosts")
   }
 
   const handleReset = () => {
@@ -40,7 +40,7 @@ export default function NewFactScreen() {
           </View>
           <TouchableOpacity
             style={styles.profileIcon}
-            onPress={() => router.replace("/(tabs)/GeoProfile")}
+            onPress={() => router.replace("/(tabs)/geologists/GeoProfile")}
           >
             <Ionicons name="person" size={20} color="white" />
           </TouchableOpacity>
@@ -79,7 +79,7 @@ export default function NewFactScreen() {
         <View style={styles.buttonRow}>
           <TouchableOpacity
             style={styles.returnButton}
-            onPress={() => router.replace("/(tabs)/GeoPosts")}
+            onPress={() => router.replace("/(tabs)/geologists/GeoPosts")}
           >
             <Text style={styles.returnButtonText}>Return</Text>
           </TouchableOpacity>
@@ -98,7 +98,7 @@ export default function NewFactScreen() {
       <View style={styles.bottomNav}>
         <TouchableOpacity
           style={styles.navItem}
-          onPress={() => router.replace("/(tabs)/GeoHomepage")}
+          onPress={() => router.replace("/(tabs)/geologists/GeoHomepage")}
         >
           <Ionicons name="home" size={24} color="#BA9B77" />
           <Text style={styles.navText}>Home</Text>
@@ -106,7 +106,7 @@ export default function NewFactScreen() {
 
         <TouchableOpacity
           style={styles.navItem}
-          onPress={() => router.replace("/(tabs)/GeoPosts")}
+          onPress={() => router.replace("/(tabs)/geologists/GeoPosts")}
         >
           <Ionicons name="chatbubbles" size={24} color="#BA9B77" />
           <Text style={styles.navText}>Posts</Text>

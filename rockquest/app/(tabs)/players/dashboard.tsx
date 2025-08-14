@@ -35,7 +35,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [showGreeting, setShowGreeting] = useState(true);
   const [avatarSrc, setAvatarSrc] = useState(avatarFromId(1));
-
+  const [nearby, setNearby] = useState<{ uniques: RockClass[]; byClass: Partial<Record<RockClass, number>> }>({ uniques: [], byClass: {} });
 
   // sliding panel
   const [isMinimized, setIsMinimized] = useState(false);
@@ -78,32 +78,25 @@ export default function Dashboard() {
 
   if (!fontsLoaded || loading) return null;
 
-
-  const located: RockClass[] = ["Granite", "Basalt"];
-
-
-  const MIN_TILES = 8;
+  // Fix: Use nearby.uniques instead of undefined nearbyClasses
+  const located = nearby.uniques;
+  const MIN_TILES = 4;
   const placeholders = Math.max(0, MIN_TILES - located.length);
-  const locatedWithPads: (RockClass | null)[] = [
-    ...located,
-    ...Array(placeholders).fill(null),
-  ];
+  const locatedWithPads: (RockClass | null)[] = [...located, ...Array(placeholders).fill(null)];
 
   return (
     <View style={styles.root}>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
 
       <View style={styles.mapWrapper}>
-        <MapComponent />
+        <MapComponent onNearby={setNearby} />
       </View>
-
 
       <View style={styles.overlayLayer} pointerEvents="box-none">
         {/* top-right avatar */}
         <View style={styles.profileIconContainer} pointerEvents="box-none">
           <TouchableOpacity onPress={() => router.replace("/(tabs)/players/profile")} activeOpacity={0.85}>
             <Image source={avatarSrc} style={styles.profileImage} />
-
           </TouchableOpacity>
         </View>
 
@@ -144,7 +137,6 @@ export default function Dashboard() {
             </View>
           </TouchableOpacity>
         </View>
-
 
         {/* Sliding rocks container - separate from handle */}
         <Animated.View
@@ -363,8 +355,8 @@ const styles = StyleSheet.create({
   rocksScrollContainer: { flexDirection: "row", gap: 12, paddingRight: 8 },
   rockCard: { alignItems: "center" },
   rockCardImage: {
-    width: 80,
-    height: 80,
+    width: 70,
+    height: 70,
     borderRadius: 8,
     backgroundColor: "#C0BAA9",
     justifyContent: "center",
