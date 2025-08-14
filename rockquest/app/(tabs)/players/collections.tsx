@@ -14,7 +14,7 @@ import { useFonts, PressStart2P_400Regular } from "@expo-google-fonts/press-star
 import * as SplashScreen from "expo-splash-screen"
 import { useEffect, useState } from "react"
 import { Ionicons } from "@expo/vector-icons"
-import { useRouter } from "expo-router"
+import { useRouter, useLocalSearchParams } from "expo-router"
 import BottomNav from "@/components/BottomNav"
 import { FIREBASE_AUTH } from "@/utils/firebase"
 import { getProfile } from "@/utils/userApi"
@@ -28,9 +28,14 @@ SplashScreen.preventAutoHideAsync()
 
 export default function CollectionsScreen() {
   const router = useRouter()
-  const [fontsLoaded] = useFonts({ PressStart2P_400Regular })
 
-  const [activeTab, setActiveTab] = useState("Rocks")
+  // --- NEW: read `tab` param and compute initial tab before state init
+  const params = useLocalSearchParams<{ tab?: string | string[] }>()
+  const tabParamRaw = Array.isArray(params.tab) ? params.tab[0] : params.tab
+  const initialTab = tabParamRaw === "Badges" ? "Badges" : "Rocks"
+
+  const [fontsLoaded] = useFonts({ PressStart2P_400Regular })
+  const [activeTab, setActiveTab] = useState<"Rocks" | "Badges">(initialTab)
   const [avatarSrc, setAvatarSrc] = useState(avatarFromId(1))
 
   useEffect(() => {
@@ -53,28 +58,32 @@ export default function CollectionsScreen() {
     }
   }, [fontsLoaded])
 
+  // --- Optional sync if param changes while mounted (deep link/back nav)
+  useEffect(() => {
+    if (tabParamRaw === "Badges" || tabParamRaw === "Rocks") {
+      setActiveTab(tabParamRaw as "Rocks" | "Badges")
+    }
+  }, [tabParamRaw])
+
   if (!fontsLoaded) return null
 
   const byType = (t: "igneous" | "sedimentary" | "metamorphic") =>
-    (Object.keys(rockMeta) as RockClass[])
-      .filter((k) => rockMeta[k].type === t)
-      .sort();
+    (Object.keys(rockMeta) as RockClass[]).filter((k) => rockMeta[k].type === t).sort()
 
   const rockCategories: { title: string; rocks: (RockClass | null)[] }[] = [
-    { title: "Igneous rocks",     rocks: byType("igneous")     },
+    { title: "Igneous rocks", rocks: byType("igneous") },
     { title: "Sedimentary rocks", rocks: byType("sedimentary") },
     { title: "Metamorphic rocks", rocks: byType("metamorphic") },
   ].map(({ title, rocks }) => {
-    // pad to full rows of 3 with null placeholders
-    const COLUMNS = 3;
-    const pad = (COLUMNS - (rocks.length % COLUMNS)) % COLUMNS;
-    return { title, rocks: [...rocks, ...Array(pad).fill(null)] };
+    const COLUMNS = 3
+    const pad = (COLUMNS - (rocks.length % COLUMNS)) % COLUMNS
+    return { title, rocks: [...rocks, ...Array(pad).fill(null)] }
   })
 
   const RockGrid = ({ rocks }: { rocks: (RockClass | null)[] }) => (
     <View style={styles.rockGrid}>
       {rocks.map((rock, index) => {
-        const isPlaceholder = rock === null;
+        const isPlaceholder = rock === null
         return (
           <TouchableOpacity
             key={index}
@@ -84,12 +93,7 @@ export default function CollectionsScreen() {
               if (!isPlaceholder) router.push("/(tabs)/players/collection-rock")
             }}
           >
-            <View
-              style={[
-                styles.rockImage,
-                isPlaceholder && styles.rockImagePlaceholder,
-              ]}
-            >
+            <View style={[styles.rockImage, isPlaceholder && styles.rockImagePlaceholder]}>
               {isPlaceholder ? (
                 <Text style={styles.rockImageText}>?</Text>
               ) : (
@@ -110,6 +114,7 @@ export default function CollectionsScreen() {
       })}
     </View>
   )
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
@@ -122,7 +127,6 @@ export default function CollectionsScreen() {
             <Image source={avatarSrc} style={styles.headerAvatar} />
           </TouchableOpacity>
         </View>
-
       </View>
 
       {/* Scrollable Background & Content */}
@@ -142,23 +146,16 @@ export default function CollectionsScreen() {
                   activeTab === tab && styles.tabButtonActive,
                   i === 0 && { marginRight: 10 },
                 ]}
-                onPress={() => setActiveTab(tab)}
+                onPress={() => setActiveTab(tab as "Rocks" | "Badges")}
               >
-                <Text
-                  style={[
-                    styles.tabText,
-                    activeTab === tab && styles.tabTextActive,
-                  ]}
-                >
-                  {tab}
-                </Text>
+                <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>{tab}</Text>
               </TouchableOpacity>
             ))}
           </View>
 
           <ScrollView
             style={styles.content}
-            contentContainerStyle={{ paddingTop: 20, paddingBottom: 100 }}  // keep same visual start
+            contentContainerStyle={{ paddingTop: 20, paddingBottom: 100 }}
             showsVerticalScrollIndicator={false}
           >
             {activeTab === "Rocks" ? (
@@ -234,20 +231,20 @@ const styles = StyleSheet.create({
   fixedTabContainer: {
     position: "absolute",
     top: 157,
-    left: 0,                 // flush with left edge
-    height: 40,              // define button bar height
+    left: 0,
+    height: 40,
     flexDirection: "row",
     alignItems: "center",
     zIndex: 30,
   },
 
   tabButton: {
-    paddingHorizontal: 13,   // smaller buttons
+    paddingHorizontal: 13,
     paddingVertical: 6,
     borderRadius: 18,
     backgroundColor: "#f3f4f6",
     marginRight: 10,
-    marginLeft: 0,          
+    marginLeft: 0,
   },
   tabButtonActive: {
     backgroundColor: "#1f2937",
@@ -271,8 +268,8 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    marginTop: 200,          // clip starts just below the 40px filter bar
-    overflow: "hidden",      // hide scrolled content above this edge
+    marginTop: 200,
+    overflow: "hidden",
   },
   rocksContent: {
     paddingHorizontal: 15,
@@ -292,10 +289,10 @@ const styles = StyleSheet.create({
     color: "#ffffffff",
   },
   rockGrid: {
-  flexDirection: "row",
-  flexWrap: "wrap",
-  justifyContent: "space-between",
-},
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+  },
   rockItem: {
     width: "32%",
     aspectRatio: 1,
@@ -326,15 +323,15 @@ const styles = StyleSheet.create({
     marginBottom: 0,
   },
   header: {
-  paddingTop: 50,
-  paddingHorizontal: 20,
-  paddingBottom: 20,
-  backgroundColor: "rgba(0,0,0,0.3)",
-  position: "absolute",
-  top: 0,
-  left: 0,
-  right: 0,
-  zIndex: 30,
+    paddingTop: 50,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    backgroundColor: "rgba(0,0,0,0.3)",
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 30,
   },
   headerContent: {
     flexDirection: "row",
@@ -356,7 +353,6 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: "white",
   },
-
 })
 
 
