@@ -1,4 +1,6 @@
 // collection-rock.tsx
+"use client"
+
 import React from 'react'
 import {
   View,
@@ -16,18 +18,28 @@ import { Ionicons } from '@expo/vector-icons'
 import { useFonts, PressStart2P_400Regular } from '@expo-google-fonts/press-start-2p'
 import { useRouter } from 'expo-router'
 import BottomNav from '@/components/BottomNav'
+import { useLocalSearchParams } from 'expo-router'
+import { rockMeta, rockImages, isKnownClass, RockClass } from "@/utils/rocks"
 
 import rockinfo from '../../../assets/images/rockinfo.png'
 
 export default function RockCollectionScreen() {
   const router = useRouter()
-  const [fontsLoaded] = useFonts({ PressStart2P_400Regular })
+  const params = useLocalSearchParams<{rockClass: string}>()
+  const rockClass = params.rockClass as RockClass
 
+  const [fontsLoaded] = useFonts({ PressStart2P_400Regular })
   if (!fontsLoaded) return null
 
+  if(!rockClass || !isKnownClass(rockClass)) {
+    return (<Text style={{ color: "white", fontSize: 16 }}>Unknown rock</Text>)
+  }
+  const rockInfo = rockMeta[rockClass];
+  const rockImage = rockImages[rockClass];
+
   return (
-    <ImageBackground source={rockinfo} style={styles.background} imageStyle={styles.bgImage}>
-      <StatusBar barStyle="dark-content" />
+  <ImageBackground source={rockinfo} style={styles.background} imageStyle={styles.bgImage}>
+    <StatusBar barStyle="dark-content" />
 
       {/* Header (fixed) */}
       <SafeAreaView style={styles.headerSafe}>
@@ -58,9 +70,7 @@ export default function RockCollectionScreen() {
         {/* Rock Image */}
         <View style={styles.imageContainer}>
           <Image
-            source={{
-              uri: 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-7AIjZLBZhVXMKHZ2lFgSHNtXUi6jqK.png',
-            }}
+            source={rockImage}
             style={styles.rockImage}
             resizeMode="cover"
           />
@@ -72,20 +82,17 @@ export default function RockCollectionScreen() {
 
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Name: </Text>
-            <Text style={styles.infoValue}>Granite</Text>
+            <Text style={styles.infoValue}>{rockClass}</Text>
           </View>
 
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Type: </Text>
-            <Text style={styles.infoValue}>Igneous</Text>
+            <Text style={styles.infoValue}>{rockInfo.type}</Text>
           </View>
 
           <View style={styles.aboutSection}>
             <Text style={styles.infoLabel}>About:</Text>
-            <Text style={styles.aboutText} numberOfLines={4}>
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
-              incididunt ut labore et dolore magna aliqua...
-            </Text>
+            <Text style={styles.aboutText} numberOfLines={6}>{rockInfo.description}</Text>
           </View>
 
           <TouchableOpacity style={styles.deleteButton} activeOpacity={0.7}>
@@ -107,6 +114,7 @@ export default function RockCollectionScreen() {
       </View>
     </ImageBackground>
   )
+
 }
 
 const HEADER_HEIGHT = 88;   // visual header height (including padding)
@@ -245,6 +253,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
 })
+
 
 
 
