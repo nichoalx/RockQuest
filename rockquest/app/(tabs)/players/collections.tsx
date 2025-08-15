@@ -42,19 +42,9 @@ type Badge = {
 export default function CollectionsScreen() {
   const router = useRouter()
 
-<<<<<<< HEAD
-  // --- NEW: read `tab` param and compute initial tab before state init
-  const params = useLocalSearchParams<{ tab?: string | string[] }>()
-  const tabParamRaw = Array.isArray(params.tab) ? params.tab[0] : params.tab
-  const initialTab = tabParamRaw === "Badges" ? "Badges" : "Rocks"
-
-  const [fontsLoaded] = useFonts({ PressStart2P_400Regular })
-  const [activeTab, setActiveTab] = useState<"Rocks" | "Badges">(initialTab)
-=======
   const [counts, setCounts] = useState<Record<string, number>>({})
   const [collected, setCollected] = useState<Set<string>>(new Set())
   const [activeTab, setActiveTab] = useState<"Rocks" | "Badges">("Rocks")
->>>>>>> origin/main
   const [avatarSrc, setAvatarSrc] = useState(avatarFromId(1))
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -124,30 +114,6 @@ export default function CollectionsScreen() {
     }
   }, [fontsLoaded])
 
-<<<<<<< HEAD
-  // --- Optional sync if param changes while mounted (deep link/back nav)
-  useEffect(() => {
-    if (tabParamRaw === "Badges" || tabParamRaw === "Rocks") {
-      setActiveTab(tabParamRaw as "Rocks" | "Badges")
-    }
-  }, [tabParamRaw])
-
-  if (!fontsLoaded) return null
-
-  const byType = (t: "igneous" | "sedimentary" | "metamorphic") =>
-    (Object.keys(rockMeta) as RockClass[]).filter((k) => rockMeta[k].type === t).sort()
-
-  const rockCategories: { title: string; rocks: (RockClass | null)[] }[] = [
-    { title: "Igneous rocks", rocks: byType("igneous") },
-    { title: "Sedimentary rocks", rocks: byType("sedimentary") },
-    { title: "Metamorphic rocks", rocks: byType("metamorphic") },
-  ].map(({ title, rocks }) => {
-    const COLUMNS = 3
-    const pad = (COLUMNS - (rocks.length % COLUMNS)) % COLUMNS
-    return { title, rocks: [...rocks, ...Array(pad).fill(null)] }
-  })
-
-=======
   // lazy-load badges on first switch
   useEffect(() => {
     if (activeTab === "Badges" && badges.length === 0) loadBadges()
@@ -156,18 +122,14 @@ export default function CollectionsScreen() {
   if (!fontsLoaded) return null
 
   // -------- components --------
->>>>>>> origin/main
   const RockGrid = ({ rocks }: { rocks: (RockClass | null)[] }) => (
     <View style={styles.rockGrid}>
       {rocks.map((rock, index) => {
         const isPlaceholder = rock === null
-<<<<<<< HEAD
-=======
         const count = !isPlaceholder ? (counts[rock as string] ?? 0) : 0
         const isCollected = count > 0
         const displayCount = Math.min(99, count)
 
->>>>>>> origin/main
         return (
           <TouchableOpacity
             key={index}
@@ -181,9 +143,6 @@ export default function CollectionsScreen() {
               })
             }}
           >
-<<<<<<< HEAD
-            <View style={[styles.rockImage, isPlaceholder && styles.rockImagePlaceholder]}>
-=======
             <View
               style={[
                 styles.rockImage,
@@ -191,7 +150,6 @@ export default function CollectionsScreen() {
                 !isPlaceholder && (isCollected ? styles.rockImageCollected : styles.rockImageLocked),
               ]}
             >
->>>>>>> origin/main
               {isPlaceholder ? (
                 <Text style={styles.rockImageText}>?</Text>
               ) : (
@@ -218,8 +176,6 @@ export default function CollectionsScreen() {
     </View>
   )
 
-<<<<<<< HEAD
-=======
   const BadgeGrid = () => (
     <View style={styles.badgeGrid}>
       {badges.map((b) => {
@@ -269,7 +225,6 @@ export default function CollectionsScreen() {
     }
   }
 
->>>>>>> origin/main
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
@@ -296,15 +251,7 @@ export default function CollectionsScreen() {
             {["Rocks", "Badges"].map((tab, i) => (
               <TouchableOpacity
                 key={tab}
-<<<<<<< HEAD
-                style={[
-                  styles.tabButton,
-                  activeTab === tab && styles.tabButtonActive,
-                  i === 0 && { marginRight: 10 },
-                ]}
-=======
                 style={[styles.tabButton, activeTab === tab && styles.tabButtonActive, i === 0 && { marginRight: 10 }]}
->>>>>>> origin/main
                 onPress={() => setActiveTab(tab as "Rocks" | "Badges")}
               >
                 <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>{tab}</Text>
@@ -370,16 +317,10 @@ const styles = StyleSheet.create({
 
   fixedTabContainer: {
     position: "absolute",
-<<<<<<< HEAD
-    top: 157,
-    left: 0,
-    height: 40,
-=======
     top: height * 0.18,
     left: 0,
     height: height * 0.06,
     width,
->>>>>>> origin/main
     flexDirection: "row",
     alignItems: "center",
     zIndex: 30,
@@ -393,61 +334,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#f3f4f6",
     marginRight: 10,
     marginLeft: 0,
-<<<<<<< HEAD
-  },
-  tabButtonActive: {
-    backgroundColor: "#1f2937",
-  },
-  tabText: {
-    fontSize: 13,
-    color: "#6b7280",
-    fontWeight: "500",
-  },
-  tabTextActive: {
-    color: "white",
-  },
-  rockImagePlaceholder: {
-    opacity: 0.25,
-  },
-  rockName: {
-    color: "#1f2937",
-    fontSize: 12,
-    fontWeight: "600",
-    marginTop: 6,
-  },
-  content: {
-    flex: 1,
-    marginTop: 200,
-    overflow: "hidden",
-  },
-  rocksContent: {
-    paddingHorizontal: 15,
-  },
-  categorySection: {
-    marginBottom: 24,
-  },
-  categoryHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  categoryTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#ffffffff",
-  },
-  rockGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-  },
-  rockItem: {
-    width: "32%",
-    aspectRatio: 1,
-    marginBottom: 12,
-=======
->>>>>>> origin/main
   },
   tabButtonActive: { backgroundColor: "#1f2937" },
   tabText: { fontSize: 13, color: "#6b7280", fontWeight: "500" },
@@ -504,45 +390,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 8,
   },
-<<<<<<< HEAD
-  comingSoon: {
-    fontSize: 24,
-    color: "#ffffffff",
-    textAlign: "center",
-    marginBottom: 0,
-  },
-  header: {
-    paddingTop: 50,
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-    backgroundColor: "rgba(0,0,0,0.3)",
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 30,
-  },
-  headerContent: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-  },
-  title: {
-    fontFamily: "PressStart2P_400Regular",
-    fontSize: 20,
-    color: "white",
-    marginBottom: 8,
-    marginTop: 20,
-  },
-  headerAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginTop: 10,
-    borderWidth: 2,
-    borderColor: "white",
-  },
-=======
   badgeCardLocked: { opacity: 0.35 },
   badgeName: { fontSize: 12, fontWeight: "700", color: "#111", textAlign: "center", marginTop: 6 },
   badgeProgress: { fontSize: 11, color: "#374151", marginTop: 2 },
@@ -572,5 +419,4 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   badgeText: { color: "black", fontSize: 11, fontWeight: "700" },
->>>>>>> origin/main
 })
