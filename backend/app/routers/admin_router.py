@@ -11,22 +11,19 @@ from app.models.models import (
 
 admin_router = APIRouter(prefix="/admin", tags=["Admin"])
 
-# DASHBOARD 
-@admin_router.get("/dashboard/users")
-def get_user_count(user=Depends(verify_admin_token)):
-    count = len(list(db.collection("user").stream()))
-    return {"totalUsers": count}
-
-@admin_router.get("/dashboard/posts")
-def get_post_count(user=Depends(verify_admin_token)):
-    count = len(list(db.collection("post").stream()))
-    return {"totalPosts": count}
-
-@admin_router.get("/dashboard/reports")
-def get_report_count(user=Depends(verify_admin_token)):
-    query = db.collection("report").where("status", "==", "pending")
-    count = len(list(query.stream()))
-    return {"totalReports": count}
+# DASHBOARD - combined counts
+@admin_router.get("/dashboard")
+def get_dashboard_counts(user=Depends(verify_admin_token)):
+    return {
+        "totalUsers": len(list(db.collection("user").stream())),
+        "totalPosts": len(list(db.collection("post").stream())),
+        "totalReports": len(list(db.collection("report").where("status", "==", "pending").stream())),
+        "totalQuests": len(list(db.collection("quest").stream())),
+        "totalRocks": len(list(db.collection("rock").stream())),
+        "totalRockDistributions": len(list(db.collection("spawnedRock").stream())),
+        "totalAnnouncements": len(list(db.collection("announcement").stream())),
+        "totalFacts": len(list(db.collection("fact").stream())),
+    }
 
 
 # USER MANAGEMENT
@@ -259,57 +256,13 @@ def get_all_posts(user=Depends(verify_admin_token)):
     docs = db.collection("post").stream()
     return [{"id": doc.id, **doc.to_dict()} for doc in docs]
 
-@admin_router.post("/add-post")
-def add_post(data: Post, user=Depends(verify_admin_token)):
-    if not data.postId:
-        raise HTTPException(status_code=400, detail="postId is required when manually setting ID")
-    post_ref = db.collection("post").document(data.postId)
-
-    # Check if postId already exists
-    if post_ref.get().exists:
-        raise HTTPException(status_code=400, detail=f"Post with postId '{data.postId}' already exists")
-
-    post_data = {
-        "postId": data.postId,
-        "rockname": data.rockname,
-        "description": data.description,
-        "information": data.information,
-        "image": data.image,
-        "createdBy": user["uid"],
-        "createdAt": firestore.SERVER_TIMESTAMP,
-        "verified": False
-    }
-
-    post_ref.set(post_data)
-    return {"message": "Post added", "postId": data.postId}
-
-@admin_router.put("/edit-post/{post_id}")
-def edit_post(post_id: str, data: Post, user=Depends(verify_admin_token)):
-    ref = db.collection("post").document(post_id)
-    if not ref.get().exists:
-        raise HTTPException(status_code=404, detail="Post not found")
-
-    update_data = {
-        "postId": post_id,  # ensure it's stored in case it was missing before
-        "rockname": data.rockname,
-        "description": data.description,
-        "information": data.information,
-        "image": data.image,
-        "updatedAt": firestore.SERVER_TIMESTAMP,
-        "updatedBy": user["uid"]
-    }
-
-    ref.update(update_data)
-    return {"message": "Post updated"}
-
-
 @admin_router.delete("/delete-post/{post_id}")
 def delete_post(post_id: str, user=Depends(verify_admin_token)):
     ref = db.collection("post").document(post_id)
     if not ref.get().exists:
         raise HTTPException(status_code=404, detail="Post not found")
     ref.delete()
-    return {"message": "Post deleted"}
+    return {"message": f"Post '{post_id}' deleted successfully"}
 
 # REPORT MANAGEMENT
 @admin_router.get("/reports")

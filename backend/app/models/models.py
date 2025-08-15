@@ -98,20 +98,27 @@ class Report(BaseModel):
     moderatedBy: Optional[str] = None
 
 class Post(BaseModel):
-    postId: Optional[str] = None 
-    rockname: str
-    description: str
+    postId: Optional[str] = None
+    rockName: str
+    shortDescription: Optional[str] = None
+    description: Optional[str] = None  # you can keep this if some posts have a longer text
     information: str
-    image: str
+    imageUrl: str
+    type: Optional[str] = None  # e.g., "post"
+    uploadedBy: Optional[str] = None
     createdBy: Optional[str] = None
     createdAt: Optional[datetime] = None
+    updatedAt: Optional[datetime] = None
+    updatedBy: Optional[str] = None
     verified: bool = False
     verifiedBy: Optional[str] = None
     verifiedAt: Optional[datetime] = None
-    rejectedReason: Optional[str] = None
     rejectedAt: Optional[datetime] = None
-    updatedAt: Optional[datetime] = None
-    updatedBy: Optional[str] = None
+
+    # Flagged content details
+    flaggedAt: Optional[datetime] = None
+    flaggedBy: Optional[str] = None
+    flaggedReason: Optional[str] = None
 
 # User
 class User(BaseModel):
