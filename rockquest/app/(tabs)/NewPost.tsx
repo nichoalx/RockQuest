@@ -179,7 +179,7 @@ export default function NewPostScreen() {
         Alert.alert("Success", "Post created successfully");
       }
 
-      router.replace(`/(tabs)/${role === "player" ? "players/posts" : "geologistsGeoPosts"}` as any);
+      router.replace(`/(tabs)/${role === "player" ? "players/posts" : "geologists/GeoPosts"}` as any);
     } catch (error) {
       console.log("Submit error:", error);
       Alert.alert("Error", `Failed to ${isEditing ? "update" : "create"} post`);
@@ -189,7 +189,7 @@ export default function NewPostScreen() {
   };
 
   const handleReturn = () => {
-    router.replace(`/(tabs)/${role === "player" ? "players/posts" : "geologistsGeoPosts"}` as any)
+    router.replace(`/(tabs)/${role === "player" ? "players/posts" : "geologists/GeoPosts"}` as any)
   }
 
   const handleReset = () => {

@@ -81,14 +81,23 @@ export default function AuthScreen() {
       const { uid } = userCredential.user
 
       // Get user type from Firestore
-      const userDoc = await getDoc(doc(FIRESTORE, "user", uid))
-      
+      const userDoc = await getDoc(doc(FIRESTORE, "user", uid));
       if (!userDoc.exists()) {
-        throw new Error("User profile not found. Please contact support.")
+        throw new Error("User profile not found. Please contact support.");
       }
+      const userData = userDoc.data();
+      const userType = userData?.type;
+      const isVerified = userData?.verified;
 
-      const userData = userDoc.data()
-      const userType = userData?.type
+      // Block unverified geologists
+      if (userType === "geologist" && !isVerified) {
+        setLoading(false);
+        Alert.alert(
+          "Account Pending Verification",
+          "Your account is awaiting admin approval. Please check back later."
+        );
+        return;
+      }
 
 
       setLoading(false)

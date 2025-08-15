@@ -1,5 +1,3 @@
-"use client"
-
 import { useRouter, useLocalSearchParams } from "expo-router"
 import { useState, useEffect } from "react"
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from "react-native"
@@ -33,15 +31,26 @@ export default function SignupDetailsScreen() {
       return
     }
 
-    router.push({
-      pathname: "/profile-info",
-      params: {
-        email,
-        password,
-        confirmPassword,
-        type,
-      },
-    })
+    if (type === "geologist") {
+      router.push({
+        pathname: "/upload-documents",
+        params: {
+          email,
+          password,
+          type,
+        },
+      })
+    } else {
+      router.push({
+        pathname: "/profile-info",
+        params: {
+          email,
+          password,
+          confirmPassword,
+          type,
+        },
+      })
+    }
   }
 
   return (

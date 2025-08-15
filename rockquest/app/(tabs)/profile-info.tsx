@@ -1,7 +1,7 @@
 import { useLocalSearchParams, useRouter } from "expo-router"
 import { useState, useEffect } from "react"
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from "react-native"
-import { createUserWithEmailAndPassword, getAuth, deleteUser, signOut } from "firebase/auth" // 👈 add deleteUser, signOut
+import { createUserWithEmailAndPassword, getAuth, deleteUser, signOut } from "firebase/auth" 
 import { FIREBASE_AUTH } from "../../utils/firebase"
 import { LinearGradient } from "expo-linear-gradient"
 import { completeProfile } from "../../utils/userApi"
@@ -47,6 +47,7 @@ export default function ProfileInfoScreen() {
           type: typeStr,
           description: description || "",
           emailAddress: emailStr,
+          dob: "1999-01-01", // Placeholder, adjust as needed
         })
       } catch (e: any) {
         // --- ROLLBACK: delete the just-created Auth user so email can be reused

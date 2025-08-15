@@ -65,18 +65,12 @@ export async function getReportsByStatus(status: "pending" | "approve" | "reject
   return data as Array<Record<string, any>>
 }
 
-export async function listReportedPosts(
-  status: "pending" | "approve" | "reject" = "pending"
-) {
+export async function listReportedPosts(status: "pending"|"approve"|"reject" = "pending") {
   const { data } = await api.get("/geologist/reported", { params: { status } })
-  // each item: { reportId, postId, reason, status, reportedAt, reportedBy, post?: {...} }
-  return data as Array<Record<string, any>>
+  return data
 }
 
-export async function decideReport(
-  reportId: string,
-  action: "approve" | "reject"
-) {
+export async function decideReport(reportId: string, action: "approve"|"reject") {
   const { data } = await api.post(`/geologist/reports/${encodeURIComponent(reportId)}/decision`, { action })
-  return data as { message: string }
+  return data
 }

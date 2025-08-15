@@ -1,5 +1,3 @@
-"use client"
-
 import {
   View,
   Text,
@@ -21,7 +19,7 @@ import { LinearGradient } from "expo-linear-gradient"
 
 import { listReportedPosts, decideReport } from "@/utils/geoApi"
 import { FIREBASE_AUTH } from "@/utils/firebase"
-import { getProfile, getMyPosts, getAllPosts, deletePost, reportPost } from "@/utils/userApi"
+import { getProfile, getMyPosts, getAllPosts, deletePost, reportPost, getFacts } from "@/utils/userApi"
 import { avatarFromId } from "@/utils/avatar"
 
 SplashScreen.preventAutoHideAsync()
@@ -40,7 +38,7 @@ export default function PostsScreen() {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
 
-  // NEW: moderation tab state
+  // moderation tab state
   const [view, setView] = useState<"posts" | "reports">("posts")
   const [reports, setReports] = useState<any[]>([])
   const [reportsLoading, setReportsLoading] = useState(false)
@@ -48,7 +46,7 @@ export default function PostsScreen() {
   const loadReports = async () => {
     try {
       setReportsLoading(true)
-      const data = await listReportedPosts("pending") // pending reviews
+      const data = await listReportedPosts("pending")
       setReports(Array.isArray(data) ? data : [])
     } catch (e) {
       console.log("loadReports error:", e)
@@ -63,16 +61,47 @@ export default function PostsScreen() {
       const user = FIREBASE_AUTH.currentUser
       if (!user) return
 
-      const [profileData, _myPosts, allPostsData] = await Promise.all([getProfile(), getMyPosts(), getAllPosts()])
+      const [profileData, _myPosts, allPostsData, factsData] = await Promise.all([
+        getProfile(),
+        getMyPosts(),
+        getAllPosts(),
+        getFacts(), // NEW: fetch facts
+      ])
+
       setAvatarSrc(avatarFromId(profileData?.avatarId))
 
-      const normalized = (allPostsData || []).map((p: any) => ({
+      // Normalize regular posts
+      const normalizedPosts = (allPostsData || []).map((p: any) => ({
         ...p,
         isOwn: p.uploadedBy === user.uid,
         type: p.type || "post",
       }))
 
-      setPosts(normalized)
+      // Normalize facts to match the card structure
+      const normalizedFacts = (factsData || []).map((f: any) => ({
+        id: f.id || f.factId,
+        type: "fact",
+        isOwn: f.createdBy === user.uid || f.uploadedBy === user.uid,
+        rockName: f.title,
+        title: f.title,
+        shortDescription: f.description,
+        description: f.description,
+        username: f.username || "Geologist",
+        createdAt: f.createdAt,
+        flagged: f.flagged,
+        verified: true, // optional: show facts as verified, tweak if you track this
+      }))
+
+      // Combine, hide flagged, and sort newest first
+      const all = [...normalizedPosts, ...normalizedFacts]
+        .filter((item) => !item.flagged)
+        .sort((a, b) => {
+          const aDate = a?.createdAt?.toDate ? a.createdAt.toDate() : new Date(a?.createdAt || 0)
+          const bDate = b?.createdAt?.toDate ? b.createdAt.toDate() : new Date(b?.createdAt || 0)
+          return +bDate - +aDate
+        })
+
+      setPosts(all)
     } catch (err) {
       console.log("Error loading posts:", err)
       Alert.alert("Error", "Failed to load posts")
@@ -132,9 +161,9 @@ export default function PostsScreen() {
             try {
               const res = await reportPost(postId, reason)
               const msg =
-                res?.message?.toLowerCase?.().includes("already") ?
-                  "You’ve already reported this post. Our team is reviewing it." :
-                  "Post reported successfully. Thanks for helping keep things safe."
+                res?.message?.toLowerCase?.().includes("already")
+                  ? "You’ve already reported this post. Our team is reviewing it."
+                  : "Post reported successfully. Thanks for helping keep things safe."
               Alert.alert("Report", msg)
             } catch (error) {
               console.log("Report error:", error)
@@ -165,7 +194,6 @@ export default function PostsScreen() {
     }
   }, [fontsLoaded])
 
-  // auto-load reports when switching tab
   useEffect(() => {
     if (view === "reports") loadReports()
   }, [view])
@@ -218,28 +246,14 @@ export default function PostsScreen() {
             style={[styles.filterButton, showMyPosts && styles.filterButtonActive]}
             onPress={() => setShowMyPosts(!showMyPosts)}
           >
-            <Text style={[styles.filterText, showMyPosts && styles.filterTextActive]}>My Posts</Text>
+            <Text style={[styles.filterText, showMyPosts && styles.filterTextActive]}>Mine</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.addButton} onPress={() => setShowCreateOptions(true)}>
             <Ionicons name="add" size={20} color="white" />
           </TouchableOpacity>
         </View>
 
-        {/* View switch */}
-        <View style={[styles.filterRowAligned, { marginTop: 0 }]}>
-          <TouchableOpacity
-            style={[styles.filterButtonEqual, view === "posts" && styles.filterButtonActive]}
-            onPress={() => setView("posts")}
-          >
-            <Text style={[styles.filterText, view === "posts" && styles.filterTextActive]}>Posts</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.filterButtonEqual, view === "reports" && styles.filterButtonActive, { marginLeft: 8 }]}
-            onPress={() => setView("reports")}
-          >
-            <Text style={[styles.filterText, view === "reports" && styles.filterTextActive]}>Reported</Text>
-          </TouchableOpacity>
-        </View>
+
 
         {/* Type Filter Row — only for posts view */}
         {view === "posts" && (
@@ -377,9 +391,7 @@ export default function PostsScreen() {
             ) : filteredPosts.length === 0 ? (
               <View style={styles.emptyContainer}>
                 <Ionicons name="chatbubbles-outline" size={48} color="#BA9B77" style={styles.emptyIcon} />
-                <Text style={styles.emptyText}>
-                  {showMyPosts ? "You haven't posted anything yet" : "No posts available"}
-                </Text>
+                <Text style={styles.emptyText}>{showMyPosts ? "You haven't posted anything yet" : "No posts available"}</Text>
                 <Text style={styles.emptySubtext}>
                   {showMyPosts ? "Share your rock discoveries!" : "Be the first to share something!"}
                 </Text>
@@ -388,7 +400,11 @@ export default function PostsScreen() {
               filteredPosts.map((post: any) => (
                 <View key={post.id} style={styles.postItem}>
                   <View style={styles.postImage}>
-                    {post.imageUrl ? (
+                    {post.type === "fact" ? (
+                      <View style={styles.actionContainer}>
+                        <Ionicons name="bulb" size={32} color="#A77B4E" />
+                      </View>
+                    ) : post.imageUrl ? (
                       <Image source={{ uri: post.imageUrl }} style={styles.rockImage} resizeMode="cover" />
                     ) : (
                       <View style={styles.placeholderImage}>
@@ -428,8 +444,9 @@ export default function PostsScreen() {
                     </Text>
                     {post.createdAt && <Text style={styles.postDate}>{formatDate(post.createdAt)}</Text>}
 
+                    {/* Actions: facts have no actions; posts keep edit/delete or report */}
                     <View style={styles.postActions}>
-                      {post.isOwn ? (
+                      {post.type === "fact" ? null : post.isOwn ? (
                         <>
                           <TouchableOpacity
                             style={styles.actionButton}

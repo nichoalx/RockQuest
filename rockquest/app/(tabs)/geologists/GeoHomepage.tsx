@@ -13,11 +13,13 @@ import {
   Modal,
   ScrollView,
   Image,
+  RefreshControl
 } from "react-native"
 import { LinearGradient } from "expo-linear-gradient"
 import { signOut } from "firebase/auth"
 import { FIREBASE_AUTH } from "@/utils/firebase"
-import { getProfile, getAnnouncements } from "@/utils/userApi"
+import { getProfile, getAnnouncements, getAllPosts, getFacts } from "@/utils/userApi"
+import { listReportedPosts } from "@/utils/geoApi"
 import { avatarFromId } from "@/utils/avatar"
 
 SplashScreen.preventAutoHideAsync()
@@ -32,10 +34,25 @@ type PinnedAnnouncement = {
   pinned?: boolean
 }
 
+type ActivityItem = {
+  id: string
+  type: 'post' | 'fact' | 'report_approved' | 'report_rejected'
+  title: string
+  date: Date
+  icon: string
+}
+
+type Stats = {
+  postsReviewed: number
+  approved: number
+  pending: number
+}
+
 export default function Dashboard() {
   const router = useRouter()
   const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false)
   const [fontsLoaded] = useFonts({ PressStart2P_400Regular })
+  const [refreshing, setRefreshing] = useState(false)
 
   // avatar
   const [avatarSrc, setAvatarSrc] = useState(avatarFromId(1))
@@ -43,19 +60,231 @@ export default function Dashboard() {
   // announcement
   const [pinned, setPinned] = useState<PinnedAnnouncement | null>(null)
 
+  // new states for dynamic data
+  const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([])
+  const [stats, setStats] = useState<Stats>({ postsReviewed: 0, approved: 0, pending: 0 })
+  const [loading, setLoading] = useState(true)
+  
+  const onRefresh = async () => {
+  setRefreshing(true)
+  try {
+    await Promise.all([loadStats(), loadRecentActivity()])
+    // optionally refresh the pinned announcement too
+    const list = await getAnnouncements()
+    const pin = Array.isArray(list) ? list.find((a: any) => a?.pinned) : null
+    setPinned(
+      pin ? { id: pin.id, title: pin.title, description: pin.description, imageUrl: pin.imageUrl, pinned: true } : null
+    )
+  } catch (e) {
+    // no-op; your load functions already log
+  } finally {
+    setRefreshing(false)
+  }
+}
+
+const loadStats = async () => {
+  try {
+    const user = FIREBASE_AUTH.currentUser
+    if (!user) {
+      console.log("❌ No current user in loadStats")
+      return
+    }
+    console.log("👤 Current user ID:", user.uid)
+
+    const pendingReports = await listReportedPosts("pending")
+    const pendingCount = Array.isArray(pendingReports) ? pendingReports.length : 0
+
+    const approvedReports = await listReportedPosts("approve")
+    const rejectedReports = await listReportedPosts("reject")
+
+    // Filter reports that were moderated by this user
+    const filterByModerator = (reports) => {
+      if (!Array.isArray(reports)) return []
+      return reports.filter(report => {
+        // Check if this report was moderated by current user
+        const moderatedByCurrentUser = report.moderatedBy === user.uid || report.moderated_by === user.uid
+        return moderatedByCurrentUser
+      })
+    }
+
+    const userApprovedReports = filterByModerator(approvedReports)
+    const userRejectedReports = filterByModerator(rejectedReports)
+    
+    const approvedCount = userApprovedReports.length
+    const totalReviewedCount = userApprovedReports.length + userRejectedReports.length
+    const finalStats = {
+      postsReviewed: totalReviewedCount,
+      approved: approvedCount,
+      pending: pendingCount
+    }
+    setStats(finalStats)
+
+  } catch (error) {
+    console.error("❌ Error loading stats:", error)
+    console.error("❌ Error details:", error.message)
+    setStats({ postsReviewed: 0, approved: 0, pending: 0 })
+  }
+}
+
+const loadRecentActivity = async () => {
+  try {
+    const user = FIREBASE_AUTH.currentUser
+    if (!user) {
+      console.log("❌ No current user in loadRecentActivity")
+      return
+    }
+
+    const activities = []
+    const [allPosts, allFacts] = await Promise.all([
+      getAllPosts(),
+      getFacts()
+    ])
+    // Add recent posts (last 5)
+    if (Array.isArray(allPosts) && allPosts.length > 0) {
+      const recentPosts = allPosts
+        .sort((a, b) => {
+          const aDate = a?.createdAt?.toDate ? a.createdAt.toDate() : new Date(a?.createdAt || 0)
+          const bDate = b?.createdAt?.toDate ? b.createdAt.toDate() : new Date(b?.createdAt || 0)
+          return +bDate - +aDate
+        })
+        .slice(0, 4)
+
+
+      recentPosts.forEach(post => {
+        const date = post?.createdAt?.toDate ? post.createdAt.toDate() : new Date(post?.createdAt || Date.now())
+        activities.push({
+          id: post.id,
+          type: 'post',
+          title: `New post: "${post.rockName || post.title || 'Unnamed Rock'}"`,
+          date,
+          icon: 'chatbubble'
+        })
+      })
+    } else {
+      console.log("📝 No posts found or invalid format")
+    }
+
+    // Add recent facts (last 3)
+    if (Array.isArray(allFacts) && allFacts.length > 0) {
+      const recentFacts = allFacts
+        .sort((a, b) => {
+          const aDate = a?.createdAt?.toDate ? a.createdAt.toDate() : new Date(a?.createdAt || 0)
+          const bDate = b?.createdAt?.toDate ? b.createdAt.toDate() : new Date(b?.createdAt || 0)
+          return +bDate - +aDate
+        })
+        .slice(0, 3)
+      recentFacts.forEach(fact => {
+        const date = fact?.createdAt?.toDate ? fact.createdAt.toDate() : new Date(fact?.createdAt || Date.now())
+        activities.push({
+          id: fact.id || fact.factId,
+          type: 'fact',
+          title: `New fact: "${fact.title || 'Geology Fact'}"`,
+          date,
+          icon: 'bulb'
+        })
+      })
+    } else {
+      console.log("💡 No facts found or invalid format")
+    }
+
+
+    // Get recent moderated reports using API instead of Firestore
+    try {
+      
+      // Get all approved and rejected reports, then filter by moderator
+      const [approvedReports, rejectedReports] = await Promise.all([
+        listReportedPosts("approve"),
+        listReportedPosts("reject")
+      ])
+      
+      
+      // Combine and filter reports moderated by current user
+      const allModeratedReports = [
+        ...(Array.isArray(approvedReports) ? approvedReports.map(r => ({...r, status: 'approve'})) : []),
+        ...(Array.isArray(rejectedReports) ? rejectedReports.map(r => ({...r, status: 'reject'})) : [])
+      ].filter(report => {
+        return report.moderatedBy === user.uid || report.moderated_by === user.uid
+      })
+      
+      
+      // Sort by moderated date and take recent ones
+      const recentModeratedReports = allModeratedReports
+        .sort((a, b) => {
+          const aDate = a?.moderatedAt?.toDate ? a.moderatedAt.toDate() : new Date(a?.moderatedAt || a?.moderated_at || 0)
+          const bDate = b?.moderatedAt?.toDate ? b.moderatedAt.toDate() : new Date(b?.moderatedAt || b?.moderated_at || 0)
+          return +bDate - +aDate
+        })
+        .slice(0, 5)
+
+      recentModeratedReports.forEach(report => {
+        const date = report?.moderatedAt?.toDate 
+          ? report.moderatedAt.toDate() 
+          : new Date(report?.moderatedAt || report?.moderated_at || Date.now())
+        const isApproved = report.status === "approve"
+        
+        activities.push({
+          id: report.reportId || report.id,
+          type: isApproved ? 'report_approved' : 'report_rejected',
+          title: isApproved 
+            ? `Approved report for "${report.postId || 'post'}"`
+            : `Rejected report for "${report.postId || 'post'}"`,
+          date,
+          icon: isApproved ? 'checkmark' : 'close'
+        })
+      })
+      
+    } catch (moderationError) {
+      console.log("⚠️ Error loading recent moderation activity:", moderationError.message)
+    }
+
+    const sortedActivities = activities
+      .sort((a, b) => +b.date - +a.date)
+      .slice(0, 10)
+    setRecentActivity(sortedActivities)
+  } catch (error) {
+    setRecentActivity([])
+  }
+}
+
+  const formatActivityDate = (date: Date) => {
+    const now = new Date()
+    const diffMs = now.getTime() - date.getTime()
+    const diffMins = Math.floor(diffMs / 60000)
+    const diffHours = Math.floor(diffMins / 60)
+    const diffDays = Math.floor(diffHours / 24)
+
+    if (diffMins < 1) return "Just now"
+    if (diffMins < 60) return `${diffMins}m ago`
+    if (diffHours < 24) return `${diffHours}h ago`
+    if (diffDays < 7) return `${diffDays}d ago`
+    return date.toLocaleDateString()
+  }
+
   useEffect(() => {
-    let alive = true
+    let mounted = true
 
     // Load profile (avatar)
     const unsub = FIREBASE_AUTH.onAuthStateChanged(async (u) => {
-      if (!u || !alive) return
+      if (!u || !mounted) return
+      
       try {
+        setLoading(true)
         const profile = await getProfile()
-        if (!alive) return
+        
+        if (!mounted) return
         setAvatarSrc(avatarFromId(profile?.avatarId))
+
+        // Load stats and activity
+        await Promise.all([
+          loadStats(),
+          loadRecentActivity()
+        ])
+        
       } catch (e) {
-        // non-fatal
-        console.log("geologist dashboard getProfile error:", e)
+        console.error("❌ Auth state change error:", e)
+        console.error("❌ Error message:", e.message)
+      } finally {
+        setLoading(false)
       }
     })
 
@@ -63,22 +292,31 @@ export default function Dashboard() {
     ;(async () => {
       try {
         const list = await getAnnouncements()
-        if (!alive) return
+        
+        if (!mounted) return
         const pin = Array.isArray(list) ? list.find((a: any) => a?.pinned) : null
+        
         setPinned(pin ? {
           id: pin.id, title: pin.title, description: pin.description, imageUrl: pin.imageUrl, pinned: true
         } : null)
       } catch (e) {
-        console.log("geologist dashboard getAnnouncements error:", e)
+        console.error("❌ Announcements error:", e)
+        console.error("❌ Error message:", e.message)
         setPinned(null)
       }
     })()
 
-    return () => { alive = false; unsub() }
+    return () => { 
+      console.log("🔄 Dashboard cleanup")
+      mounted = false
+      unsub() 
+    }
   }, [])
 
   useEffect(() => {
-    if (fontsLoaded) SplashScreen.hideAsync()
+    if (fontsLoaded) {
+      SplashScreen.hideAsync()
+    }
   }, [fontsLoaded])
 
   if (!fontsLoaded) return null
@@ -94,7 +332,18 @@ export default function Dashboard() {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
-
+      <ScrollView
+        style={styles.contentWrapper}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={["#A77B4E"]}      // Android spinner color
+            tintColor="#A77B4E"       // iOS spinner color
+          />
+        }
+      >
       <LinearGradient colors={["#CCCABC", "#C0BAA9", "#BA9B77"]} style={styles.backgroundGradient}>
         {/* Decorative background circles */}
         <View style={[styles.decorativeCircle, { top: 100, right: -50 }]} />
@@ -142,17 +391,17 @@ export default function Dashboard() {
         <View style={styles.statsContainer}>
           <View style={styles.statsCard}>
             <Ionicons name="document-text" size={24} color="#A77B4E" />
-            <Text style={styles.statsNumber}>12</Text>
+            <Text style={styles.statsNumber}>{stats.postsReviewed}</Text>
             <Text style={styles.statsLabel}>Posts Reviewed</Text>
           </View>
           <View style={styles.statsCard}>
             <Ionicons name="checkmark-circle" size={24} color="#A77B4E" />
-            <Text style={styles.statsNumber}>8</Text>
+            <Text style={styles.statsNumber}>{stats.approved}</Text>
             <Text style={styles.statsLabel}>Approved</Text>
           </View>
           <View style={styles.statsCard}>
             <Ionicons name="time" size={24} color="#A77B4E" />
-            <Text style={styles.statsNumber}>4</Text>
+            <Text style={styles.statsNumber}>{stats.pending}</Text>
             <Text style={styles.statsLabel}>Pending</Text>
           </View>
         </View>
@@ -185,37 +434,50 @@ export default function Dashboard() {
           </TouchableOpacity>
         </View>
 
-        {/* Activity (static placeholder) */}
+        {/* Recent Activity */}
         <View style={styles.activityContainer}>
           <Text style={styles.sectionTitle}>Recent Activity</Text>
           <View style={styles.activityCard}>
-            <View className="activityItem" style={styles.activityItem}>
-              <View style={styles.activityIcon}>
-                <Ionicons name="checkmark" size={16} color="white" />
+            {loading ? (
+              <View style={styles.activityItem}>
+                <View style={styles.activityIcon}>
+                  <Ionicons name="hourglass" size={16} color="white" />
+                </View>
+                <View style={styles.activityContent}>
+                  <Text style={styles.activityText}>Loading recent activity...</Text>
+                  <Text style={styles.activityTime}>Please wait</Text>
+                </View>
               </View>
-              <View style={styles.activityContent}>
-                <Text style={styles.activityText}>Approved post about igneous rocks</Text>
-                <Text style={styles.activityTime}>2 hours ago</Text>
+            ) : recentActivity.length === 0 ? (
+              <View style={styles.activityItem}>
+                <View style={styles.activityIcon}>
+                  <Ionicons name="information-circle" size={16} color="white" />
+                </View>
+                <View style={styles.activityContent}>
+                  <Text style={styles.activityText}>No recent activity</Text>
+                  <Text style={styles.activityTime}>Start by reviewing posts</Text>
+                </View>
               </View>
-            </View>
-            <View style={styles.activityItem}>
-              <View style={styles.activityIcon}>
-                <Ionicons name="eye" size={16} color="white" />
-              </View>
-              <View style={styles.activityContent}>
-                <Text style={styles.activityText}>Reviewed sedimentary formation post</Text>
-                <Text style={styles.activityTime}>5 hours ago</Text>
-              </View>
-            </View>
-            <View style={styles.activityItem}>
-              <View style={styles.activityIcon}>
-                <Ionicons name="chatbubble" size={16} color="white" />
-              </View>
-              <View style={styles.activityContent}>
-                <Text style={styles.activityText}>New post submitted for review</Text>
-                <Text style={styles.activityTime}>1 day ago</Text>
-              </View>
-            </View>
+            ) : (
+              recentActivity.slice(0, 4).map((activity, index) => (
+                <View key={activity.id + index} style={[
+                  styles.activityItem,
+                  index === Math.min(4, recentActivity.length - 1) && { borderBottomWidth: 0 }
+                ]}>
+                  <View style={styles.activityIcon}>
+                    <Ionicons name={activity.icon as any} size={16} color="white" />
+                  </View>
+                  <View style={styles.activityContent}>
+                    <Text style={styles.activityText} numberOfLines={1}>
+                      {activity.title}
+                    </Text>
+                    <Text style={styles.activityTime}>
+                      {formatActivityDate(activity.date)}
+                    </Text>
+                  </View>
+                </View>
+              ))
+            )}
           </View>
         </View>
 
@@ -269,11 +531,12 @@ export default function Dashboard() {
           </View>
         </View>
       </Modal>
+      </ScrollView>
     </View>
   )
 }
 
-// CSS Stylesheet (unchanged except profileIcon inner content now <Image/>)
+// Styles remain the same as your original
 const styles = StyleSheet.create({
   container: {
     flex: 1,
