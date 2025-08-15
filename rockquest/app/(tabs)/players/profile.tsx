@@ -53,12 +53,12 @@ export default function ProfileScreen() {
       } catch (e: any) {
         console.log("getProfile error:", e?.response?.status, e?.response?.data, e?.message)
         if (e?.response?.status === 404) {
-          Alert.alert("Complete Profile", "Let’s finish your profile first.", [
+          Alert.alert("Complete Profile", "Let's finish your profile first.", [
             {
               text: "OK",
               onPress: () =>
                 router.replace({
-                  pathname: "/(tabs)/edit-profile",
+                  pathname: "/(tabs)/players/edit-profile",
                   params: { role: "player" },
                 }),
             },

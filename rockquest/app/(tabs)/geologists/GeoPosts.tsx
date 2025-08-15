@@ -12,9 +12,16 @@ import {
   TouchableOpacity,
   View,
   Modal,
+  Image,
+  Dimensions
 } from "react-native"
+import { FIREBASE_AUTH } from "@/utils/firebase"
+import { getProfile } from "@/utils/userApi"
+import { avatarFromId } from "@/utils/avatar"
 
 SplashScreen.preventAutoHideAsync()
+
+const { width, height } = Dimensions.get("window")
 
 export default function PostsScreen() {
   const router = useRouter()
@@ -23,6 +30,8 @@ export default function PostsScreen() {
   const [postTypeFilter, setPostTypeFilter] = useState("all")
   const [showCreateOptions, setShowCreateOptions] = useState(false)
   const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false)
+  const [avatarSrc, setAvatarSrc] = useState(avatarFromId(1))
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     if (fontsLoaded) SplashScreen.hideAsync()
@@ -135,7 +144,7 @@ export default function PostsScreen() {
               style={styles.modalButton}
               onPress={() => {
                 setShowCreateOptions(false)
-                router.push({ pathname: "/(tabs)/NewPost", params: { role: "geologist" } })
+                router.push({ pathname: "/(tabs)/players/NewPost", params: { role: "geologist" } })
               }}
             >
               <Text style={styles.modalButtonText}>New Post</Text>
