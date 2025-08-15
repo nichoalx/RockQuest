@@ -3,12 +3,13 @@ from fastapi import HTTPException
 from datetime import datetime, timedelta
 import os
 from dotenv import load_dotenv
+from app.firebase import ADMIN_SECRET_KEY
 
 # Load environment variables
 load_dotenv()
 
 # Get secret key from .env
-SECRET_KEY = os.getenv("ADMIN_SECRET_KEY")
+SECRET_KEY = ADMIN_SECRET_KEY
 ALGORITHM = "HS256"
 
 if not SECRET_KEY:

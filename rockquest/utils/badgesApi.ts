@@ -1,4 +1,4 @@
-import { api } from "@/utils/userApi"
+import { api } from "./api"
 
 export const getBadges = () => api.get("/badges").then(r => r.data)
 

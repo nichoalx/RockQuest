@@ -4,6 +4,7 @@ inference-sdk==0.52.0
 firebase-admin==6.9.0
 google-cloud-firestore==2.21.0
 google-cloud-storage==3.1.1
+google-cloud-secret-manager
 google-auth==2.40.3
 python-multipart==0.0.20
 python-dotenv==1.1.1
@@ -11,3 +12,4 @@ requests==2.32.4
 PyJWT==2.10.1
 email-validator==2.1.1
 pytz==2025.2
+

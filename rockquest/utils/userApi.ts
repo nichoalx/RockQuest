@@ -1,41 +1,5 @@
-import axios, { AxiosHeaders } from "axios"
-import Constants from "expo-constants"
-import { Platform } from "react-native"
-import { FIREBASE_AUTH } from "./firebase"
+import { api } from "./api" 
 
-const getDevBaseUrl = () => {
-  // Try to infer your dev machine's IP from Expo
-  const host =
-    // SDK 50+:
-    (Constants?.expoConfig as any)?.hostUri?.split(":")?.[0] ||
-    // older manifests:
-    (Constants as any)?.manifest?.debuggerHost?.split(":")?.[0]
-
-  if (host) return `http://${host}:8000`
-
-  // Fallbacks
-  if (Platform.OS === "android") return "http://10.0.2.2:8000"
-  return "http://localhost:8000"
-}
-
-const BASE_URL = __DEV__ ? getDevBaseUrl() : "https://your-prod-domain"
-
-export const api = axios.create({
-  baseURL: BASE_URL,
-  timeout: 15000,
-})
-
-api.interceptors.request.use(async (config) => {
-  if (!config.headers) config.headers = new AxiosHeaders()
-  const user = FIREBASE_AUTH.currentUser
-  if (user) {
-    const token = await user.getIdToken()
-    ;(config.headers as AxiosHeaders).set("Authorization", `Bearer ${token}`)
-  }
-  ;(config.headers as AxiosHeaders).set("Content-Type", "application/json")
-  ;(config.headers as AxiosHeaders).set("Accept", "application/json")
-  return config
-})
 
 // ---- Endpoints ----
 export const getProfile = () => api.get("/profile").then(r => r.data)

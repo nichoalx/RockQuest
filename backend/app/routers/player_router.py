@@ -10,12 +10,12 @@ from app.firebase import db
 from firebase_admin import firestore  # SERVER_TIMESTAMP + Increment
 from inference_sdk import InferenceHTTPClient
 from zoneinfo import ZoneInfo
+from app.firebase import ROBOFLOW_API_KEY
 
 player_router = APIRouter(prefix="/player", tags=["Player"])
 
 # -------------------- config / constants --------------------
 ROBOFLOW_API_URL = "https://serverless.roboflow.com"
-ROBOFLOW_API_KEY = os.environ.get("ROBOFLOW_API_KEY") or "YOUR_API_KEY"
 ROBOFLOW_WORKSPACE = "test-yn6mq"
 ROBOFLOW_WORKFLOW_ID = "rockquest-scan"
 MIN_CONFIDENCE = 0.20

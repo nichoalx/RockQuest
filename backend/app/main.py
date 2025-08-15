@@ -1,6 +1,10 @@
+# backend/app/main.py
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+# Import firebase to initialize it
+from app import firebase  # This will run the firebase initialization
 
 from app.routers import admin_router, player_router, geologist_router, user_router
 from app.routers.admin_auth import admin_auth_router
@@ -19,8 +23,7 @@ app.include_router(user_router.router)
 app.include_router(player_router.player_router)
 app.include_router(geologist_router.geologist_router)
 
-# CORS middleware (optional: adjust domain for production)
-
+# CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -28,14 +31,13 @@ app.add_middleware(
         "http://127.0.0.1:19006",
         "exp://*",                  # Expo Go
         "http://localhost:5173",
-        "http://192.168.1.0/24",    # (Optional) or list specific LAN origins like "http://192.168.1.23:19000"
-        "*",                        # (Dev only) loosen if needed
+        "http://192.168.1.0/24",
+        "*",                        # Dev only
     ],
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*"],            # must allow Authorization
+    allow_headers=["*"],
 )
-
 
 @app.get("/")
 def root():

@@ -1,4 +1,4 @@
-import { api } from "@/utils/userApi"
+import { api } from "./api"
 
 /** ---- Types (mirror your FastAPI models) ---- */
 export type AddFactPayload = {
