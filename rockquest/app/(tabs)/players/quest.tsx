@@ -146,8 +146,8 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-  fixedQuestCard: { marginTop: 180, marginHorizontal: 20 },
-  fixedTasksCard: { position: "absolute", left: 20, right: 20, top: 380, bottom: 50, zIndex: 9, overflow: "hidden" },
+  fixedQuestCard: { marginTop: 160, marginHorizontal: 20 },
+  fixedTasksCard: { position: "absolute", left: 20, right: 20, top: 350, bottom: 50, zIndex: 9, overflow: "hidden" },
 
   tasksScroll: { flex: 1, marginTop: 8 },
 
