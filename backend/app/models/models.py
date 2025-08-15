@@ -10,6 +10,7 @@ class PostVerificationRequest(BaseModel):
 # Fully compatible with FastAPI validation
 class ReportDecisionRequest(BaseModel):
     action: Literal["approve", "reject"]
+    reason: Optional[str] = None
 
 # ----------------------------------------------------------------------------------------------------------------------
 # Rock markers (Database Reference)
@@ -59,11 +60,11 @@ class Quest(BaseModel):
     questId: str
     title: str
     description: str
-    type: Literal["GPS-based", "Collection", "Identification"]
+    type: Literal["Scanning", "Collection", "Community","Learning","GPS-based"]
     difficulty: Literal["Easy", "Medium", "Hard"]
-    location: str
     reward: str
     status: Literal["Draft", "Active", "Past"] = "Active"
+    date: Optional[datetime] = None  
     createdAt: Optional[datetime] = None
     updatedAt: Optional[datetime] = None
     updatedBy: Optional[str] = None
@@ -71,11 +72,13 @@ class Quest(BaseModel):
 class UpdateQuest(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
-    type: Optional[Literal["GPS-based", "Collection", "Identification"]] = None
+    type: Optional[Literal["Scanning", "Collection", "Community","Learning","GPS-based"]] = None
     difficulty: Optional[Literal["Easy", "Medium", "Hard"]] = None
     location: Optional[str] = None
     reward: Optional[str] = None
     status: Optional[Literal["Draft", "Active", "Past"]] = None
+    date: Optional[datetime] = None  
+
 
 class DailyQuest(BaseModel):
     questId: str
@@ -84,8 +87,6 @@ class DailyQuest(BaseModel):
     createdAt: Optional[datetime] = None
 
 class Report(BaseModel):
-    reportedId: str
-    reportedItemType: Literal["post", "fact"]
     reason: str
     status: Literal["pending", "approve", "reject"] = "pending"
     reportedBy: Optional[str] = None
@@ -93,22 +94,31 @@ class Report(BaseModel):
     reviewedBy: Optional[str] = None
     reviewedAt: Optional[datetime] = None
     adminAction: Optional[str] = None
+    moderatedAt: Optional[datetime] = None
+    moderatedBy: Optional[str] = None
 
 class Post(BaseModel):
-    postId: Optional[str] = None 
-    rockname: str
-    description: str
+    postId: Optional[str] = None
+    rockName: str
+    shortDescription: Optional[str] = None
+    description: Optional[str] = None  # you can keep this if some posts have a longer text
     information: str
-    image: str
+    imageUrl: str
+    type: Optional[str] = None  # e.g., "post"
+    uploadedBy: Optional[str] = None
     createdBy: Optional[str] = None
     createdAt: Optional[datetime] = None
+    updatedAt: Optional[datetime] = None
+    updatedBy: Optional[str] = None
     verified: bool = False
     verifiedBy: Optional[str] = None
     verifiedAt: Optional[datetime] = None
-    rejectedReason: Optional[str] = None
     rejectedAt: Optional[datetime] = None
-    updatedAt: Optional[datetime] = None
-    updatedBy: Optional[str] = None
+
+    # Flagged content details
+    flaggedAt: Optional[datetime] = None
+    flaggedBy: Optional[str] = None
+    flaggedReason: Optional[str] = None
 
 # User
 class User(BaseModel):
