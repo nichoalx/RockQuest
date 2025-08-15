@@ -53,6 +53,7 @@ android/
 .env
 firebase-admin-key.json
 __pycache__/
-venv/
+venv*/
+.venv*/
 *.pyc
 .DS_Store

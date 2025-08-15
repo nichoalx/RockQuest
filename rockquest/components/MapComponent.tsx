@@ -11,10 +11,13 @@ import {
   Modal,
   TouchableOpacity,
   useColorScheme,
+  Alert,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons"; // 👈 add this
+import { Ionicons } from "@expo/vector-icons";
+import { getNearbyRocks } from "@/utils/playerApi";
+import { rockImages, rockMeta, RockClass, isKnownClass } from "@/utils/rocks";
 
-const { height, width } = Dimensions.get("window");
+const { height } = Dimensions.get("window");
 
 const darkTheme = [
   { elementType: "geometry", stylers: [{ color: "#242f3e" }] },
@@ -38,54 +41,136 @@ const darkTheme = [
 ];
 const lightTheme: any[] = [];
 
-const MapComponent = () => {
+// ----- types from API -----
+type NearbyRock = {
+  id: string;
+  rockId?: string;
+  lat: number;
+  lng: number;
+  confidence?: number;
+  spawnedAt?: any;
+  spawnedBy?: string;
+  rockMeta?: { name?: string; imageUrl?: string; type?: string };
+};
+
+type NearbySummary = {
+  uniques: RockClass[];
+  byClass: Partial<Record<RockClass, number>>;
+};
+
+type Props = {
+  onNearby?: (summary: NearbySummary) => void;
+};
+
+// ----- helpers -----
+const JITTER_DEG = 0.0002; // ~22m; tweak as needed
+const hashJitter = (id: string | number) => {
+  let h = 0;
+  const s = String(id);
+  for (let i = 0; i < s.length; i++) {
+    h = (h ^ s.charCodeAt(i)) + ((h << 5) - h);
+    h |= 0;
+  }
+  const norm = (n: number) => ((n % 1000) / 500) - 1; // [-1,1]
+  const jx = norm(h);
+  const jy = norm(h >> 1);
+  return { dLat: jy * JITTER_DEG, dLng: jx * JITTER_DEG };
+};
+
+// radius (deg) that covers visible map; clamp to sane bounds
+const radiusFromRegion = (r: Region) => {
+  // half of the largest span, padded a bit so edges are included
+  const base = Math.max(r.latitudeDelta, r.longitudeDelta) * 0.6;
+  // clamp between ~500m and full city (~25km in deg ~= 0.25)
+  const MIN = 0.005; // ~550m
+  const MAX = 0.25;  // ~27km
+  return Math.min(MAX, Math.max(MIN, base));
+};
+
+const MapComponent: React.FC<Props> = ({ onNearby }) => {
   const [region, setRegion] = useState<Region | null>(null);
-  const [selectedRock, setSelectedRock] = useState<{
-    name: string;
-    description: string;
-    image: any;
-  } | null>(null);
+  const [rocks, setRocks] = useState<NearbyRock[]>([]);
+  const [selectedRock, setSelectedRock] = useState<{ name: string; description: string; image: any } | null>(null);
+  const [initialRegion, setInitialRegion] = useState<Region | null>(null);
 
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
-
   const mapRef = useRef<MapView | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // 1) get location and set initial camera
   useEffect(() => {
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
-        console.log("Permission to access location was denied");
+        Alert.alert("Location", "Permission to access location was denied.");
         return;
       }
       const loc = await Location.getCurrentPositionAsync({});
-      const initialRegion: Region = {
+      const r: Region = {
         latitude: loc.coords.latitude,
         longitude: loc.coords.longitude,
-        latitudeDelta: 0.01,
-        longitudeDelta: 0.01,
+        latitudeDelta: 0.02,
+        longitudeDelta: 0.02,
       };
-      setRegion(initialRegion);
+      setInitialRegion(r);
+      setRegion(r);
     })();
   }, []);
+
+  // 2) fetch by visible region (debounced)
+  const fetchByRegion = async (r: Region) => {
+    try {
+      const radius = radiusFromRegion(r);
+      const data = await getNearbyRocks(r.latitude, r.longitude, radius);
+      const arr = Array.isArray(data) ? (data as NearbyRock[]) : [];
+      setRocks(arr);
+
+      if (onNearby) {
+        const classes = arr
+          .map((x) => (x.rockMeta?.name || "").toString())
+          .filter(isKnownClass) as RockClass[];
+        const byClass: Partial<Record<RockClass, number>> = {};
+        for (const c of classes) byClass[c] = (byClass[c] ?? 0) + 1;
+        const uniques = Array.from(new Set(classes));
+        onNearby({ uniques, byClass });
+      }
+    } catch (e) {
+      console.log("getNearbyRocks error:", e);
+    }
+  };
+
+  // call on mount (initial region)
+  useEffect(() => {
+    if (region) fetchByRegion(region);
+  }, [region?.latitude, region?.longitude, region?.latitudeDelta, region?.longitudeDelta]);
+
+  const onRegionChangeComplete = (r: Region) => {
+    // Debounce so we don’t refetch on every tiny camera tick while the user is panning
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      setRegion(r);
+      fetchByRegion(r);
+    }, 300);
+  };
 
   const handleMyLocationPress = async () => {
     try {
       const loc = await Location.getCurrentPositionAsync({});
-      const nextRegion: Region = {
+      const next: Region = {
         latitude: loc.coords.latitude,
         longitude: loc.coords.longitude,
-        latitudeDelta: 0.01,
-        longitudeDelta: 0.01,
+        latitudeDelta: region?.latitudeDelta ?? 0.02,
+        longitudeDelta: region?.longitudeDelta ?? 0.02,
       };
-      setRegion(nextRegion);
-      mapRef.current?.animateToRegion(nextRegion, 550); // smooth recenter
+      setRegion(next);
+      mapRef.current?.animateToRegion(next, 550);
     } catch (error) {
       console.log("Error getting current location:", error);
     }
   };
 
-  if (!region) {
+  if (!initialRegion) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#A77B4E" />
@@ -100,34 +185,50 @@ const MapComponent = () => {
         ref={mapRef}
         provider={PROVIDER_GOOGLE}
         style={styles.map}
-        initialRegion={region}
+        initialRegion={initialRegion}
+        onRegionChangeComplete={onRegionChangeComplete}
         showsUserLocation
-        showsMyLocationButton={false} 
+        showsMyLocationButton={false}
         loadingEnabled={false}
         moveOnMarkerPress={false}
         cacheEnabled
         mapType="standard"
         customMapStyle={isDark ? darkTheme : lightTheme}
       >
-        {/* example markers */}
-        <Marker
-          coordinate={{ latitude: region.latitude + 0.0005, longitude: region.longitude + 0.0005 }}
-          onPress={() =>
-            setSelectedRock({
-              name: "Granite",
-              description:
-                "Granite is a coarse-grained igneous rock composed of quartz and feldspar. It forms from the slow crystallization of magma below Earth's surface.",
-              image: require("../assets/images/rocks/Gneiss.png"),
-            })
-          }
-        >
-          <View style={styles.customMarker}>
-            <View style={styles.markerImageWrapper}>
-              <Image source={require("../assets/images/rocks/Gneiss.png")} style={styles.markerImage} />
-            </View>
-          </View>
-        </Marker>
+        {rocks.map((r, i) => {
+          if (typeof r.lat !== "number" || typeof r.lng !== "number") return null;
 
+          const label = (r.rockMeta?.name || "").toString();
+          const known = isKnownClass(label);
+          const img = known ? rockImages[label as RockClass] : null;
+
+          // stable per-doc jitter so stacked points separate visually
+          const { dLat, dLng } = hashJitter(r.id || i);
+          const lat = r.lat + dLat;
+          const lng = r.lng + dLng;
+
+          return (
+            <Marker
+              key={r.id || i}
+              coordinate={{ latitude: lat, longitude: lng }}
+              anchor={{ x: 0.5, y: 0.5 }}
+              onPress={() => {
+                const meta = known ? rockMeta[label as RockClass] : undefined;
+                setSelectedRock({
+                  name: known ? (label as RockClass) : label || "Unknown",
+                  description: meta?.description ?? "No description available.",
+                  image: img,
+                });
+              }}
+            >
+              <View style={styles.customMarker}>
+                <View style={styles.markerImageWrapper}>
+                  {img ? <Image source={img} style={styles.markerImage} /> : <Ionicons name="help" size={20} color="#A77B4E" />}
+                </View>
+              </View>
+            </Marker>
+          );
+        })}
       </MapView>
 
       <TouchableOpacity
@@ -140,14 +241,13 @@ const MapComponent = () => {
         <Ionicons name="navigate" size={20} color="#A77B4E" />
       </TouchableOpacity>
 
-      {/* Rock Info Modal */}
       {selectedRock && (
         <Modal visible transparent animationType="slide" onRequestClose={() => setSelectedRock(null)}>
           <View style={styles.modalOverlay}>
             <TouchableOpacity style={styles.modalBackdrop} activeOpacity={1} onPress={() => setSelectedRock(null)} />
             <View style={styles.modalContent}>
               <View style={styles.modalHandle} />
-              <Image source={selectedRock.image} style={styles.modalImage} />
+              {selectedRock.image ? <Image source={selectedRock.image} style={styles.modalImage} /> : null}
               <Text style={styles.modalTitle}>{selectedRock.name}</Text>
               <Text style={styles.modalDesc}>{selectedRock.description}</Text>
               <TouchableOpacity onPress={() => setSelectedRock(null)} style={styles.closeButton}>
@@ -170,7 +270,7 @@ const styles = StyleSheet.create({
 
   myLocationButton: {
     position: "absolute",
-    right: 10,        
+    right: 10,
     top: 150,
     width: 50,
     height: 50,
@@ -203,7 +303,6 @@ const styles = StyleSheet.create({
   },
   markerImageWrapper: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#C0BAA9" },
   markerImage: { width: 50, height: 40, resizeMode: "contain" },
-  markerText: { fontSize: 20 },
 
   modalOverlay: { flex: 1, justifyContent: "flex-end" },
   modalBackdrop: { flex: 1, backgroundColor: "rgba(0, 0, 0, 0.5)" },

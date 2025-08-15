@@ -1,15 +1,6 @@
-"use client";
 import {
-  View,
-  Text,
-  TouchableOpacity,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Dimensions,
-  Image,
-  Animated,
-  Easing,
+  View, Text, TouchableOpacity, ScrollView, StatusBar, StyleSheet,
+  Dimensions, Image, Animated, Easing
 } from "react-native";
 import { useFonts, PressStart2P_400Regular } from "@expo-google-fonts/press-start-2p";
 import * as SplashScreen from "expo-splash-screen";
@@ -22,43 +13,91 @@ import { FIREBASE_AUTH } from "@/utils/firebase";
 import { getProfile } from "@/utils/userApi";
 import { avatarFromId } from "@/utils/avatar";
 import { rockImages, RockClass } from "@/utils/rocks";
+import { getAnnouncements } from "@/utils/userApi"; // <-- ADD THIS
 
 SplashScreen.preventAutoHideAsync();
 const { width } = Dimensions.get("window");
 const ROCKS_PANEL_HEIGHT = 170;
 const ROCKS_HANDLE_WIDTH = 62;
-const ROCKS_PANEL_WIDTH = width * 0.88; // 80% of screen width
+const ROCKS_PANEL_WIDTH = width * 0.88;
+
+type PinnedAnnouncement = {
+  id?: string;
+  title?: string;
+  description?: string;
+  imageUrl?: string;
+  pinned?: boolean;
+};
 
 export default function Dashboard() {
   const router = useRouter();
   const [fontsLoaded] = useFonts({ PressStart2P_400Regular });
   const [loading, setLoading] = useState(true);
+
+  // announcement
+  const [pinned, setPinned] = useState<PinnedAnnouncement | null>(null);
   const [showGreeting, setShowGreeting] = useState(true);
+
+  // profile
   const [avatarSrc, setAvatarSrc] = useState(avatarFromId(1));
 
+  // nearby rocks (already wired by your MapComponent)
+  const [nearby, setNearby] = useState<{ uniques: RockClass[]; byClass: Partial<Record<RockClass, number>> }>({
+    uniques: [], byClass: {}
+  });
 
   // sliding panel
   const [isMinimized, setIsMinimized] = useState(false);
   const slideX = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    let mounted = true;
+    let alive = true;
     const unsub = FIREBASE_AUTH.onAuthStateChanged(async (u) => {
-      if (!u || !mounted) return;
+      if (!u || !alive) return;
       try {
         const data = await getProfile();
-        if (!mounted) return;
+        if (!alive) return;
         setAvatarSrc(avatarFromId(data?.avatarId));
       } catch (e) {
         console.log("getProfile error:", e);
       } finally {
-        setLoading(false);
+        if (alive) setLoading(false);
       }
     });
-    return () => {
-      mounted = false;
-      unsub();
-    };
+    return () => { alive = false; unsub(); };
+  }, []);
+
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const list = await getAnnouncements(); 
+        // Find first pinned (you can sort server-side if you prefer)
+        const pinnedOne = Array.isArray(list)
+          ? list.find((a: any) => a?.pinned === true)
+          : null;
+        if (!alive) return;
+        if (pinnedOne) {
+          setPinned({
+            id: pinnedOne.id,
+            title: pinnedOne.title,
+            description: pinnedOne.description,
+            imageUrl: pinnedOne.imageUrl,
+            pinned: true,
+          });
+          setShowGreeting(true);
+        } else {
+          setPinned(null);
+          setShowGreeting(false);
+        }
+      } catch (e) {
+        console.log("getAnnouncements error:", e);
+        setPinned(null);
+        setShowGreeting(false);
+      }
+    })();
+    return () => { alive = false; };
   }, []);
 
   useEffect(() => {
@@ -69,7 +108,7 @@ export default function Dashboard() {
     const minimized = !isMinimized;
     setIsMinimized(minimized);
     Animated.timing(slideX, {
-      toValue: minimized ? -ROCKS_PANEL_WIDTH : 0, // Only slide the panel width minus handle
+      toValue: minimized ? -ROCKS_PANEL_WIDTH : 0,
       duration: 300,
       easing: Easing.out(Easing.cubic),
       useNativeDriver: true,
@@ -78,47 +117,47 @@ export default function Dashboard() {
 
   if (!fontsLoaded || loading) return null;
 
-
-  const located: RockClass[] = ["Granite", "Basalt"];
-
-
-  const MIN_TILES = 8;
+  const located = nearby.uniques;
+  const MIN_TILES = 4;
   const placeholders = Math.max(0, MIN_TILES - located.length);
-  const locatedWithPads: (RockClass | null)[] = [
-    ...located,
-    ...Array(placeholders).fill(null),
-  ];
+  const locatedWithPads: (RockClass | null)[] = [...located, ...Array(placeholders).fill(null)];
 
   return (
     <View style={styles.root}>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
 
       <View style={styles.mapWrapper}>
-        <MapComponent />
+        <MapComponent onNearby={setNearby} />
       </View>
 
-
       <View style={styles.overlayLayer} pointerEvents="box-none">
-        {/* top-right avatar */}
+        {/* avatar */}
         <View style={styles.profileIconContainer} pointerEvents="box-none">
           <TouchableOpacity onPress={() => router.replace("/(tabs)/players/profile")} activeOpacity={0.85}>
             <Image source={avatarSrc} style={styles.profileImage} />
-
           </TouchableOpacity>
         </View>
 
-        {/* Greeting */}
-        {showGreeting && (
+        {/* Announcement: show only if there's a pinned one */}
+        {showGreeting && pinned && (
           <View style={styles.greetingPanelContainer} pointerEvents="box-none">
-            <TouchableOpacity style={styles.greetingPanel} onPress={() => setShowGreeting(false)} activeOpacity={0.9}>
+            <TouchableOpacity
+              style={styles.greetingPanel}
+              onPress={() => setShowGreeting(false)}
+              activeOpacity={0.9}
+            >
               <View style={styles.greetingContent}>
                 <View style={styles.greetingLeft}>
                   <View style={styles.greetingIcon}>
                     <Ionicons name="notifications" size={16} color="white" />
                   </View>
                   <View style={styles.greetingTextContainer}>
-                    <Text style={styles.greetingTitle}>Hello, Player!</Text>
-                    <Text style={styles.greetingDescription}>Check out the latest news</Text>
+                    <Text style={styles.greetingTitle}>
+                      {pinned.title || "Announcement"}
+                    </Text>
+                    <Text style={styles.greetingDescription} numberOfLines={2}>
+                      {pinned.description || ""}
+                    </Text>
                   </View>
                 </View>
                 <Ionicons name="close" size={20} color="#A77B4E" />
@@ -128,7 +167,7 @@ export default function Dashboard() {
         )}
 
         {/* Quest card */}
-        <View style={[styles.questPanelContainer, { top: showGreeting ? 160 : 80 }]} pointerEvents="box-none">
+        <View style={[styles.questPanelContainer, { top: showGreeting && pinned ? 160 : 80 }]} pointerEvents="box-none">
           <TouchableOpacity style={styles.questPanel} onPress={() => router.push("/players/quest")} activeOpacity={0.9}>
             <View style={styles.questContent}>
               <View style={styles.questLeft}>
@@ -137,7 +176,7 @@ export default function Dashboard() {
                 </View>
                 <View style={styles.questTextContainer}>
                   <Text style={styles.questTitle}>Today's Quest</Text>
-                  <Text style={styles.questDescription}>Take pictures of 3 rocks</Text>
+                  <Text style={styles.questDescription}>Click to explore daily quests!</Text>
                 </View>
               </View>
               <Ionicons name="chevron-forward" size={20} color="#A77B4E" />
@@ -145,18 +184,11 @@ export default function Dashboard() {
           </TouchableOpacity>
         </View>
 
-
-        {/* Sliding rocks container - separate from handle */}
+        {/* Rocks panel */}
         <Animated.View
           pointerEvents="box-none"
-          style={[
-            styles.rocksContainer,
-            {
-              transform: [{ translateX: slideX }],
-            },
-          ]}
+          style={[styles.rocksContainer, { transform: [{ translateX: slideX }] }]}
         >
-          {/* The main rocks panel - rounded rectangle */}
           <View style={styles.rocksPanel}>
             <View style={styles.rocksHeaderRow}>
               <Text style={styles.rocksSectionTitle}>Rocks Located...</Text>
@@ -171,29 +203,16 @@ export default function Dashboard() {
                       key={idx}
                       style={styles.rockCard}
                       activeOpacity={isPlaceholder ? 1 : 0.85}
-                      onPress={() => {
-                        if (!isPlaceholder) router.push("/(tabs)/players/collections");
-                      }}
+                      onPress={() => !isPlaceholder && router.push("/(tabs)/players/collections")}
                     >
-                      <View
-                        style={[
-                          styles.rockCardImage,
-                          isPlaceholder && styles.rockCardImagePlaceholder,
-                        ]}
-                      >
+                      <View style={[styles.rockCardImage, isPlaceholder && styles.rockCardImagePlaceholder]}>
                         {isPlaceholder ? (
                           <Text style={styles.rockCardText}>?</Text>
                         ) : (
-                          <Image
-                            source={rockImages[rock]}
-                            resizeMode="contain"
-                            style={{ width: 72, height: 56 }}
-                          />
+                          <Image source={rockImages[rock]} resizeMode="contain" style={{ width: 72, height: 56 }} />
                         )}
                       </View>
-                      <Text style={styles.rockCardName}>
-                        {isPlaceholder ? "Unknown" : rock}
-                      </Text>
+                      <Text style={styles.rockCardName}>{isPlaceholder ? "Unknown" : rock}</Text>
                     </TouchableOpacity>
                   );
                 })}
@@ -201,13 +220,11 @@ export default function Dashboard() {
             </ScrollView>
           </View>
 
-          {/* Handle - separate element positioned next to panel */}
           <TouchableOpacity style={styles.rocksHandle} onPress={togglePanel} activeOpacity={0.95}>
             <Ionicons name={isMinimized ? "chevron-forward" : "chevron-back"} size={18} color="#fff" />
           </TouchableOpacity>
         </Animated.View>
 
-        {/* BottomNav ABSOLUTE – does not push layout up */}
         <View style={styles.bottomNavWrapper} pointerEvents="box-none">
           <BottomNav
             items={[
@@ -252,7 +269,7 @@ const styles = StyleSheet.create({
   // Greeting
   greetingPanelContainer: {
     position: "absolute",
-    top: 80,
+    top: 75,
     left: 16,
     right: 72,
   },
@@ -278,8 +295,8 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   greetingTextContainer: { flex: 1 },
-  greetingTitle: { fontSize: 14, color: "#1f2937", fontFamily: "PressStart2P_400Regular", marginBottom: 4 },
-  greetingDescription: { fontSize: 12, color: "#6b7280" },
+  greetingTitle: { fontSize: 12, color: "#1f2937", fontFamily: "PressStart2P_400Regular", marginBottom: 2 },
+  greetingDescription: { fontSize: 11, color: "#6b7280" },
 
   // Quest
   questPanelContainer: {
@@ -363,8 +380,8 @@ const styles = StyleSheet.create({
   rocksScrollContainer: { flexDirection: "row", gap: 12, paddingRight: 8 },
   rockCard: { alignItems: "center" },
   rockCardImage: {
-    width: 80,
-    height: 80,
+    width: 70,
+    height: 70,
     borderRadius: 8,
     backgroundColor: "#C0BAA9",
     justifyContent: "center",

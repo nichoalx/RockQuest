@@ -11,6 +11,9 @@ export default function TabLayout() {
       <Tabs.Screen name="signup-details" options={{ title: "Signup details", tabBarStyle: { display: "none" } }} />
       <Tabs.Screen name="upload-documents" options={{ title: "Upload documents", tabBarStyle: { display: "none" } }} />
       <Tabs.Screen name="thankyouScreen" options={{ title: "Finish", tabBarStyle: { display: "none" } }} />
+      <Tabs.Screen name="edit-profile" options={{ title: "Edit Profile", tabBarStyle: { display: "none" } }} />
+      <Tabs.Screen name="NewPost" options={{ title: "New Post", tabBarStyle: { display: "none" } }} />
+      <Tabs.Screen name="profile-info" options={{ title: "Profile Info", tabBarStyle: { display: "none" } }} />
 
       {/* Players */}
       <Tabs.Screen name="players/dashboard" options={{ title: "Dashboard", tabBarStyle: { display: "none" } }} />
@@ -20,9 +23,6 @@ export default function TabLayout() {
       <Tabs.Screen name="players/camera" options={{ title: "Camera", tabBarStyle: { display: "none" } }} />
       <Tabs.Screen name="players/profile" options={{ title: "Profile", tabBarStyle: { display: "none" } }} />
       <Tabs.Screen name="players/quest" options={{ title: "Quest", tabBarStyle: { display: "none" } }} />
-      <Tabs.Screen name="players/edit-profile" options={{ title: "Edit Profile", tabBarStyle: { display: "none" } }} />
-      <Tabs.Screen name="players/profile-info" options={{ title: "Profile Info", tabBarStyle: { display: "none" } }} />
-      <Tabs.Screen name="players/NewPost" options={{ title: "New Post", tabBarStyle: { display: "none" } }} />
 
       {/* Geologists */}
       <Tabs.Screen name="geologists/GeoHomepage" options={{ title: "Homepage", tabBarStyle: { display: "none" } }} />

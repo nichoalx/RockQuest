@@ -31,7 +31,7 @@ export default function AuthScreen() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
-  const [type, setType] = useState("user")
+  const [type, setType] = useState("player") // Changed from "user" to "player"
   const [loading, setLoading] = useState(false)
 
   const auth = FIREBASE_AUTH
@@ -46,35 +46,93 @@ export default function AuthScreen() {
     setIsLogin(mode !== "signup")
   }, [mode])
 
-  const handleAuth = () => {
+  const handleAuth = async () => {
     if (!email || !password) {
       Alert.alert("Error", "Please fill in all fields")
       return
     }
 
-    setLoading(true)
-    signInWithEmailAndPassword(auth, email, password)
-      .then(async (userCredential) => {
-        const { uid } = userCredential.user
+    if (!isLogin && password !== confirmPassword) {
+      Alert.alert("Error", "Passwords do not match")
+      return
+    }
 
-        // Get user type from Firestore
-        const userDoc = await getDoc(doc(FIRESTORE, "user", uid))
-        const userData = userDoc.data()
-        const userType = userData?.type || "user"
+    try {
+      setLoading(true)
 
-        setLoading(false)
+      let userCredential
+      if (isLogin) {
+        // Login existing user
+        userCredential = await signInWithEmailAndPassword(auth, email, password)
+      } else {
+        // Create new user
+        userCredential = await createUserWithEmailAndPassword(auth, email, password)
+        
+        // Create user document in Firestore for new users
+        await setDoc(doc(FIRESTORE, "user", userCredential.user.uid), {
+          uid: userCredential.user.uid,
+          email: userCredential.user.email,
+          type: type, // Use the selected type from the form
+          createdAt: serverTimestamp(),
+          isActive: true,
+        })
+      }
 
-        // Redirect based on type
-        if (userType === "geologist") {
+      const { uid } = userCredential.user
+
+      // Get user type from Firestore
+      const userDoc = await getDoc(doc(FIRESTORE, "user", uid))
+      
+      if (!userDoc.exists()) {
+        throw new Error("User profile not found. Please contact support.")
+      }
+
+      const userData = userDoc.data()
+      const userType = userData?.type
+
+
+      setLoading(false)
+
+      // Redirect based on type with proper mapping
+      switch (userType) {
+        case "geologist":
           router.replace("/(tabs)/geologists/GeoHomepage")
-        } else {
+          break
+        case "player":
+        default:
           router.replace("/(tabs)/players/dashboard")
-        }
-      })
-      .catch((error) => {
-        setLoading(false)
-        Alert.alert("Authentication Error", error.message)
-      })
+          break
+      }
+
+    } catch (error: any) {
+      setLoading(false)
+      console.error("Auth error:", error)
+      
+      let errorMessage = "Authentication failed"
+      
+      // Handle specific Firebase errors
+      switch (error.code) {
+        case "auth/user-not-found":
+          errorMessage = "No account found with this email"
+          break
+        case "auth/wrong-password":
+          errorMessage = "Incorrect password"
+          break
+        case "auth/email-already-in-use":
+          errorMessage = "An account already exists with this email"
+          break
+        case "auth/weak-password":
+          errorMessage = "Password should be at least 6 characters"
+          break
+        case "auth/invalid-email":
+          errorMessage = "Please enter a valid email address"
+          break
+        default:
+          errorMessage = error.message || "Authentication failed"
+      }
+      
+      Alert.alert("Authentication Error", errorMessage)
+    }
   }
 
   const toggleAuthMode = () => {
@@ -105,18 +163,22 @@ export default function AuthScreen() {
             <View style={styles.formContainer}>
               {!isLogin && (
                 <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Login As</Text>
-                  <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-                    {["user", "geologist", "admin"].map((r) => (
+                  <Text style={styles.label}>Account Type</Text>
+                  <View style={styles.roleContainer}>
+                    {[
+                      { value: "player", label: "Player" },
+                      { value: "geologist", label: "Geologist" },
+                      { value: "admin", label: "Admin" }
+                    ].map((role) => (
                       <TouchableOpacity
-                        key={r}
-                        style={[styles.roleButton, type === r && styles.roleButtonSelected]}
-                        onPress={() => setType(r)}
+                        key={role.value}
+                        style={[styles.roleButton, type === role.value && styles.roleButtonSelected]}
+                        onPress={() => setType(role.value)}
                       >
                         <Text
-                          style={type === r ? styles.roleButtonTextSelected : styles.roleButtonText}
+                          style={type === role.value ? styles.roleButtonTextSelected : styles.roleButtonText}
                         >
-                          {r.charAt(0).toUpperCase() + r.slice(1)}
+                          {role.label}
                         </Text>
                       </TouchableOpacity>
                     ))}
@@ -165,11 +227,18 @@ export default function AuthScreen() {
                 </View>
               )}
 
-              <TouchableOpacity style={styles.authButton} onPress={handleAuth} activeOpacity={0.8}>
+              <TouchableOpacity 
+                style={[styles.authButton, loading && styles.authButtonDisabled]} 
+                onPress={handleAuth} 
+                activeOpacity={0.8}
+                disabled={loading}
+              >
                 {loading ? (
                   <ActivityIndicator size="small" color="white" />
                 ) : (
-                  <Text style={styles.authButtonText}>{isLogin ? "Login" : "Create Account"}</Text>
+                  <Text style={styles.authButtonText}>
+                    {isLogin ? "Login" : "Create Account"}
+                  </Text>
                 )}
               </TouchableOpacity>
 
@@ -212,35 +281,74 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   inputGroup: { marginBottom: 16 },
-  label: { color: "#374151", fontSize: 14, fontWeight: "600", marginBottom: 8 },
+  label: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#374151",
+    marginBottom: 8,
+  },
   input: {
     borderWidth: 1,
-    borderColor: "#d1d5db",
+    borderColor: "#D1D5DB",
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 16,
     backgroundColor: "white",
   },
-  authButton: {
-    backgroundColor: "#A77B4E",
-    borderRadius: 8,
-    paddingVertical: 16,
-    marginBottom: 16,
+  roleContainer: { 
+    flexDirection: "row", 
+    justifyContent: "space-between",
+    gap: 8,
   },
-  authButtonText: { color: "white", textAlign: "center", fontSize: 16, fontWeight: "bold" },
-  toggleText: { color: "#A77B4E", textAlign: "center", fontSize: 14 },
   roleButton: {
     flex: 1,
-    marginHorizontal: 4,
-    paddingVertical: 10,
-    borderRadius: 6,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#A77B4E",
+    borderColor: "#D1D5DB",
     backgroundColor: "white",
     alignItems: "center",
   },
-  roleButtonSelected: { backgroundColor: "#A77B4E" },
-  roleButtonText: { color: "#A77B4E", fontWeight: "bold" },
-  roleButtonTextSelected: { color: "white", fontWeight: "bold" },
+  roleButtonSelected: {
+    backgroundColor: "#A77B4E",
+    borderColor: "#A77B4E",
+  },
+  roleButtonText: {
+    fontSize: 12,
+    color: "#374151",
+    fontWeight: "500",
+  },
+  roleButtonTextSelected: {
+    fontSize: 12,
+    color: "white",
+    fontWeight: "600",
+  },
+  authButton: {
+    backgroundColor: "#A77B4E",
+    paddingVertical: 16,
+    borderRadius: 8,
+    alignItems: "center",
+    marginBottom: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  authButtonDisabled: {
+    opacity: 0.6,
+  },
+  authButtonText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  toggleText: {
+    textAlign: "center",
+    color: "#6B7280",
+    fontSize: 14,
+    textDecorationLine: "underline",
+  },
 })

@@ -42,6 +42,7 @@ playerApi.interceptors.request.use(async (config) => {
   return config
 })
 
+
 // ---- Rock Collection Endpoints ----
 export const getMyRocks = () => 
   playerApi.get("/player/rocks").then(r => r.data)
@@ -143,3 +144,27 @@ export interface RockCollectionResponse {
 export interface AchievementResponse {
   earnedAchievements: Achievement[]
 }
+
+export interface ScanStatsDay {
+  date: string;
+  count: number;
+  byType?: Record<string, number>;
+}
+
+export interface ScanStatsResponse {
+  day: ScanStatsDay;  
+  total: number;       
+}
+
+export const getScanStats = (dateKey?: string) =>
+  playerApi
+    .get<ScanStatsResponse>("/player/scan-stats", { params: { date: dateKey } })
+    .then(r => r.data);
+
+export interface QuestsSummary {
+  today?: { date: string; title: string; description?: string };
+  upcoming: { date: string; title: string }[];
+}
+
+export const getQuestsSummary = () =>
+  playerApi.get<QuestsSummary>("/player/quests-summary").then(r => r.data);

@@ -9,12 +9,15 @@ import { useEffect, useState } from "react"
 import { router } from "expo-router"
 import quest_bg from "../../../assets/images/quest_bg.png"
 import BottomNav from "@/components/BottomNav"
+import { getQuestsSummary, QuestsSummary } from "@/utils/playerApi"   
 
 SplashScreen.preventAutoHideAsync()
 
 export default function QuestScreen() {
   const [fontsLoaded] = useFonts({ PressStart2P_400Regular })
   const [avatarSrc, setAvatarSrc] = useState(avatarFromId(1))
+  const [todayTitle, setTodayTitle] = useState<string>("")
+  const [upcoming, setUpcoming] = useState<{ date: string; title: string }[]>([])
 
   // 1) Hooks FIRST (no early return above this line)
   useEffect(() => {
@@ -26,17 +29,18 @@ export default function QuestScreen() {
     const unsub = FIREBASE_AUTH.onAuthStateChanged(async (u) => {
       if (!u || !mounted) return
       try {
-        const data = await getProfile()
+        const [profile, summary] = await Promise.all([getProfile(), getQuestsSummary()])
         if (!mounted) return
-        setAvatarSrc(avatarFromId(data?.avatarId))
+        setAvatarSrc(avatarFromId(profile?.avatarId))
+
+        // set today's & upcoming
+        setTodayTitle(summary.today?.title || "Today's Quest")
+        setUpcoming((summary.upcoming || []).slice(0, 10))
       } catch (e) {
-        console.log("getProfile error (quest):", e)
+        console.log("quest load error:", e)
       }
     })
-    return () => {
-      mounted = false
-      unsub()
-    }
+    return () => { mounted = false; unsub() }
   }, [])
 
   // 2) Early return AFTER all hooks
@@ -53,7 +57,6 @@ export default function QuestScreen() {
     { id: 8, text: "Take picture of a rock", completed: true },
     { id: 9, text: "Change profile picture", completed: true },
   ]
-
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
@@ -71,7 +74,7 @@ export default function QuestScreen() {
             </TouchableOpacity>
 
             <View style={styles.header}>
-              <View style={styles.headerContent}>{/* title intentionally empty */}</View>
+              <View style={styles.headerContent} />
             </View>
 
             <View style={[styles.sectionCard, styles.fixedQuestCard]}>
@@ -79,28 +82,30 @@ export default function QuestScreen() {
                 <Ionicons name="calendar-outline" size={20} color="#8B7355" />
                 <Text style={styles.sectionTitle}>Today's Quest</Text>
               </View>
-              <Text style={styles.sectionText}>Take pictures of 3 rocks</Text>
+              <Text style={styles.sectionText}>{todayTitle || "No quest posted for today."}</Text>
             </View>
           </View>
 
-          {/* Fixed Tasks card; inner content scrolls */}
+          {/* Upcoming quests list (no checkbox, max 10) */}
           <View style={[styles.sectionCard, styles.fixedTasksCard]}>
-            <Text style={styles.sectionTitle}>Tasks</Text>
             <ScrollView
               style={styles.tasksScroll}
               contentContainerStyle={{ paddingBottom: 12 }}
               showsVerticalScrollIndicator={true}
             >
-              {tasks.map((task) => (
-                <View key={task.id} style={styles.taskItem}>
-                  <View style={styles.checkbox}>
-                    {task.completed && <Ionicons name="checkmark" size={14} color="#BA9B77" />}
+              {upcoming.length === 0 ? (
+                <Text style={{ color: "#6b7280" }}>No upcoming quests.</Text>
+              ) : (
+                upcoming.map((q) => (
+                  <View key={`${q.date}-${q.title}`} style={styles.listItem}>
+                    <View style={styles.bullet} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.itemTitle}>{q.title}</Text>
+                      <Text style={styles.itemSub}>{q.date}</Text>
+                    </View>
                   </View>
-                  <Text style={[styles.taskText, task.completed && styles.taskTextCompleted]}>
-                    {task.text || "Untitled task"}
-                  </Text>
-                </View>
-              ))}
+                ))
+              )}
             </ScrollView>
           </View>
         </ImageBackground>
@@ -123,12 +128,9 @@ export default function QuestScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F5F5F5" },
-  bg: { flex: 1, width: "100%", height: "100%" },
-
+  bg: { flex: 1, width: "100%", height: "93%" },
   fixedOverlay: { position: "absolute", top: 0, left: 0, right: 0, zIndex: 10 },
-
   profileIconTop: { position: "absolute", top: 4, right: 20, zIndex: 11 },
-
   header: { paddingTop: 50, paddingHorizontal: 20, paddingBottom: 20 },
   headerContent: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
   headerAvatar: { width: 40, height: 40, borderRadius: 20, borderWidth: 2, borderColor: "white" },
@@ -153,23 +155,18 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: 16, fontWeight: "bold", color: "#1f2937", marginLeft: 8 },
   sectionText: { fontSize: 14, color: "#6b7280" },
 
-  taskItem: {
+  // list item (replaces checkbox/tasks)
+  listItem: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: "#E5E5E5",
+    gap: 10,
   },
-  checkbox: {
-    width: 20, height: 20, borderRadius: 4, borderWidth: 2, borderColor: "#BA9B77",
-    marginRight: 12, alignItems: "center", justifyContent: "center", backgroundColor: "#FFFFFF",
-  },
-  taskText: { fontSize: 14, color: "#2C2C2C", flex: 1 },
-  taskTextCompleted: { textDecorationLine: "line-through", color: "#999999" },
+  bullet: { width: 8, height: 8, borderRadius: 4, backgroundColor: "#BA9B77", marginTop: 8 },
+  itemTitle: { fontSize: 14, color: "#2C2C2C" },
+  itemSub: { fontSize: 12, color: "#9CA3AF", marginTop: 2 },
 
-  bottomNav: {
-    position: "absolute",
-    left: 0, right: 0, bottom: 0, zIndex: 20,
-
-  },
+  bottomNav: { position: "absolute", left: 0, right: 0, bottom: 0, zIndex: 20 },
 })
