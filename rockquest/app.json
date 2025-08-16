@@ -14,13 +14,17 @@
         "NSCameraUsageDescription": "This app uses the camera to identify rocks."
       },
       "config": {
-        "googleMaps": {
-          "apiKey": "AIzaSyB6qRvMLyLnOf5cnH6DUrsWd06XIK32XmI"
-        }
+        "googleMapsApiKey": "AIzaSyB6qRvMLyLnOf5cnH6DUrsWd06XIK32XmI"
       }
     },
     "android": {
-      "permissions": ["CAMERA", "READ_EXTERNAL_STORAGE", "WRITE_EXTERNAL_STORAGE"],
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -28,9 +32,10 @@
       "edgeToEdgeEnabled": true,
       "config": {
         "googleMaps": {
-          "apiKey": "AIzaSyB6qRvMLyLnOf5cnH6DUrsWd06XIK32XmI"
+          "apiKey": "AIzaSyCcHBKc8K5qybrv2xR6nRQkO4EsLddHDIY"
         }
-      }
+      },
+      "package": "com.rockquest.rockquest"
     },
     "web": {
       "bundler": "metro",
@@ -53,6 +58,12 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "e17bdb83-38b4-40b9-bbe4-5645f4cb14f7"
+      }
     }
   }
 }

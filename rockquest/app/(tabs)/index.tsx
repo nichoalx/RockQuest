@@ -6,11 +6,14 @@ import {
   useWindowDimensions,
   SafeAreaView,
   Animated,
+  Platform,
 } from "react-native";
 import { useFonts, PressStart2P_400Regular } from "@expo-google-fonts/press-start-2p";
 import * as SplashScreen from "expo-splash-screen";
 import { useRouter } from "expo-router";
 import LottieView from "lottie-react-native";
+import { FIREBASE_AUTH } from "../../utils/firebase";
+import { onAuthStateChanged } from "firebase/auth";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -19,6 +22,7 @@ export default function StartScreen() {
   const { width, height } = useWindowDimensions();
   const router = useRouter();
   const [tapped, setTapped] = useState(false);
+  const [isReady, setIsReady] = useState(false);
 
   // Animated opacity value for flashing effect
   const opacityAnim = useRef(new Animated.Value(1)).current;
@@ -27,9 +31,24 @@ export default function StartScreen() {
     if (fontsLoaded) SplashScreen.hideAsync();
   }, [fontsLoaded]);
 
+  // Check auth state on mount - especially important for Android
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(FIREBASE_AUTH, (user) => {
+      if (user) {
+        // User is already signed in, redirect immediately
+        router.replace("/(tabs)/players/dashboard");
+      } else {
+        // User is not signed in, show the splash screen
+        setIsReady(true);
+      }
+    });
+
+    return unsubscribe;
+  }, []);
+
   // Flashing animation loop
   useEffect(() => {
-    if (!tapped) {
+    if (!tapped && isReady) {
       const flashing = Animated.loop(
         Animated.sequence([
           Animated.timing(opacityAnim, {
@@ -49,7 +68,7 @@ export default function StartScreen() {
       // Clean up animation on unmount or tap
       return () => flashing.stop();
     }
-  }, [tapped, opacityAnim]);
+  }, [tapped, opacityAnim, isReady]);
 
   // Navigate on tap
   useEffect(() => {
@@ -58,7 +77,8 @@ export default function StartScreen() {
     }
   }, [tapped, router]);
 
-  if (!fontsLoaded) return null;
+  // Don't render anything until we know the auth state
+  if (!fontsLoaded || !isReady) return null;
 
   return (
     <TouchableOpacity
@@ -117,10 +137,3 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
 });
-
-
-
-
-
-
-
